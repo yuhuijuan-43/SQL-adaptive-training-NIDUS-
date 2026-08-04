@@ -190,6 +190,18 @@ body {
 }
 .m-stat .v { font-size: 20px; font-weight: 800; font-family: var(--mono); background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .m-stat .l { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+/* 数据速览悬停提示：带 data-tip 的卡片显示深色气泡 */
+.m-stat { position: relative; cursor: help; }
+.m-stat.has-tip .l { border-bottom: 1px dotted var(--text-3); }
+.m-stat[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  background: rgba(27, 39, 71, 0.94); color: #fff; font-size: 11px; line-height: 1.6;
+  padding: 6px 12px; border-radius: 8px; white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(40, 60, 110, 0.28);
+  opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 5;
+}
+.m-stat[data-tip]:hover::after { opacity: 1; }
 .modal-foot { display: flex; justify-content: flex-end; margin-top: 20px; }
 .modal-foot .btn-ok {
   display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 26px;
@@ -394,7 +406,7 @@ const UPDATES = [
       '<b>只读安全</b>：仅允许单条 SELECT / WITH 等只读语句，防止写入类语句破坏判题环境。'
     ],
     thinking: '判题的底线是「你的答案真的能跑出那个结果」。文本比对再聪明也只是近似，我们把判题推进到真实执行——结果集一致才算对。这个改动让填空题从「背答案」变成「真验证」，也让错误提示成为学习反馈的一部分。',
-    stats: [['2ms', '单题判题耗时'], ['3 类', '常见错误提示'], ['多例', '等价写法测试']]
+    stats: [['2ms', '单题判题耗时'], ['3 类', '常见错误提示', '表不存在 · 列不存在 · 语法错误'], ['多例', '等价写法测试']]
   },
   {
     date: '2026-08-04', tag: 'new', tagText: '新功能',
@@ -407,7 +419,7 @@ const UPDATES = [
       '<b>内容双语</b>：更新动态、功能说明等长内容同步提供英文版。'
     ],
     thinking: '好的产品要让更多人无障碍使用。语言不只是翻译文案，而是把整个交互链路（提示、反馈、内容）都变成可切换的——为此我们统一了一套轻量翻译机制，新增页面自动接入。',
-    stats: [['4+', '页面接入双语'], ['300+', '翻译词条'], ['1 键', '即时切换']]
+    stats: [['4+', '页面接入双语', '门户 · 了解我们 · 登录注册 · 做题前端'], ['300+', '翻译词条'], ['1 键', '即时切换']]
   },
   {
     date: '2026-08-04', tag: 'new', tagText: '新功能',
@@ -421,7 +433,7 @@ const UPDATES = [
       '<b>记录隔离</b>：密码历史按账号类型独立管理，互不干扰。'
     ],
     thinking: '团队协作的前提是安全与可控。登录双重验证、密码回退这些设计，都是为了让「有人能管」这件事本身安全、可逆、不易误伤。',
-    stats: [['2 重', '登录验证'], ['3 次', '密码回退上限'], ['实时', '同事在线同步']]
+    stats: [['2 重', '登录验证', '管理员账号密码 + 统一密钥'], ['3 次', '密码回退上限', '每次重置自动留档，可逐级回退'], ['实时', '同事在线同步']]
   },
   {
     date: '2026-08-04', tag: 'opt', tagText: '优化',
@@ -433,7 +445,7 @@ const UPDATES = [
       '<b>会话守卫</b>：会话失效自动清理本地状态并引导重新登录，避免误操作。'
     ],
     thinking: '题库是平台的核心资产，学习数据属于用户自己。登录保护是基础门槛，后续会持续完善权限体系。',
-    stats: [['100%', '题目接口登录保护'], ['自动', '失效会话清理']]
+    stats: [['100%', '题目接口登录保护'], ['自动', '失效会话清理', '会话失效自动清除本地状态并引导重新登录']]
   },
   {
     date: '2026-08-03', tag: 'new', tagText: '新功能',
@@ -447,7 +459,7 @@ const UPDATES = [
       '<b>品牌化</b>：接入 NIDUS 品牌 logo（透明底处理），页脚文案去除技术栈信息。'
     ],
     thinking: '产品要有门面：用户第一眼看到的页面决定了第一印象。我们专门花了一轮打磨对外门户——统一的视觉语言让「门户、登录、做题」看起来像一个完整的产品，而不是三个拼凑的页面。同时明确产品边界：摸底小测不是我们的特色，砍掉它，把资源聚焦到自适应引擎这条主线上。',
-    stats: [['3', '级页面体系'], ['4', '个页面改版'], ['0', 'CDN 依赖']]
+    stats: [['3', '级页面体系', '门户 → 登录 → 做题 三级流转'], ['4', '个页面改版'], ['0', 'CDN 依赖']]
   },
   {
     date: '2026-08-03', tag: 'new', tagText: '新功能',
@@ -460,7 +472,7 @@ const UPDATES = [
       '<b>一致性</b>：题型、难度、分类三组筛选统一样式与高度，视觉上是一套控件。'
     ],
     thinking: '最初的下拉框是平铺列表，想换分类得先切回「全部」再重选，误操作率高、路径也长。我们的核心思路是把「选完再改」变成「先看后定」——让筛选像逛菜单一样轻松，滑过即预览、离开不锁定，选中后还能一键反悔。筛选不该是负担，而应是探索题库的入口。',
-    stats: [['6 条', '新增样式规则'], ['5 个', '交互状态'], ['200ms', '面板收起延迟']]
+    stats: [['6 条', '新增样式规则'], ['5 个', '交互状态', '悬停 · 展开 · 收起 · 选中 · 清除'], ['200ms', '面板收起延迟']]
   },
   {
     date: '2026-08-02', tag: 'fix', tagText: '修复',
@@ -473,7 +485,7 @@ const UPDATES = [
       '<b>静态题映射</b>：静态选择题也建立了到知识节点的映射，保证它们和动态题一样参与层级筛选。'
     ],
     thinking: '筛选的本质是「帮用户把题库读薄」。平铺的 29 个标签无法传达知识点之间的关系，而知识图谱本身就是现成的层级字典——我们让它直接驱动筛选：选「多表连接」就是连同它的内连接、左连接、自连接一起看。难度筛选的修复则是原则问题：规则要么对所有题生效，要么就别叫规则。',
-    stats: [['29 个', '标签接入层级'], ['58 道', '静态题纳入过滤'], ['2 个', '筛选问题修复']]
+    stats: [['29 个', '标签接入层级'], ['58 道', '静态题纳入过滤'], ['2 个', '筛选问题修复', '难度筛选不生效 · 分类无法逐级下钻']]
   },
   {
     date: '2026-08-02', tag: 'bank', tagText: '题库扩充',
@@ -499,7 +511,7 @@ const UPDATES = [
       '<b>解锁链修复</b>：发现旧逻辑下「答对选择题永远解锁不了填空题」的断链问题——改为首次答对进阶选择题即解锁全部填空题并立即推送一道。'
     ],
     thinking: '旧图谱和题目关联松散，用户看不清「该学什么、学到哪了」。这次重构的核心是收敛：把学习路径收成一张 37 节点的地图，7 大分类打底、知识点挂在其下；同时把推荐逻辑和地图对齐——按掌握度配权重、按答对率卡进度。过程中暴露的解锁断链是最大收获：自适应系统最怕的是一环扣不上，用户就永远到不了下一环。',
-    stats: [['37', '节点总数'], ['29', '知识标签'], ['60%', '掌握阈值']]
+    stats: [['37', '节点总数', '根节点 → 7 大分类 → 29 子知识点'], ['29', '知识标签'], ['60%', '掌握阈值', '答对率低于 60% 强制停留巩固']]
   },
   {
     date: '2026-07-30', tag: 'fix', tagText: '修复',
@@ -512,7 +524,7 @@ const UPDATES = [
       '<b>果断裁剪</b>：15 道涉及正则、函数定义等无法在 SQLite 运行的功能，直接移除——判题准确比题量数字更重要。'
     ],
     thinking: '判题机的底线是「你的答案真的能跑出那个结果」。我们把 310 道题的答案全部放进数据库执行了一遍，跑不通就查原因：方言差异写翻译层，答案本身错了就人工修，实在跑不了的 15 道果断移除。题量是可以再补的，但「判错」会直接击穿用户信任——数据质量优先于数量。',
-    stats: [['295', '题验证通过'], ['15', '题果断移除'], ['3', '题人工修正']]
+    stats: [['295', '题验证通过'], ['15', '题果断移除', '正则/自定义函数等 SQLite 无法运行的题型'], ['3', '题人工修正']]
   },
     {
     date: '2026-07-28', tag: 'new', tagText: '新功能',
@@ -524,7 +536,7 @@ const UPDATES = [
       '<b>解锁规则</b>：首次答对基础题解锁全部选择题；首次答对进阶题直接解锁全部填空题并立即推送一道；答错则留在当前知识点巩固。'
     ],
     thinking: '选择题能检验「认不认识」，填空题才能检验「会不会写」——只刷选择题容易产生「我懂了」的错觉。深度模式的思路是概念题答对立刻上实战题，趁热打铁形成闭环，把「看懂」真正变成「会写」。',
-    stats: [['1', '个核心功能'], ['4', '条解锁规则'], ['×1.5', '答错强化权重']]
+    stats: [['1', '个核心功能'], ['4', '条解锁规则', '基础题答对解锁选择题 → 进阶题答对解锁填空题'], ['×1.5', '答错强化权重']]
   },
   {
     date: '2026-07-25', tag: 'opt', tagText: '优化',
@@ -537,7 +549,7 @@ const UPDATES = [
       '<b>数据净化</b>：批量修复 272 道题的标签分隔符不一致，并解决编码乱码导致的星级读取失败。'
     ],
     thinking: '题库是产品的地基，而多来源汇集的数据最怕口径不一——同一个知识点有的题叫「窗口函数」有的叫「排名函数」，筛选就会漏题。这次对齐的收益不在表面：难度、标签、编码这些看不见的数据口径统一后，筛选、推荐、统计才能建立在可信的基础上。地基修好了，上面才能盖楼。',
-    stats: [['58', '题静态导入'], ['371', '题同步对齐'], ['272', '题数据修复']]
+    stats: [['58', '题静态导入'], ['371', '题同步对齐'], ['272', '题数据修复', '标签分隔符不一致 · 编码乱码']]
   }
 ];
 
@@ -572,7 +584,7 @@ const UPDATES_EN = [
       '<b>Read-only safety</b>: only single read-only statements (SELECT / WITH) are allowed, preventing write statements from breaking the judging environment.'
     ],
     thinking: 'The bottom line of judging is "your answer can really produce that result". However clever text comparison is, it is only an approximation — we moved judging to real execution: correct only when the result sets match. This turns fill-ins from "memorizing answers" into "real verification", and makes error hints part of the learning feedback.',
-    stats: [['2ms', 'judging per question'], ['3', 'common error hints'], ['many', 'equivalence test cases']]
+    stats: [['2ms', 'judging per question'], ['3', 'common error hints', 'table not found · column not found · syntax error'], ['many', 'equivalence test cases']]
   },
   {
     date: '2026-08-04', tag: 'new', tagText: 'New Feature',
@@ -585,7 +597,7 @@ const UPDATES_EN = [
       '<b>Bilingual content</b>: long-form content like update notes also ships in English.'
     ],
     thinking: 'A good product should be accessible to more people. Language is not just translating copy — it means making the whole interaction chain (hints, feedback, content) switchable. We built one lightweight translation system that new pages plug into automatically.',
-    stats: [['4+', 'bilingual pages'], ['300+', 'translated entries'], ['1 click', 'instant switch']]
+    stats: [['4+', 'bilingual pages', 'Portal · About · Login/Register · Practice'], ['300+', 'translated entries'], ['1 click', 'instant switch']]
   },
   {
     date: '2026-08-04', tag: 'new', tagText: 'New Feature',
@@ -599,7 +611,7 @@ const UPDATES_EN = [
       '<b>Isolated records</b>: password history is managed per account type, never cross-contaminated.'
     ],
     thinking: 'Team collaboration demands security and control. Double verification at login and password rollback are both about making "someone being able to manage" itself safe, reversible and hard to misuse.',
-    stats: [['2x', 'login verification'], ['3', 'rollback limit'], ['realtime', 'colleague sync']]
+    stats: [['2x', 'login verification', 'Admin account password + unified key'], ['3', 'rollback limit', 'each reset is archived, roll back step by step'], ['realtime', 'colleague sync']]
   },
   {
     date: '2026-08-04', tag: 'opt', tagText: 'Optimization',
@@ -611,7 +623,7 @@ const UPDATES_EN = [
       '<b>Session guard</b>: expired sessions are cleaned up locally and the user is guided back to sign in, avoiding mis-operation.'
     ],
     thinking: 'The question bank is the platform\'s core asset, and learning data belongs to the users themselves. Login protection is the baseline; the permission system will keep evolving.',
-    stats: [['100%', 'question APIs login-protected'], ['auto', 'stale session cleanup']]
+    stats: [['100%', 'question APIs login-protected'], ['auto', 'stale session cleanup', 'expired sessions are cleared locally and you are guided back to sign in']]
   },
   {
     date: '2026-08-03', tag: 'new', tagText: 'New Feature',
@@ -625,7 +637,7 @@ const UPDATES_EN = [
       '<b>Branding</b>: NIDUS brand logo integrated (transparent background); tech-stack details removed from the footer.'
     ],
     thinking: 'A product needs a face: the first page a user sees shapes their first impression. We spent a full round polishing the public portal — one unified visual language makes "portal, login, practice" feel like one complete product rather than three stitched-together pages. We also clarified the product boundary: the diagnostic test wasn\'t our differentiator, so we cut it and focused resources on the adaptive engine — the main thread.',
-    stats: [['3', 'page tiers'], ['4', 'pages redesigned'], ['0', 'CDN dependencies']]
+    stats: [['3', 'page tiers', 'Portal → Login → Practice'], ['4', 'pages redesigned'], ['0', 'CDN dependencies']]
   },
   {
     date: '2026-08-03', tag: 'new', tagText: 'New Feature',
@@ -638,7 +650,7 @@ const UPDATES_EN = [
       '<b>Consistency</b>: type, difficulty and category filters share the same style and height — they read as one control set.'
     ],
     thinking: 'The old dropdown was a flat list: switching categories meant going back to "All" and re-selecting — high mis-click rate and a long path. Our core idea was to turn "choose then change" into "preview then decide" — filtering should feel like browsing a menu: hover to preview, leave without locking, one click to undo. Filtering shouldn\'t be a burden; it\'s the doorway into the question bank.',
-    stats: [['6', 'new style rules'], ['5', 'interaction states'], ['200ms', 'panel collapse delay']]
+    stats: [['6', 'new style rules'], ['5', 'interaction states', 'hover · expand · collapse · select · clear'], ['200ms', 'panel collapse delay']]
   },
   {
     date: '2026-08-02', tag: 'fix', tagText: 'Fix',
@@ -651,7 +663,7 @@ const UPDATES_EN = [
       '<b>Static question mapping</b>: static MCQs are now mapped to knowledge nodes too, so they participate in hierarchical filtering like dynamic questions.'
     ],
     thinking: 'Filtering is about helping users "read a thinner question bank". A flat list of 29 tags can\'t convey the relationships between knowledge points — but the knowledge graph is already a ready-made hierarchy dictionary, so we let it drive the filter: choosing "joins" shows inner, left and self joins together. The difficulty fix was a matter of principle: a rule either applies to everything, or it isn\'t a rule.',
-    stats: [['29', 'tags in hierarchy'], ['58', 'static questions covered'], ['2', 'filter bugs fixed']]
+    stats: [['29', 'tags in hierarchy'], ['58', 'static questions covered'], ['2', 'filter bugs fixed', 'difficulty not applying · no category drill-down']]
   },
   {
     date: '2026-08-02', tag: 'bank', tagText: 'Question Bank',
@@ -677,7 +689,7 @@ const UPDATES_EN = [
       '<b>Unlock chain fix</b>: found a broken chain in the old logic where "answering MCQs never unlocked fill-ins" — fixed: the first correct advanced MCQ unlocks all fill-ins and pushes one immediately.'
     ],
     thinking: 'The old graph had loose question connections — learners couldn\'t see "what to learn, where I am". This rebuild\'s core was convergence: compress the learning path into a 37-node map with 7 categories as the backbone and knowledge points hanging beneath; and align the recommendation logic with the map — weights by mastery, progress gated by accuracy. The exposed unlock-chain break was the biggest lesson: the worst thing for an adaptive system is a missing link that keeps users from ever reaching the next step.',
-    stats: [['37', 'total nodes'], ['29', 'knowledge tags'], ['60%', 'mastery threshold']]
+    stats: [['37', 'total nodes', 'root → 7 major categories → 29 sub-nodes'], ['29', 'knowledge tags'], ['60%', 'mastery threshold', 'accuracy below 60% keeps you practicing the current point']]
   },
   {
     date: '2026-07-30', tag: 'fix', tagText: 'Fix',
@@ -690,7 +702,7 @@ const UPDATES_EN = [
       '<b>Decisive trimming</b>: 15 questions requiring regex or function definitions that SQLite can\'t run were removed outright — accurate judging matters more than question count.'
     ],
     thinking: 'The judge\'s bottom line is "your answer can really produce that result". We executed all 310 answers in a database: failures were investigated — dialect differences got a translation layer, genuinely wrong answers got manual fixes, and the 15 that simply couldn\'t run were removed. Question count can always grow, but a wrong judgment directly destroys user trust — data quality beats quantity.',
-    stats: [['295', 'verified'], ['15', 'removed'], ['3', 'manually fixed']]
+    stats: [['295', 'verified'], ['15', 'removed', 'regex / custom functions that SQLite cannot run'], ['3', 'manually fixed']]
   },
   {
     date: '2026-07-28', tag: 'new', tagText: 'New Feature',
@@ -702,7 +714,7 @@ const UPDATES_EN = [
       '<b>Unlock rules</b>: the first correct answer on a basic question unlocks all MCQs; the first correct on an advanced question unlocks all fill-ins and pushes one immediately; wrong answers keep you consolidating the current point.'
     ],
     thinking: 'MCQs test whether you recognize something; fill-ins test whether you can write it. Practicing only MCQs creates the illusion of "I get it". Deep mode\'s idea: the moment a concept question is answered correctly, immediately serve a hands-on question — strike while the iron is hot and turn "understanding" into "writing".',
-    stats: [['1', 'core feature'], ['4', 'unlock rules'], ['×1.5', 'wrong-answer weight']]
+    stats: [['1', 'core feature'], ['4', 'unlock rules', 'basic correct unlocks MCQs → advanced correct unlocks fill-ins'], ['×1.5', 'wrong-answer weight']]
   },
   {
     date: '2026-07-25', tag: 'opt', tagText: 'Optimization',
@@ -715,7 +727,7 @@ const UPDATES_EN = [
       '<b>Data cleansing</b>: batch-fixed separator inconsistencies in 272 questions\' tags, plus encoding corruption that broke star ratings.'
     ],
     thinking: 'The question bank is the product\'s foundation, and multi-source data fears inconsistent standards the most — one bank calls it "window functions", another "ranking functions", and filters start missing questions. This alignment\'s payoff isn\'t surface-level: once invisible standards like difficulty, tags and encoding are unified, filtering, recommendations and statistics can stand on trustworthy ground. Foundations first — then you can build floors on top.',
-    stats: [['58', 'static imports'], ['371', 'aligned'], ['272', 'data fixes']]
+    stats: [['58', 'static imports'], ['371', 'aligned'], ['272', 'data fixes', 'tag separator inconsistencies · encoding corruption']]
   }
 ];
 
@@ -774,6 +786,12 @@ function gotoPage(p) {
 }
 
 /* ---- 详情弹窗 ---- */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
 function openDetail(idx) {
   const u = idx === -1 ? pick(VISION, VISION_EN)
                        : (UPDATES[idx] && UPDATES_EN[idx] ? pick(UPDATES[idx], UPDATES_EN[idx]) : null);
@@ -799,7 +817,9 @@ function openDetail(idx) {
       <h4>${t('sec_thinking')}</h4>
       <div class="m-overview thinking">${u.thinking}</div>
     </div>
-    ${u.stats ? `<div class="m-section"><h4>${t('sec_stats')}</h4><div class="m-stats">${u.stats.map(s => `<div class="m-stat"><div class="v">${s[0]}</div><div class="l">${s[1]}</div></div>`).join('')}</div></div>` : ''}
+    ${u.stats ? `<div class="m-section"><h4>${t('sec_stats')}</h4><div class="m-stats">${u.stats.map(s =>
+      `<div class="m-stat${s[2] ? ' has-tip' : ''}"${s[2] ? ' data-tip="' + esc(s[2]) + '"' : ''}><div class="v">${s[0]}</div><div class="l">${s[1]}</div></div>`
+    ).join('')}</div></div>` : ''}
     <div class="modal-foot"><button class="btn-ok" onclick="closeDetail()">${t('got_it')}</button></div>`;
   document.getElementById('detailModal').classList.add('show');
   document.body.style.overflow = 'hidden';
