@@ -225,10 +225,11 @@ if (!ADMIN_TOKEN) {
   ADMIN_TOKEN = prompt('请输入管理员 Token（后端 ADMIN_TOKEN 配置）：') || '';
   if (ADMIN_TOKEN) sessionStorage.setItem('admin_token', ADMIN_TOKEN);
 }
-function adminFetch(path) {
-  var headers = {};
-  if (ADMIN_TOKEN) headers['Authorization'] = 'Bearer ' + ADMIN_TOKEN;
-  return fetch(API_BASE + path, { headers: headers });
+function adminFetch(path, opts) {
+  opts = opts || {};
+  opts.headers = Object.assign({}, opts.headers || {});
+  if (ADMIN_TOKEN) opts.headers['Authorization'] = 'Bearer ' + ADMIN_TOKEN;
+  return fetch(API_BASE + path, opts);
 }
 
 function drawDiffBars(easy, medium, hard) {
@@ -257,9 +258,11 @@ function drawUserBars(users) {
   if (users.length === 0) { document.getElementById('userChart').innerHTML = '<text x="230" y="70" text-anchor="middle" fill="#87867f" font-size="12">暂无用户数据</text>'; return; }
   var max = 1;
   for (var i = 0; i < users.length; i++) { if (users[i].answered > max) max = users[i].answered; }
-  var barW = Math.min(50, 380 / users.length - 10);
-  var gap = Math.min(20, 380 / users.length);
-  var startX = 40;
+  // 模块变宽后按 460 宽自适应：柱子加宽、组整体居中（n=5 时柱宽 64、间隔 18）
+  var n = users.length;
+  var barW = Math.min(64, 400 / n - 8);
+  var gap = Math.min(18, 400 / n);
+  var startX = Math.max(20, (460 - (n * barW + (n - 1) * gap)) / 2);
   for (var i = 0; i < users.length; i++) {
     var u = users[i];
     var h = Math.max(3, (u.answered / max) * 90);
