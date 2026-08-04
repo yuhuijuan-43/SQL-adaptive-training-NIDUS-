@@ -6,20 +6,40 @@
 <title>SQL 自适应训练 · 管理后台</title>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <style>
-  :root { --bg: #f5f6f8; --card: #ffffff; --text: #2c3e50; --text2: #7a8599; --border: #e4e7ed; --accent: #5a7d9a; --accent-hover: #4a6a82; --tag-bg: #eef1f5; --success: #6b9e7a; --error: #c97a7a; }
+  :root { --bg: #eef3fc; --card: rgba(255,255,255,0.72); --text: #1b2747; --text2: #48577c; --border: rgba(88,110,170,0.16); --accent: #4a7dff; --accent-hover: #6a90ff; --tag-bg: rgba(88,110,170,0.08); --code-bg: rgba(255,255,255,0.75); --success: #0ea678; --error: #e04a55; --accent-grad: linear-gradient(135deg, #4a7dff 0%, #8b5bff 100%); }
   * { box-sizing: border-box; }
-  body { background: var(--bg); font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; color: var(--text); margin: 0; padding: 0; line-height: 1.5; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem; }
-  .dark-bg { background: var(--text); color: #eef1f5; padding: 0.75rem 1rem; border-radius: 0.375rem; }
-  .dark-bg a { color: var(--accent); }
+  body {
+    background:
+      radial-gradient(1100px 700px at 88% -12%, rgba(140,120,255,0.16), transparent 60%),
+      radial-gradient(900px 620px at -8% 18%, rgba(80,140,255,0.15), transparent 55%),
+      radial-gradient(800px 560px at 50% 115%, rgba(70,190,210,0.12), transparent 55%),
+      linear-gradient(180deg, #eef3fc 0%, #e3ecf9 100%);
+    font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    color: var(--text); margin: 0; padding: 0; line-height: 1.5; min-height: 100vh; overflow-x: hidden;
+  }
+  /* 背景光球（玻璃拟态氛围） */
+  .orb { position: fixed; border-radius: 50%; filter: blur(100px); z-index: 0; pointer-events: none; }
+  .orb-1 { width: 460px; height: 460px; background: #b9a6ff; top: -140px; right: -100px; opacity: 0.30; animation: orbDrift 19s ease-in-out infinite; }
+  .orb-2 { width: 400px; height: 400px; background: #9cc0ff; top: 40%; left: -180px; opacity: 0.26; animation: orbDrift 24s ease-in-out infinite reverse; }
+  .orb-3 { width: 340px; height: 340px; background: #93e2ea; bottom: -120px; right: 20%; opacity: 0.22; animation: orbDrift 27s ease-in-out infinite; }
+  @keyframes orbDrift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(42px, -28px) scale(1.07); }
+    66% { transform: translate(-30px, 24px) scale(0.94); }
+  }
+  .card { background: var(--card); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--border); border-radius: 0.9rem; padding: 1rem; box-shadow: 0 8px 28px rgba(58,82,148,0.12), inset 0 1px 0 rgba(255,255,255,0.65); }
+  .max-w-\[960px\] { max-width: 960px; }
+  .mx-auto { margin-left: auto; margin-right: auto; }
   .stat-num { font-weight: 700; font-size: 1.4rem; line-height: 1; }
   .stat-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text2); }
   table { width:100%; border-collapse:collapse; }
   table thead th { text-align:left; font-size:0.6rem; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--text2); background:var(--tag-bg); padding:8px 10px; border-bottom:1px solid var(--border); }
-  table tbody td { padding:8px 10px; border-bottom:1px solid var(--border); font-size:0.75rem; }
+  table tbody td { padding:8px 10px; border-bottom:1px solid var(--border); font-size:0.75rem; color:var(--text); }
   table tbody tr:hover td { background:var(--tag-bg); }
-  .chart-label { font-size:0.55rem; fill:var(--text2); }
+  .mini-btn { padding:3px 10px; font-size:0.7rem; border:1px solid var(--border); border-radius:0.375rem; background:var(--card); color:var(--text2); cursor:pointer; transition:all 0.15s; }
+  .mini-btn:hover { color:var(--accent); border-color:var(--accent); background:var(--tag-bg); }
   .accent { color: var(--accent); }
+  .grad-text { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .num-oswald { font-weight:600; }
   .text-xs { font-size:0.65rem; }
   .text-sm { font-size:0.75rem; }
@@ -47,16 +67,21 @@
   .opacity-50 { opacity:0.5; }
   .opacity-60 { opacity:0.6; }
   .mr-1 { margin-right:0.25rem; }
-  hr { border: 0; border-top: 2px solid var(--border); margin: 0.75rem 0; }
 </style>
 </head>
 <body class="p-4">
-<div class="max-w-[960px] mx-auto">
+
+<!-- 背景光球（玻璃拟态氛围） -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="max-w-[960px] mx-auto" style="position:relative;z-index:1">
 
   <!-- HEADER -->
   <div class="card" style="padding:0.75rem 1rem;">
     <div class="flex justify-between items-center">
-      <div><span style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;">SQL</span><span style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;color:var(--accent);"> 管理后台</span><span style="font-size:0.6rem;color:var(--text2);margin-left:0.5rem;">ADMIN · DASHBOARD</span></div>
+      <div><span style="font-weight:700;font-size:1.5rem;letter-spacing:0.02em;">SQL</span><span class="grad-text" style="font-weight:700;font-size:1.5rem;letter-spacing:0.02em;">管理后台</span><span style="font-size:0.6rem;color:var(--text2);margin-left:0.5rem;">ADMIN · DASHBOARD</span></div>
       <span style="font-size:0.65rem;color:var(--text2);" id="refreshTime">-</span>
     </div>
   </div>
@@ -105,8 +130,8 @@
     <div class="flex justify-between items-center mt-2" id="userPager" style="display:none">
       <span class="text-xs opacity-60" id="pagerInfo"></span>
       <span style="display:inline-flex;gap:6px">
-        <button id="pagerPrev" onclick="userPage(-1)" style="padding:3px 10px;font-size:0.7rem;border:1px solid var(--border);border-radius:0.25rem;background:var(--card);color:var(--text2);cursor:pointer;">上一页</button>
-        <button id="pagerNext" onclick="userPage(1)" style="padding:3px 10px;font-size:0.7rem;border:1px solid var(--border);border-radius:0.25rem;background:var(--card);color:var(--text2);cursor:pointer;">下一页</button>
+        <button id="pagerPrev" class="mini-btn" onclick="userPage(-1)">上一页</button>
+        <button id="pagerNext" class="mini-btn" onclick="userPage(1)">下一页</button>
       </span>
     </div>
   </div>
@@ -114,8 +139,8 @@
 </div>
 
 <!-- 用户答题记录弹窗（点击排行榜/明细行打开） -->
-<div id="userDetailModal" style="display:none;position:fixed;inset:0;background:rgba(20,30,50,0.45);z-index:999;align-items:center;justify-content:center;padding:1rem;" onclick="if(event.target===this)closeUserDetail()">
-  <div style="background:var(--card);border-radius:0.6rem;max-width:760px;width:100%;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.25);">
+<div id="userDetailModal" style="display:none;position:fixed;inset:0;background:rgba(45,60,110,0.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:999;align-items:center;justify-content:center;padding:1rem;" onclick="if(event.target===this)closeUserDetail()">
+  <div style="background:rgba(255,255,255,0.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--border);border-radius:0.9rem;max-width:760px;width:100%;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(58,82,148,0.28);">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:0.8rem 1rem;border-bottom:1px solid var(--border);">
       <span class="num-oswald text-sm" id="modalTitle">答题记录</span>
       <button onclick="closeUserDetail()" style="border:none;background:none;font-size:1.3rem;cursor:pointer;color:var(--text2);line-height:1;">&times;</button>
@@ -171,9 +196,9 @@ function drawDiffBars(easy, medium, hard) {
   var max = Math.max(easy, medium, hard, 1);
   var html = '';
   var bars = [
-    { label: '简单', val: easy, color: '#788c5d', x: 10 },
-    { label: '中等', val: medium, color: '#c17c4a', x: 85 },
-    { label: '困难', val: hard, color: '#b04a4a', x: 160 }
+    { label: '简单', val: easy, color: '#0ea678', x: 10 },
+    { label: '中等', val: medium, color: '#d0a24a', x: 85 },
+    { label: '困难', val: hard, color: '#e04a55', x: 160 }
   ];
   for (var i = 0; i < bars.length; i++) {
     var b = bars[i];
@@ -200,7 +225,7 @@ function drawUserBars(users) {
     var u = users[i];
     var h = Math.max(3, (u.answered / max) * 90);
     var x = startX + i * (barW + gap);
-    var accColor = u.accuracy >= 70 ? '#788c5d' : (u.accuracy >= 40 ? '#c17c4a' : '#b04a4a');
+    var accColor = u.accuracy >= 70 ? '#0ea678' : (u.accuracy >= 40 ? '#d0a24a' : '#e04a55');
     var tip = escapeHtml('查看 ' + u.username + ' 的答题记录');
     html += '<rect x="' + x + '" y="' + (115 - h) + '" width="' + barW + '" height="' + h + '" fill="' + accColor + '" rx="3" opacity="0.8" style="cursor:pointer" onclick="openUserDetail(_rankUsers[' + i + '])"><title>' + tip + '</title></rect>';
     html += '<text x="' + (x + barW / 2) + '" y="110" text-anchor="middle" fill="#2c241b" font-family="Oswald" font-size="11" font-weight="700">' + u.answered + '</text>';
