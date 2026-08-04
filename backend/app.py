@@ -19,6 +19,8 @@ app = Flask(__name__, static_folder=None)
 # 同源部署（Flask 托管前端 + /api），仅放行本机来源；跨域仅影响浏览器，不影响正常访问
 CORS(app, resources={r"/api/*": {"origins": [
     "http://localhost:5000", "http://127.0.0.1:5000", "http://localhost:3000", "http://127.0.0.1:3000",
+    # file:// 直接打开 admin.html 时浏览器发送 Origin: null，需放行
+    "null",
 ]}})
 app.teardown_appcontext(close_db)
 
