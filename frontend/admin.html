@@ -186,10 +186,25 @@ function drawUserBars(users) {
   document.getElementById('userChart').innerHTML = html;
 }
 
+function adminErrorMsg(e) {
+  console.error('[admin] 加载失败:', e);
+  // 无法连接（网络/CORS/后端未启动或未重启）
+  return '<tr><td colspan="5" class="text-center" style="color:#b04a4a">无法连接后端：请确认服务已启动；' +
+         '若刚更新过后端代码，请重启服务（CORS 配置需重启生效）</td></tr>';
+}
+
 async function loadAdmin() {
   document.getElementById('refreshTime').textContent = new Date().toLocaleTimeString();
   try {
-    var stats = await (await adminFetch('/admin/stats')).json();
+    var statsRes = await adminFetch('/admin/stats');
+    if (statsRes.status === 401) {
+      sessionStorage.removeItem('admin_token');
+      document.getElementById('userTableBody').innerHTML =
+        '<tr><td colspan="5" class="text-center" style="color:#b04a4a">管理员 Token 无效，请刷新页面重新输入</td></tr>';
+      return;
+    }
+    if (!statsRes.ok) throw new Error('HTTP ' + statsRes.status);
+    var stats = await statsRes.json();
     document.getElementById('statUsers').textContent = stats.total_users;
     document.getElementById('statAnswers').textContent = stats.total_answers;
     document.getElementById('statCorrect').textContent = stats.total_correct;
@@ -197,7 +212,9 @@ async function loadAdmin() {
     drawDonut(stats.total_correct, stats.total_answers - stats.total_correct);
     drawDiffBars(stats.by_difficulty.easy || 0, stats.by_difficulty.medium || 0, stats.by_difficulty.hard || 0);
 
-    var users = await (await adminFetch('/admin/users')).json();
+    var usersRes = await adminFetch('/admin/users');
+    if (!usersRes.ok) throw new Error('HTTP ' + usersRes.status);
+    var users = await usersRes.json();
     drawUserBars(users);
     var html = '';
     for (var i = 0; i < users.length; i++) {
@@ -213,7 +230,7 @@ async function loadAdmin() {
     if (users.length === 0) html = '<tr><td colspan="5" class="text-center opacity-50 py-4">暂无用户数据</td></tr>';
     document.getElementById('userTableBody').innerHTML = html;
   } catch(e) {
-    document.getElementById('userTableBody').innerHTML = '<tr><td colspan="5" class="text-center" style="color:#b04a4a">加载失败，请确保后端已启动</td></tr>';
+    document.getElementById('userTableBody').innerHTML = adminErrorMsg(e);
   }
 }
 
