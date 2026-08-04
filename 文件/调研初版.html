@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL刷题自适应项目 · 调研报告</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@500;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background: #e5e0d8; font-family: 'Noto Sans SC', sans-serif; color: #2c241b; }
+  .card { background: #f7f5f0; border-radius: 0.75rem; }
+  .title-serif { font-family: 'Noto Serif SC', serif; font-weight: 900; line-height: 0.85; }
+  .num-oswald { font-family: 'Oswald', sans-serif; font-weight: 700; }
+  .accent { color: #c17c4a; }
+  .accent-border { border-color: #c17c4a; }
+  .divider { border-color: #dcd6ce; }
+  .summary-bg { background: #ece8e1; }
+  .table-header { background: #2c241b; color: #f7f5f0; }
+  .table-row { border-bottom: 1px solid #dcd6ce; }
+  .table-row:nth-child(even) { background: #ece8e1; }
+  .section-title { font-family: 'Noto Serif SC', serif; font-weight: 900; font-size: 2.25rem; line-height: 1.1; letter-spacing: -0.02em; }
+  .sub-title { font-family: 'Noto Serif SC', serif; font-weight: 700; font-size: 1.5rem; line-height: 1.2; }
+  .card-shadow { box-shadow: 0 2px 8px rgba(44,36,27,0.08); }
+  .tag { display: inline-block; background: #c17c4a; color: #f7f5f0; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 0.25rem; letter-spacing: 0.05em; }
+  .highlight-box { border-left: 4px solid #c17c4a; background: #ece8e1; padding: 1rem 1.25rem; border-radius: 0 0.5rem 0.5rem 0; }
+  .stat-number { font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 1.75rem; color: #c17c4a; line-height: 1; }
+  hr.thick-rule { border: 0; border-top: 3px solid #2c241b; margin: 0.25rem 0 1rem 0; }
+  .badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #c17c4a; }
+</style>
+</head>
+<body class="p-4 md:p-6">
+<div class="max-w-[640px] mx-auto">
+
+  <!-- HEADER -->
+  <div class="card p-5 md:p-6 card-shadow">
+    <div class="flex justify-between items-start mb-1">
+      <h1 class="title-serif text-5xl md:text-[4.5rem] leading-[0.85] tracking-tight">SQL刷题<br>自适应项目</h1>
+      <span class="num-oswald text-sm tracking-widest text-[#2c241b] opacity-60 mt-2">RESEARCH<br>REPORT</span>
+    </div>
+    <hr class="thick-rule">
+    <div class="flex justify-between items-center text-xs text-[#2c241b] opacity-50">
+      <span><i class="far fa-file-alt mr-1"></i> 调研报告</span>
+      <span class="num-oswald">V1.0</span>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="card p-5 md:p-6 card-shadow mt-4">
+    <div class="highlight-box">
+      <p class="text-sm leading-relaxed">本调研系统梳理了SQL自适应学习领域的<strong>学术研究项目</strong>与<strong>商业产品工具</strong>现状，提出<strong>"自适应+生成式AI"双引擎协同驱动</strong>的创新方案，并从原理层面详述了用户画像建模、知识图谱、数据库设计及大语言模型等关键技术的实现路径。</p>
+    </div>
+    <div class="flex gap-4 mt-4 text-xs text-[#2c241b] opacity-60">
+      <span><i class="fas fa-graduation-cap accent mr-1"></i> 学术案例 <span class="num-oswald">3</span></span>
+      <span><i class="fas fa-briefcase accent mr-1"></i> 商业产品 <span class="num-oswald">5</span></span>
+      <span><i class="fas fa-table accent mr-1"></i> 对比表格 <span class="num-oswald">8</span></span>
+    </div>
+  </div>
+
+  <!-- SECTION 1 -->
+  <div class="card p-5 md:p-6 card-shadow mt-4">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="num-oswald text-lg accent">01</span>
+      <h2 class="section-title">现有应用如何实现"自适应"？</h2>
+    </div>
+    <p class="text-sm leading-relaxed mb-4">现有案例主要分为 <strong>学术研究项目</strong> 与 <strong>商业产品工具</strong> 两大阵营：</p>
+
+    <h3 class="sub-title text-lg mb-2"><i class="fas fa-flask accent mr-2"></i>学术研究项目</h3>
+    <p class="text-sm leading-relaxed mb-3">致力于深度个性化。例如，匹兹堡大学的 <strong>ADAPT2框架</strong> 支持SQL等多种计算机科学教育；伊利诺伊大学的 <strong>AI知识图谱系统</strong> 已部署在CS 411课程中，处理了超1000份学生提交； <strong>DBLearn系统</strong> 则集成了学习风格分类、自动出题和评分功能。这些研究会像真正的老师一样，分析你答错一道题的根本原因——比如你的错误是JOIN逻辑错了，还是GROUP BY语法不对——然后基于知识图谱给出针对性练习，代表了一种更深层次的"因材施教"。</p>
+
+    <p class="text-xs font-bold mb-2 accent">表1：学术研究项目案例</p>
+    <div class="overflow-x-auto text-xs mb-5">
+      <table class="w-full border-collapse">
+        <thead><tr class="table-header text-left"><th class="p-2 font-bold">项目/系统名称</th><th class="p-2 font-bold">所属机构</th><th class="p-2 font-bold">核心功能与特点</th><th class="p-2 font-bold">关键数据/应用情况</th></tr></thead>
+        <tbody>
+          <tr class="table-row"><td class="p-2 font-bold">ADAPT2框架</td><td class="p-2">匹兹堡大学</td><td class="p-2">支持SQL等多种计算机科学教育，通用的自适应教学框架</td><td class="p-2">—</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">AI知识图谱系统</td><td class="p-2">伊利诺伊大学</td><td class="p-2">基于知识图谱分析错误根因（JOIN逻辑、GROUP BY语法），提供针对性练习</td><td class="p-2">部署于CS 411课程，已处理超1000份学生提交</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">DBLearn系统</td><td class="p-2">（未明确提及）</td><td class="p-2">集成学习风格分类、自动出题和评分功能</td><td class="p-2">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-title text-lg mb-2"><i class="fas fa-briefcase accent mr-2"></i>商业产品与工具</h3>
+    <p class="text-sm leading-relaxed mb-3">则更侧重实用性与易用性。其中，<strong>题库型 + AI辅助</strong> 是目前最常见的方式，代表应用如 <strong>SQL Academy</strong> 和 <strong>SQL Prep</strong> 。它们的"自适应"主要体现在遇到错误时，AI会提供解释和修正建议，不过练习题大多是预设的，会根据你的进度解锁，题目的生成本身个性化程度相对有限。此外，像 <strong>ChatSQL</strong> 这类自然语言转SQL工具，其"自适应"则体现在"以用户表达习惯为中心"——通过AI实时理解自然语言并生成SQL，让查询过程自动适配业务需求。其他成熟平台如 <strong>Khan Academy</strong>、<strong>Duolingo</strong> 等也在SQL或相关领域有自适应实践。</p>
+
+    <p class="text-xs font-bold mb-2 accent">表2：商业产品与工具案例</p>
+    <div class="overflow-x-auto text-xs">
+      <table class="w-full border-collapse">
+        <thead><tr class="table-header text-left"><th class="p-2 font-bold">产品/工具名称</th><th class="p-2 font-bold">类型/模式</th><th class="p-2 font-bold">核心功能与特点</th><th class="p-2 font-bold">个性化/自适应体现</th></tr></thead>
+        <tbody>
+          <tr class="table-row"><td class="p-2 font-bold">SQL Academy</td><td class="p-2">题库型+AI辅助</td><td class="p-2">预设练习题按进度解锁，遇错时AI提供解释和修正建议</td><td class="p-2">错误反馈层面的自适应，题目生成本身个性化有限</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">SQL Prep</td><td class="p-2">题库型+AI辅助</td><td class="p-2">同上（预设题库+错误时AI反馈）</td><td class="p-2">同上</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">ChatSQL</td><td class="p-2">自然语言转SQL工具</td><td class="p-2">将中文/英文自然语言问题实时转换为SQL查询语句</td><td class="p-2">以用户表达习惯为中心，自动适配业务查询需求</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">Khan Academy</td><td class="p-2">综合在线学习平台</td><td class="p-2">提供SQL及相关课程，有成熟的自适应练习机制</td><td class="p-2">可作为SQL自适应实践的调研参考</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 2 -->
+  <div class="card p-5 md:p-6 card-shadow mt-4">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="num-oswald text-lg accent">02</span>
+      <h2 class="section-title">我的优势与创新？</h2>
+    </div>
+    <p class="text-sm leading-relaxed mb-4">本方案的核心优势在于<strong>"自适应"与"生成式AI"的深度融合</strong>，二者形成了一套<strong>"双引擎协同驱动"</strong>的智能学习机制。具体体现在以下两个层面：</p>
+
+    <div class="mb-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="tag">机制一</span>
+        <h3 class="sub-title text-base">作答正确时：自适应引擎主导，实现平滑进阶</h3>
+      </div>
+      <p class="text-sm leading-relaxed">当学习者作答正确时，系统由<strong>自适应引擎</strong>全权主导。它不会机械地推送下一道预设题目，而是会综合评估学习者当前的知识掌握度、近期正确率以及历史学习轨迹，动态调整后续习题的<strong>难度系数</strong>与<strong>学习进程</strong>。这种设计确保学习者始终处于"最近发展区"（Zone of Proximal Development），既避免因题目过易而产生的倦怠感，也防止因难度突增而产生的挫败感。</p>
+    </div>
+
+    <div>
+      <div class="flex items-center gap-2 mb-2">
+        <span class="tag">机制二</span>
+        <h3 class="sub-title text-base">作答错误时：双引擎协同联动，实现靶向攻坚</h3>
+      </div>
+      <p class="text-sm leading-relaxed mb-2">当学习者作答错误时，系统进入<strong>自适应引擎与生成模型深度协同</strong>的工作模式：</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="bg-white p-3 rounded-lg border border-[#dcd6ce]">
+          <p class="text-xs font-bold accent mb-1"><i class="fas fa-crosshairs mr-1"></i>第一步：精准归因</p>
+          <p class="text-xs leading-relaxed">自适应引擎主导——对错误进行细粒度分析，结合知识图谱精准定位错误的根本原因。例如区分是"JOIN连接条件理解偏差"、"GROUP BY聚合函数使用不当"还是"子查询嵌套逻辑混乱"。</p>
+        </div>
+        <div class="bg-white p-3 rounded-lg border border-[#dcd6ce]">
+          <p class="text-xs font-bold accent mb-1"><i class="fas fa-robot mr-1"></i>第二步：智能干预</p>
+          <p class="text-xs leading-relaxed">生成模型主导——基于错误类型和薄弱点，动态生成与错题<strong>知识点同源、考察逻辑相似、数据场景全新</strong>的"变式题"，实现"错一题，练一类"的靶向训练。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3 -->
+  <div class="card p-5 md:p-6 card-shadow mt-4">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="num-oswald text-lg accent">03</span>
+      <h2 class="section-title">原理上如何实现？</h2>
+    </div>
+
+    <!-- 3.1 -->
+    <h3 class="sub-title text-lg mb-2">3.1 自适应学习系统搭建</h3>
+    <p class="text-sm leading-relaxed mb-3">典型的自适应学习系统通常包含以下核心组件：<strong>用户建模服务器</strong>（负责维护和更新学习者模型）、<strong>自适应引擎</strong>（负责决策与路径规划）、<strong>内容服务器</strong>（负责存储和检索学习资源）等。</p>
+    <p class="text-sm leading-relaxed mb-3">系统内部构建了三个核心模型，相互关联、协同运作：</p>
+    <div class="grid grid-cols-1 gap-2 mb-4">
+      <div class="bg-white p-3 rounded-lg border border-[#dcd6ce]">
+        <p class="text-xs font-bold accent"><i class="fas fa-sitemap mr-1"></i>领域知识模型</p>
+        <p class="text-xs leading-relaxed">学习内容的"知识地图"。将学科知识拆解为细颗粒度的知识点，并明晰其间的逻辑依赖与前置关系。以知识图谱的形式呈现，为系统"该推荐什么"提供结构化依据。</p>
+      </div>
+      <div class="bg-white p-3 rounded-lg border border-[#dcd6ce]">
+        <p class="text-xs font-bold accent"><i class="fas fa-user-graduate mr-1"></i>学习者模型</p>
+        <p class="text-xs leading-relaxed">建模学生的"数字画像"。通过采集答题正误、反应时耗、交互行为等数据，动态推断学习者对各知识点的掌握程度、学习风格及认知水平，是实现个性化推荐的核心依据。</p>
+      </div>
+      <div class="bg-white p-3 rounded-lg border border-[#dcd6ce]">
+        <p class="text-xs font-bold accent"><i class="fas fa-microchip mr-1"></i>自适应引擎</p>
+        <p class="text-xs leading-relaxed">系统的决策中枢。实时接收学习者的行为数据，动态更新"学习者模型"，基于"知识地图"规划最优的下一步学习路径，包括决定下一道题目的推荐内容及其难度调整策略。</p>
+      </div>
+    </div>
+
+    <!-- 3.2 -->
+    <h3 class="sub-title text-lg mb-3">3.2 关键技术</h3>
+
+    <!-- 3.2.1 -->
+    <h4 class="font-bold text-sm mb-2">3.2.1 用户画像建模</h4>
+    <p class="text-sm leading-relaxed mb-2">探讨系统如何构建并动态更新用户模型。重点在于如何通过交互数据推断知识掌握程度（<strong>项目反应理论IRT</strong> 和 <strong>贝叶斯知识追踪BKT</strong>）、学习风格以及认知能力。例如，可通过Flanker、N-back等认知测试获取先验知识，以缓解新用户的"冷启动"问题。</p>
+
+    <p class="text-xs font-bold mb-2 accent">表3：冷启动问题常见解决策略对比</p>
+    <div class="overflow-x-auto text-xs mb-4">
+      <table class="w-full border-collapse">
+        <thead><tr class="table-header text-left"><th class="p-2 font-bold">策略名称</th><th class="p-2 font-bold">核心思路</th><th class="p-2 font-bold">具体做法</th><th class="p-2 font-bold">优点</th><th class="p-2 font-bold">缺点/适用场景</th></tr></thead>
+        <tbody>
+          <tr class="table-row"><td class="p-2 font-bold">初始摸底测试</td><td class="p-2">先考试，后教学</td><td class="p-2">新用户先完成一组覆盖各难度的诊断题</td><td class="p-2">画像较准确，直接匹配用户水平</td><td class="p-2">用户需额外付出时间，可能造成体验门槛</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">默认中庸策略</td><td class="p-2">从最低/基础开始</td><td class="p-2">所有新用户统一从最基础知识点开始</td><td class="p-2">实现简单，对零基础用户友好</td><td class="p-2">对有基础用户不够友好</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">借用先验信息</td><td class="p-2">用其他数据"猜"水平</td><td class="p-2">通过认知能力测试或用户基础信息推断</td><td class="p-2">无需答题历史即可做出合理推断</td><td class="p-2">需额外开发，精度有限</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">群体协同过滤</td><td class="p-2">物以类聚</td><td class="p-2">匹配相似背景用户，推荐其表现好的内容</td><td class="p-2">利用群体行为数据做较合理初始推荐</td><td class="p-2">需足够用户数据支撑，新平台不适用</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">探索与利用策略</td><td class="p-2">先试探，后精准</td><td class="p-2">初期随机推送进行"探索"，再切换到精准推荐</td><td class="p-2">在真实交互中渐进式建立画像</td><td class="p-2">初期随机可能带来不好体验</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 3.2.2 -->
+    <h4 class="font-bold text-sm mb-2">3.2.2 学习理论支撑</h4>
+    <p class="text-sm leading-relaxed mb-2">系统设计需依托教育学或认知科学理论，以保障自适应策略的科学性。</p>
+    <p class="text-xs font-bold mb-2 accent">表4：三种教育/认知理论对比</p>
+    <div class="overflow-x-auto text-xs mb-4">
+      <table class="w-full border-collapse">
+        <thead><tr class="table-header text-left"><th class="p-2 font-bold">理论名称</th><th class="p-2 font-bold">核心概念</th><th class="p-2 font-bold">在自适应学习系统中的应用方式</th><th class="p-2 font-bold">解决的核心问题</th></tr></thead>
+        <tbody>
+          <tr class="table-row"><td class="p-2 font-bold">认知负荷理论</td><td class="p-2">工作记忆容量有限，认知负荷分内在/外在/相关三种</td><td class="p-2">指导题目难度的动态平衡，根据认知负荷状态调整复杂度</td><td class="p-2">防止认知过载或闲置，最大化学习效率</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">布鲁姆分类法</td><td class="p-2">六层次：记忆→理解→应用→分析→评价→创造</td><td class="p-2">知识点标签化与分层，按认知深度递进规划路径</td><td class="p-2">确保学习路径遵循从"浅层记忆"到"深度思维"的发展规律</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">学习风格理论</td><td class="p-2">VARK模型：视觉/听觉/读写/动觉四种偏好</td><td class="p-2">根据学习风格标签匹配不同媒介形式的呈现方式</td><td class="p-2">提升学习体验和信息吸收效率</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 3.2.3 -->
+    <h4 class="font-bold text-sm mb-2">3.2.3 知识图谱</h4>
+    <p class="text-sm leading-relaxed mb-2">用于表征SQL知识点间的关联与依赖关系，是实现精准推荐的关键基础设施。已有研究采用Neo4j图数据库构建知识图谱，并利用大语言模型从课程材料中自动抽取概念间的逻辑关系。</p>
+    <p class="text-xs font-bold mb-2 accent">表5：知识图谱构建工具对比</p>
+    <div class="overflow-x-auto text-xs mb-4">
+      <table class="w-full border-collapse">
+        <thead><tr class="table-header text-left"><th class="p-2 font-bold">工具/产品</th><th class="p-2 font-bold">类型/核心定位</th><th class="p-2 font-bold">核心特点与能力</th><th class="p-2 font-bold">适用场景</th></tr></thead>
+        <tbody>
+          <tr class="table-row"><td class="p-2 font-bold">Neo4j LLM 知识图谱构建器</td><td class="p-2">非结构化数据转换</td><td class="p-2">用LLM从PDF、网页等非结构化文本中自动提取实体和关系</td><td class="p-2">处理大量文本文档，自动化构建图谱并进行智能检索</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">Microsoft GraphRAG</td><td class="p-2">非结构化数据转换</td><td class="p-2">基于LLM提取实体和关系，节点间关系更稠密、更有意义</td><td class="p-2">构建关系紧密、对推理能力要求更高的知识图谱</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">Oracle Graph Studio</td><td class="p-2">企业级集成平台</td><td class="p-2">一站式图形分析体验，入门门槛低</td><td class="p-2">Oracle生态内，需要低门槛全功能的企业级图分析平台</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">@fluxgraph/knowledge</td><td class="p-2">嵌入式开发库</td><td class="p-2">TypeScript实现，不绑定特定数据库，支持多种后端</td><td class="p-2">开发者需在应用中集成轻量级可自定义的知识图谱能力</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">ChimeraDB</td><td class="p-2">嵌入式融合数据库</td><td class="p-2">集向量搜索、图查询和SQL分析于一体，无需额外基础设施</td><td class="p-2">构建需结合向量语义搜索和知识图谱的AI应用</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 3.2.4 -->
+    <h4 class="font-bold text-sm mb-2">3.2.4 数据库设计</h4>
+    <p class="text-sm leading-relaxed mb-2">调研数据存储方案时，核心数据表通常围绕 <strong>学习者（Learner）</strong>、<strong>内容（Content）</strong> 和 <strong>交互（Interaction）</strong> 三大核心实体进行设计，以支撑用户建模、内容推荐与行为分析等核心功能。</p>
+    <p class="text-xs font-bold mb-2 accent">表6：三大基础实体</p>
+    <div class="overflow-x-auto text-xs mb-3">
+      <table class="w-full border-collapse">
+        <thead><tr class="table-header text-left"><th class="p-2 font-bold">核心主表</th><th class="p-2 font-bold">表名</th><th class="p-2 font-bold">核心职责</th><th class="p-2 font-bold">关键字段示例</th><th class="p-2 font-bold">数据增长特点</th></tr></thead>
+        <tbody>
+          <tr class="table-row"><td class="p-2 font-bold">学习者表</td><td class="p-2">Learner</td><td class="p-2">存储用户的静态身份与属性信息</td><td class="p-2">user_id, user_name, register_date, user_group, location</td><td class="p-2">增长相对平缓</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">内容表</td><td class="p-2">Content</td><td class="p-2">存储学习资源的元数据</td><td class="p-2">content_id, title, type, difficulty, course_id, tags</td><td class="p-2">增长相对平缓</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">交互表</td><td class="p-2">Interaction</td><td class="p-2">记录学习者与内容之间的所有动态行为</td><td class="p-2">interaction_id, user_id, content_id, action_type, timestamp, duration</td><td class="p-2">增长极快，性能瓶颈所在</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-xs font-bold mb-2 accent">表7：外围扩展与辅助表</p>
+    <div class="overflow-x-auto text-xs mb-3">
+      <table class="w-full border-collapse">
+        <thead><tr class="table-header text-left"><th class="p-2 font-bold">表名</th><th class="p-2 font-bold">核心职责</th><th class="p-2 font-bold">关键字段示例</th><th class="p-2 font-bold">设计目的</th></tr></thead>
+        <tbody>
+          <tr class="table-row"><td class="p-2 font-bold">Learner Profile Extension</td><td class="p-2">存储动态/非结构化用户画像标签</td><td class="p-2">user_id, preference_tag, skill_level, last_update_time</td><td class="p-2">避免频繁修改主表结构</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">Content Hierarchy/Graph</td><td class="p-2">存储内容间的上下级/前置后置关系</td><td class="p-2">parent_content_id, child_content_id, relation_type</td><td class="p-2">将复杂关系从主表中剥离</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">Interaction Summary</td><td class="p-2">存储预计算的统计结果</td><td class="p-2">user_id, date, daily_learning_minutes, weekly_active_days</td><td class="p-2">性能优化核心，加速前端展示</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">Course/Module</td><td class="p-2">描述业务的层级结构</td><td class="p-2">course_id, course_name, module_id, module_order</td><td class="p-2">辅助内容组织和展示</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-xs font-bold mb-2 accent">表8：交互表主流技术选型</p>
+    <div class="overflow-x-auto text-xs mb-4">
+      <table class="w-full border-collapse">
+        <thead><tr class="table-header text-left"><th class="p-2 font-bold">技术方案</th><th class="p-2 font-bold">核心特点</th><th class="p-2 font-bold">写入性能</th><th class="p-2 font-bold">查询与分析能力</th><th class="p-2 font-bold">典型适用场景</th></tr></thead>
+        <tbody>
+          <tr class="table-row"><td class="p-2 font-bold">Elasticsearch</td><td class="p-2">日志型方案首选</td><td class="p-2">极高</td><td class="p-2">强，多维过滤聚合，毫秒级</td><td class="p-2">实时行为日志分析、数据看板</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">ClickHouse</td><td class="p-2">分析型方案首选</td><td class="p-2">极高</td><td class="p-2">极强，TB级秒级聚合</td><td class="p-2">高强度聚合分析，如漏斗分析</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">Cassandra</td><td class="p-2">分布式NoSQL方案</td><td class="p-2">极高</td><td class="p-2">弱，依赖预定义分区键</td><td class="p-2">高吞吐写入、简单键值查询</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">MongoDB</td><td class="p-2">通用型文档方案</td><td class="p-2">高</td><td class="p-2">中等，支持二级索引和聚合管道</td><td class="p-2">行为数据附带大量JSON上下文</td></tr>
+          <tr class="table-row"><td class="p-2 font-bold">MySQL(分库分表)</td><td class="p-2">关系型方案</td><td class="p-2">中低</td><td class="p-2">中等，依赖中间件</td><td class="p-2">不推荐用于海量交互日志</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 3.2.5 -->
+    <h4 class="font-bold text-sm mb-2">3.2.5 大语言模型</h4>
+    <p class="text-sm leading-relaxed mb-4">在自适应SQL学习系统中，LLMs可应用于自然语言转SQL、自动出题、错误分析与诊断等环节。例如，有平台基于Llama 3模型实现数据库模式的自动提取、练习题的动态生成以及作答结果的智能评分。</p>
+
+    <!-- 3.3 -->
+    <h3 class="sub-title text-lg mb-2">3.3 效果评估指标</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+      <div class="bg-white p-3 rounded-lg border border-[#dcd6ce] text-center">
+        <p class="stat-number">+20%</p>
+        <p class="text-xs mt-1">掌握速度提升</p>
+      </div>
+      <div class="bg-white p-3 rounded-lg border border-[#dcd6ce] text-center">
+        <p class="stat-number">-33%</p>
+        <p class="text-xs mt-1">两周流失率降幅</p>
+      </div>
+      <div class="bg-white p-3 rounded-lg border border-[#dcd6ce] text-center">
+        <p class="stat-number">RCT</p>
+        <p class="text-xs mt-1">随机对照试验验证</p>
+      </div>
+      <div class="bg-white p-3 rounded-lg border border-[#dcd6ce] text-center">
+        <p class="stat-number">5维</p>
+        <p class="text-xs mt-1">系统评估框架</p>
+      </div>
+    </div>
+    <p class="text-sm leading-relaxed"><strong>学习成效</strong>：有研究通过随机对照试验(RCT)证明，自适应SQL游戏比传统课本学习效果更好，自适应练习能让用户掌握速度提升20%。<strong>用户参与度</strong>：自适应设计将两周流失率从45%降至30%。系统评估框架可参考：用户属性界定→用户属性评估→内容代表性→用户交互设计→用户交互效果。</p>
+
+    <!-- 3.4 -->
+    <h3 class="sub-title text-lg mb-2 mt-4">3.4 实战流程案例：一次完整的题目推荐</h3>
+    <p class="text-sm leading-relaxed mb-3">以<strong>计算机自适应测试（CAT）</strong>为例，这个过程非常典型，也被广泛用于GRE、GMAT等考试中：</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+      <div class="bg-white p-3 rounded-lg border border-[#dcd6ce]">
+        <p class="text-xs font-bold accent"><i class="fas fa-play-circle mr-1"></i>初始评估</p>
+        <p class="text-xs leading-relaxed">系统先给你一个中等难度的题目，快速建立初始能力估计。</p>
+      </div>
+      <div class="bg-white p-3 rounded-lg border border-[#dcd6ce]">
+        <p class="text-xs font-bold accent"><i class="fas fa-sync-alt mr-1"></i>动态选题</p>
+        <p class="text-xs leading-relaxed">每答完一题，引擎更新能力估计，从题库中选出最能提供信息量的下一题。答对则变难，答错则变易。</p>
+      </div>
+      <div class="bg-white p-3 rounded-lg border border-[#dcd6ce]">
+        <p class="text-xs font-bold accent"><i class="fas fa-bullseye mr-1"></i>多目标优化</p>
+        <p class="text-xs leading-relaxed">现代CAT兼顾题目多样性、知识点覆盖等。前沿研究甚至用<strong>强化学习</strong>让模型自己学习最优出题策略。</p>
+      </div>
+      <div class="bg-white p-3 rounded-lg border border-[#dcd6ce]">
+        <p class="text-xs font-bold accent"><i class="fas fa-stethoscope mr-1"></i>多维诊断</p>
+        <p class="text-xs leading-relaxed">最新系统分析答错原因——是"知识点没掌握"、"计算粗心"还是"题目读不懂"，给出针对性反馈。</p>
+      </div>
+    </div>
+    <p class="text-xs leading-relaxed opacity-70 border-t border-[#dcd6ce] pt-2 mt-1">目标：用最少的题目，最快地锁定你的真实水平。</p>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="card p-4 card-shadow mt-4 text-center">
+    <p class="text-xs text-[#2c241b] opacity-40">
+      <span class="num-oswald">SQL ADAPTIVE LEARNING RESEARCH</span> &middot; 双引擎协同驱动 &middot; 千人千面·因错施教
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

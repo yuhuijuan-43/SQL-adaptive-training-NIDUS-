@@ -1,0 +1,2246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>LeetCode SQL 题目汇总</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+  h1 { color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
+  .stats { display: flex; gap: 20px; margin: 20px 0; flex-wrap: wrap; }
+  .stat-card { background: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-width: 120px; }
+  .stat-card .num { font-size: 28px; font-weight: bold; color: #4CAF50; }
+  .stat-card .label { font-size: 14px; color: #666; }
+  table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+  th { background: #4CAF50; color: white; padding: 12px; text-align: left; }
+  td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+  tr:hover { background: #f0f8f0; }
+  .Easy { color: #4CAF50; font-weight: bold; }
+  .Medium { color: #FF9800; font-weight: bold; }
+  .Hard { color: #f44336; font-weight: bold; }
+  a { color: #1a73e8; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .filter-bar { margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .filter-bar button { padding: 8px 16px; border: 1px solid #ddd; border-radius: 20px; background: white; cursor: pointer; }
+  .filter-bar button.active { background: #4CAF50; color: white; border-color: #4CAF50; }
+  .filter-bar input { padding: 8px 16px; border: 1px solid #ddd; border-radius: 20px; flex: 1; max-width: 300px; }
+  .stats-bar { height: 20px; border-radius: 10px; overflow: hidden; display: flex; margin: 10px 0; }
+  .stats-bar .seg-easy { background: #4CAF50; }
+  .stats-bar .seg-medium { background: #FF9800; }
+  .stats-bar .seg-hard { background: #f44336; }
+</style>
+</head>
+<body>
+<a href="/" style="display:inline-block;margin-bottom:5px;color:#1a73e8;text-decoration:none;font-weight:600;font-size:14px;">← 返回主页</a>
+<h1>LeetCode SQL 题目汇总</h1>
+<div class="stats">
+  <div class="stat-card"><div class="num">310</div><div class="label">总题数</div></div>
+  <div class="stat-card"><div class="num" style="color:#4CAF50">112</div><div class="label">简单</div></div>
+  <div class="stat-card"><div class="num" style="color:#FF9800">137</div><div class="label">中等</div></div>
+  <div class="stat-card"><div class="num" style="color:#f44336">61</div><div class="label">困难</div></div>
+</div>
+<div class="stats-bar" style="width:100%">
+  <div class="seg-easy" style="width:36.1%;height:100%"></div>
+  <div class="seg-medium" style="width:44.2%;height:100%"></div>
+  <div class="seg-hard" style="width:19.7%;height:100%"></div>
+</div>
+<div class="filter-bar">
+  <input type="text" id="search" placeholder="搜索题目..." onkeyup="filterTable()">
+  <button class="active" onclick="filterDifficulty('all', this)">全部</button>
+  <button onclick="filterDifficulty('Easy', this)">简单</button>
+  <button onclick="filterDifficulty('Medium', this)">中等</button>
+  <button onclick="filterDifficulty('Hard', this)">困难</button>
+</div>
+<table id="problems">
+<thead><tr><th>#</th><th>题目</th><th>难度</th><th>通过率</th><th>链接</th><th>详情</th></tr></thead>
+<tbody><tr class="Easy">
+    <td>1</td>
+    <td>Combine Two Tables</td>
+    <td class="Easy">Easy</td>
+    <td>79.8%</td>
+    <td><a href="https://leetcode.com/problems/combine-two-tables/" target="_blank">打开</a></td>
+    <td><a href="details/combine-two-tables.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>2</td>
+    <td>Second Highest Salary</td>
+    <td class="Medium">Medium</td>
+    <td>47.8%</td>
+    <td><a href="https://leetcode.com/problems/second-highest-salary/" target="_blank">打开</a></td>
+    <td><a href="details/second-highest-salary.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>3</td>
+    <td>Nth Highest Salary</td>
+    <td class="Medium">Medium</td>
+    <td>39.7%</td>
+    <td><a href="https://leetcode.com/problems/nth-highest-salary/" target="_blank">打开</a></td>
+    <td><a href="details/nth-highest-salary.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>4</td>
+    <td>Rank Scores</td>
+    <td class="Medium">Medium</td>
+    <td>68.4%</td>
+    <td><a href="https://leetcode.com/problems/rank-scores/" target="_blank">打开</a></td>
+    <td><a href="details/rank-scores.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>5</td>
+    <td>Consecutive Numbers</td>
+    <td class="Medium">Medium</td>
+    <td>48.9%</td>
+    <td><a href="https://leetcode.com/problems/consecutive-numbers/" target="_blank">打开</a></td>
+    <td><a href="details/consecutive-numbers.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>6</td>
+    <td>Employees Earning More Than Their Managers</td>
+    <td class="Easy">Easy</td>
+    <td>73.6%</td>
+    <td><a href="https://leetcode.com/problems/employees-earning-more-than-their-managers/" target="_blank">打开</a></td>
+    <td><a href="details/employees-earning-more-than-their-managers.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>7</td>
+    <td>Duplicate Emails</td>
+    <td class="Easy">Easy</td>
+    <td>74.1%</td>
+    <td><a href="https://leetcode.com/problems/duplicate-emails/" target="_blank">打开</a></td>
+    <td><a href="details/duplicate-emails.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>8</td>
+    <td>Customers Who Never Order</td>
+    <td class="Easy">Easy</td>
+    <td>72.1%</td>
+    <td><a href="https://leetcode.com/problems/customers-who-never-order/" target="_blank">打开</a></td>
+    <td><a href="details/customers-who-never-order.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>9</td>
+    <td>Department Highest Salary</td>
+    <td class="Medium">Medium</td>
+    <td>58.8%</td>
+    <td><a href="https://leetcode.com/problems/department-highest-salary/" target="_blank">打开</a></td>
+    <td><a href="details/department-highest-salary.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>10</td>
+    <td>Department Top Three Salaries</td>
+    <td class="Hard">Hard</td>
+    <td>61.2%</td>
+    <td><a href="https://leetcode.com/problems/department-top-three-salaries/" target="_blank">打开</a></td>
+    <td><a href="details/department-top-three-salaries.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>11</td>
+    <td>Delete Duplicate Emails</td>
+    <td class="Easy">Easy</td>
+    <td>66.4%</td>
+    <td><a href="https://leetcode.com/problems/delete-duplicate-emails/" target="_blank">打开</a></td>
+    <td><a href="details/delete-duplicate-emails.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>12</td>
+    <td>Rising Temperature</td>
+    <td class="Easy">Easy</td>
+    <td>51.8%</td>
+    <td><a href="https://leetcode.com/problems/rising-temperature/" target="_blank">打开</a></td>
+    <td><a href="details/rising-temperature.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>13</td>
+    <td>Trips and Users</td>
+    <td class="Hard">Hard</td>
+    <td>38.8%</td>
+    <td><a href="https://leetcode.com/problems/trips-and-users/" target="_blank">打开</a></td>
+    <td><a href="details/trips-and-users.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>14</td>
+    <td>Game Play Analysis I</td>
+    <td class="Easy">Easy</td>
+    <td>76.5%</td>
+    <td><a href="https://leetcode.com/problems/game-play-analysis-i/" target="_blank">打开</a></td>
+    <td><a href="details/game-play-analysis-i.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>15</td>
+    <td>Game Play Analysis II</td>
+    <td class="Easy">Easy</td>
+    <td>54.8%</td>
+    <td><a href="https://leetcode.com/problems/game-play-analysis-ii/" target="_blank">打开</a></td>
+    <td><a href="details/game-play-analysis-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>16</td>
+    <td>Game Play Analysis III</td>
+    <td class="Medium">Medium</td>
+    <td>81.3%</td>
+    <td><a href="https://leetcode.com/problems/game-play-analysis-iii/" target="_blank">打开</a></td>
+    <td><a href="details/game-play-analysis-iii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>17</td>
+    <td>Game Play Analysis IV</td>
+    <td class="Medium">Medium</td>
+    <td>41.9%</td>
+    <td><a href="https://leetcode.com/problems/game-play-analysis-iv/" target="_blank">打开</a></td>
+    <td><a href="details/game-play-analysis-iv.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>18</td>
+    <td>Median Employee Salary</td>
+    <td class="Hard">Hard</td>
+    <td>65.8%</td>
+    <td><a href="https://leetcode.com/problems/median-employee-salary/" target="_blank">打开</a></td>
+    <td><a href="details/median-employee-salary.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>19</td>
+    <td>Managers with at Least 5 Direct Reports</td>
+    <td class="Medium">Medium</td>
+    <td>49.3%</td>
+    <td><a href="https://leetcode.com/problems/managers-with-at-least-5-direct-reports/" target="_blank">打开</a></td>
+    <td><a href="details/managers-with-at-least-5-direct-reports.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>20</td>
+    <td>Find Median Given Frequency of Numbers</td>
+    <td class="Hard">Hard</td>
+    <td>42.2%</td>
+    <td><a href="https://leetcode.com/problems/find-median-given-frequency-of-numbers/" target="_blank">打开</a></td>
+    <td><a href="details/find-median-given-frequency-of-numbers.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>21</td>
+    <td>Winning Candidate</td>
+    <td class="Medium">Medium</td>
+    <td>62.8%</td>
+    <td><a href="https://leetcode.com/problems/winning-candidate/" target="_blank">打开</a></td>
+    <td><a href="details/winning-candidate.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>22</td>
+    <td>Employee Bonus</td>
+    <td class="Easy">Easy</td>
+    <td>77.8%</td>
+    <td><a href="https://leetcode.com/problems/employee-bonus/" target="_blank">打开</a></td>
+    <td><a href="details/employee-bonus.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>23</td>
+    <td>Get Highest Answer Rate Question</td>
+    <td class="Medium">Medium</td>
+    <td>40.0%</td>
+    <td><a href="https://leetcode.com/problems/get-highest-answer-rate-question/" target="_blank">打开</a></td>
+    <td><a href="details/get-highest-answer-rate-question.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>24</td>
+    <td>Find Cumulative Salary of an Employee</td>
+    <td class="Hard">Hard</td>
+    <td>49.6%</td>
+    <td><a href="https://leetcode.com/problems/find-cumulative-salary-of-an-employee/" target="_blank">打开</a></td>
+    <td><a href="details/find-cumulative-salary-of-an-employee.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>25</td>
+    <td>Count Student Number in Departments</td>
+    <td class="Medium">Medium</td>
+    <td>60.0%</td>
+    <td><a href="https://leetcode.com/problems/count-student-number-in-departments/" target="_blank">打开</a></td>
+    <td><a href="details/count-student-number-in-departments.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>26</td>
+    <td>Find Customer Referee</td>
+    <td class="Easy">Easy</td>
+    <td>73.2%</td>
+    <td><a href="https://leetcode.com/problems/find-customer-referee/" target="_blank">打开</a></td>
+    <td><a href="details/find-customer-referee.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>27</td>
+    <td>Investments in 2016</td>
+    <td class="Medium">Medium</td>
+    <td>51.5%</td>
+    <td><a href="https://leetcode.com/problems/investments-in-2016/" target="_blank">打开</a></td>
+    <td><a href="details/investments-in-2016.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>28</td>
+    <td>Customer Placing the Largest Number of Orders</td>
+    <td class="Easy">Easy</td>
+    <td>64.6%</td>
+    <td><a href="https://leetcode.com/problems/customer-placing-the-largest-number-of-orders/" target="_blank">打开</a></td>
+    <td><a href="details/customer-placing-the-largest-number-of-orders.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>29</td>
+    <td>Big Countries</td>
+    <td class="Easy">Easy</td>
+    <td>68.7%</td>
+    <td><a href="https://leetcode.com/problems/big-countries/" target="_blank">打开</a></td>
+    <td><a href="details/big-countries.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>30</td>
+    <td>Classes With at Least 5 Students</td>
+    <td class="Easy">Easy</td>
+    <td>64.4%</td>
+    <td><a href="https://leetcode.com/problems/classes-with-at-least-5-students/" target="_blank">打开</a></td>
+    <td><a href="details/classes-with-at-least-5-students.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>31</td>
+    <td>Friend Requests I: Overall Acceptance Rate</td>
+    <td class="Easy">Easy</td>
+    <td>41.0%</td>
+    <td><a href="https://leetcode.com/problems/friend-requests-i-overall-acceptance-rate/" target="_blank">打开</a></td>
+    <td><a href="details/friend-requests-i-overall-acceptance-rate.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>32</td>
+    <td>Human Traffic of Stadium</td>
+    <td class="Hard">Hard</td>
+    <td>51.8%</td>
+    <td><a href="https://leetcode.com/problems/human-traffic-of-stadium/" target="_blank">打开</a></td>
+    <td><a href="details/human-traffic-of-stadium.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>33</td>
+    <td>Friend Requests II: Who Has the Most Friends</td>
+    <td class="Medium">Medium</td>
+    <td>63.2%</td>
+    <td><a href="https://leetcode.com/problems/friend-requests-ii-who-has-the-most-friends/" target="_blank">打开</a></td>
+    <td><a href="details/friend-requests-ii-who-has-the-most-friends.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>34</td>
+    <td>Consecutive Available Seats</td>
+    <td class="Easy">Easy</td>
+    <td>64.9%</td>
+    <td><a href="https://leetcode.com/problems/consecutive-available-seats/" target="_blank">打开</a></td>
+    <td><a href="details/consecutive-available-seats.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>35</td>
+    <td>Sales Person</td>
+    <td class="Easy">Easy</td>
+    <td>66.2%</td>
+    <td><a href="https://leetcode.com/problems/sales-person/" target="_blank">打开</a></td>
+    <td><a href="details/sales-person.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>36</td>
+    <td>Tree Node</td>
+    <td class="Medium">Medium</td>
+    <td>76.2%</td>
+    <td><a href="https://leetcode.com/problems/tree-node/" target="_blank">打开</a></td>
+    <td><a href="details/tree-node.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>37</td>
+    <td>Triangle Judgement</td>
+    <td class="Easy">Easy</td>
+    <td>75.0%</td>
+    <td><a href="https://leetcode.com/problems/triangle-judgement/" target="_blank">打开</a></td>
+    <td><a href="details/triangle-judgement.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>38</td>
+    <td>Shortest Distance in a Plane</td>
+    <td class="Medium">Medium</td>
+    <td>60.9%</td>
+    <td><a href="https://leetcode.com/problems/shortest-distance-in-a-plane/" target="_blank">打开</a></td>
+    <td><a href="details/shortest-distance-in-a-plane.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>39</td>
+    <td>Shortest Distance in a Line</td>
+    <td class="Easy">Easy</td>
+    <td>79.6%</td>
+    <td><a href="https://leetcode.com/problems/shortest-distance-in-a-line/" target="_blank">打开</a></td>
+    <td><a href="details/shortest-distance-in-a-line.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>40</td>
+    <td>Second Degree Follower</td>
+    <td class="Medium">Medium</td>
+    <td>40.9%</td>
+    <td><a href="https://leetcode.com/problems/second-degree-follower/" target="_blank">打开</a></td>
+    <td><a href="details/second-degree-follower.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>41</td>
+    <td>Average Salary: Departments VS Company</td>
+    <td class="Hard">Hard</td>
+    <td>56.6%</td>
+    <td><a href="https://leetcode.com/problems/average-salary-departments-vs-company/" target="_blank">打开</a></td>
+    <td><a href="details/average-salary-departments-vs-company.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>42</td>
+    <td>Students Report By Geography</td>
+    <td class="Hard">Hard</td>
+    <td>63.5%</td>
+    <td><a href="https://leetcode.com/problems/students-report-by-geography/" target="_blank">打开</a></td>
+    <td><a href="details/students-report-by-geography.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>43</td>
+    <td>Biggest Single Number</td>
+    <td class="Easy">Easy</td>
+    <td>71.8%</td>
+    <td><a href="https://leetcode.com/problems/biggest-single-number/" target="_blank">打开</a></td>
+    <td><a href="details/biggest-single-number.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>44</td>
+    <td>Not Boring Movies</td>
+    <td class="Easy">Easy</td>
+    <td>75.1%</td>
+    <td><a href="https://leetcode.com/problems/not-boring-movies/" target="_blank">打开</a></td>
+    <td><a href="details/not-boring-movies.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>45</td>
+    <td>Exchange Seats</td>
+    <td class="Medium">Medium</td>
+    <td>74.5%</td>
+    <td><a href="https://leetcode.com/problems/exchange-seats/" target="_blank">打开</a></td>
+    <td><a href="details/exchange-seats.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>46</td>
+    <td>Swap Sex of Employees</td>
+    <td class="Easy">Easy</td>
+    <td>84.8%</td>
+    <td><a href="https://leetcode.com/problems/swap-sex-of-employees/" target="_blank">打开</a></td>
+    <td><a href="details/swap-sex-of-employees.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>47</td>
+    <td>Customers Who Bought All Products</td>
+    <td class="Medium">Medium</td>
+    <td>64.3%</td>
+    <td><a href="https://leetcode.com/problems/customers-who-bought-all-products/" target="_blank">打开</a></td>
+    <td><a href="details/customers-who-bought-all-products.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>48</td>
+    <td>Actors and Directors Who Cooperated At Least Three Times</td>
+    <td class="Easy">Easy</td>
+    <td>71.2%</td>
+    <td><a href="https://leetcode.com/problems/actors-and-directors-who-cooperated-at-least-three-times/" target="_blank">打开</a></td>
+    <td><a href="details/actors-and-directors-who-cooperated-at-least-three-times.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>49</td>
+    <td>Product Sales Analysis I</td>
+    <td class="Easy">Easy</td>
+    <td>86.0%</td>
+    <td><a href="https://leetcode.com/problems/product-sales-analysis-i/" target="_blank">打开</a></td>
+    <td><a href="details/product-sales-analysis-i.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>50</td>
+    <td>Product Sales Analysis II</td>
+    <td class="Easy">Easy</td>
+    <td>82.7%</td>
+    <td><a href="https://leetcode.com/problems/product-sales-analysis-ii/" target="_blank">打开</a></td>
+    <td><a href="details/product-sales-analysis-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>51</td>
+    <td>Product Sales Analysis III</td>
+    <td class="Medium">Medium</td>
+    <td>46.3%</td>
+    <td><a href="https://leetcode.com/problems/product-sales-analysis-iii/" target="_blank">打开</a></td>
+    <td><a href="details/product-sales-analysis-iii.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>52</td>
+    <td>Project Employees I</td>
+    <td class="Easy">Easy</td>
+    <td>67.1%</td>
+    <td><a href="https://leetcode.com/problems/project-employees-i/" target="_blank">打开</a></td>
+    <td><a href="details/project-employees-i.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>53</td>
+    <td>Project Employees II</td>
+    <td class="Easy">Easy</td>
+    <td>50.5%</td>
+    <td><a href="https://leetcode.com/problems/project-employees-ii/" target="_blank">打开</a></td>
+    <td><a href="details/project-employees-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>54</td>
+    <td>Project Employees III</td>
+    <td class="Medium">Medium</td>
+    <td>77.2%</td>
+    <td><a href="https://leetcode.com/problems/project-employees-iii/" target="_blank">打开</a></td>
+    <td><a href="details/project-employees-iii.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>55</td>
+    <td>Sales Analysis I</td>
+    <td class="Easy">Easy</td>
+    <td>74.8%</td>
+    <td><a href="https://leetcode.com/problems/sales-analysis-i/" target="_blank">打开</a></td>
+    <td><a href="details/sales-analysis-i.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>56</td>
+    <td>Sales Analysis II</td>
+    <td class="Easy">Easy</td>
+    <td>50.2%</td>
+    <td><a href="https://leetcode.com/problems/sales-analysis-ii/" target="_blank">打开</a></td>
+    <td><a href="details/sales-analysis-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>57</td>
+    <td>Sales Analysis III</td>
+    <td class="Easy">Easy</td>
+    <td>48.0%</td>
+    <td><a href="https://leetcode.com/problems/sales-analysis-iii/" target="_blank">打开</a></td>
+    <td><a href="details/sales-analysis-iii.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>58</td>
+    <td>Game Play Analysis V</td>
+    <td class="Hard">Hard</td>
+    <td>50.4%</td>
+    <td><a href="https://leetcode.com/problems/game-play-analysis-v/" target="_blank">打开</a></td>
+    <td><a href="details/game-play-analysis-v.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>59</td>
+    <td>Unpopular Books</td>
+    <td class="Medium">Medium</td>
+    <td>43.4%</td>
+    <td><a href="https://leetcode.com/problems/unpopular-books/" target="_blank">打开</a></td>
+    <td><a href="details/unpopular-books.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>60</td>
+    <td>New Users Daily Count</td>
+    <td class="Medium">Medium</td>
+    <td>44.4%</td>
+    <td><a href="https://leetcode.com/problems/new-users-daily-count/" target="_blank">打开</a></td>
+    <td><a href="details/new-users-daily-count.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>61</td>
+    <td>Highest Grade For Each Student</td>
+    <td class="Medium">Medium</td>
+    <td>71.2%</td>
+    <td><a href="https://leetcode.com/problems/highest-grade-for-each-student/" target="_blank">打开</a></td>
+    <td><a href="details/highest-grade-for-each-student.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>62</td>
+    <td>Reported Posts</td>
+    <td class="Easy">Easy</td>
+    <td>64.8%</td>
+    <td><a href="https://leetcode.com/problems/reported-posts/" target="_blank">打开</a></td>
+    <td><a href="details/reported-posts.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>63</td>
+    <td>Active Businesses</td>
+    <td class="Medium">Medium</td>
+    <td>66.0%</td>
+    <td><a href="https://leetcode.com/problems/active-businesses/" target="_blank">打开</a></td>
+    <td><a href="details/active-businesses.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>64</td>
+    <td>User Purchase Platform</td>
+    <td class="Hard">Hard</td>
+    <td>46.3%</td>
+    <td><a href="https://leetcode.com/problems/user-purchase-platform/" target="_blank">打开</a></td>
+    <td><a href="details/user-purchase-platform.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>65</td>
+    <td>Reported Posts II</td>
+    <td class="Medium">Medium</td>
+    <td>32.0%</td>
+    <td><a href="https://leetcode.com/problems/reported-posts-ii/" target="_blank">打开</a></td>
+    <td><a href="details/reported-posts-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>66</td>
+    <td>User Activity for the Past 30 Days I</td>
+    <td class="Easy">Easy</td>
+    <td>51.3%</td>
+    <td><a href="https://leetcode.com/problems/user-activity-for-the-past-30-days-i/" target="_blank">打开</a></td>
+    <td><a href="details/user-activity-for-the-past-30-days-i.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>67</td>
+    <td>User Activity for the Past 30 Days II</td>
+    <td class="Easy">Easy</td>
+    <td>35.6%</td>
+    <td><a href="https://leetcode.com/problems/user-activity-for-the-past-30-days-ii/" target="_blank">打开</a></td>
+    <td><a href="details/user-activity-for-the-past-30-days-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>68</td>
+    <td>Article Views I</td>
+    <td class="Easy">Easy</td>
+    <td>76.8%</td>
+    <td><a href="https://leetcode.com/problems/article-views-i/" target="_blank">打开</a></td>
+    <td><a href="details/article-views-i.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>69</td>
+    <td>Article Views II</td>
+    <td class="Medium">Medium</td>
+    <td>47.3%</td>
+    <td><a href="https://leetcode.com/problems/article-views-ii/" target="_blank">打开</a></td>
+    <td><a href="details/article-views-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>70</td>
+    <td>Market Analysis I</td>
+    <td class="Medium">Medium</td>
+    <td>57.6%</td>
+    <td><a href="https://leetcode.com/problems/market-analysis-i/" target="_blank">打开</a></td>
+    <td><a href="details/market-analysis-i.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>71</td>
+    <td>Market Analysis II</td>
+    <td class="Hard">Hard</td>
+    <td>57.8%</td>
+    <td><a href="https://leetcode.com/problems/market-analysis-ii/" target="_blank">打开</a></td>
+    <td><a href="details/market-analysis-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>72</td>
+    <td>Product Price at a Given Date</td>
+    <td class="Medium">Medium</td>
+    <td>58.3%</td>
+    <td><a href="https://leetcode.com/problems/product-price-at-a-given-date/" target="_blank">打开</a></td>
+    <td><a href="details/product-price-at-a-given-date.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>73</td>
+    <td>Immediate Food Delivery I</td>
+    <td class="Easy">Easy</td>
+    <td>80.6%</td>
+    <td><a href="https://leetcode.com/problems/immediate-food-delivery-i/" target="_blank">打开</a></td>
+    <td><a href="details/immediate-food-delivery-i.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>74</td>
+    <td>Immediate Food Delivery II</td>
+    <td class="Medium">Medium</td>
+    <td>56.6%</td>
+    <td><a href="https://leetcode.com/problems/immediate-food-delivery-ii/" target="_blank">打开</a></td>
+    <td><a href="details/immediate-food-delivery-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>75</td>
+    <td>Reformat Department Table</td>
+    <td class="Easy">Easy</td>
+    <td>76.4%</td>
+    <td><a href="https://leetcode.com/problems/reformat-department-table/" target="_blank">打开</a></td>
+    <td><a href="details/reformat-department-table.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>76</td>
+    <td>Monthly Transactions I</td>
+    <td class="Medium">Medium</td>
+    <td>59.6%</td>
+    <td><a href="https://leetcode.com/problems/monthly-transactions-i/" target="_blank">打开</a></td>
+    <td><a href="details/monthly-transactions-i.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>77</td>
+    <td>Tournament Winners</td>
+    <td class="Hard">Hard</td>
+    <td>50.1%</td>
+    <td><a href="https://leetcode.com/problems/tournament-winners/" target="_blank">打开</a></td>
+    <td><a href="details/tournament-winners.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>78</td>
+    <td>Last Person to Fit in the Bus</td>
+    <td class="Medium">Medium</td>
+    <td>69.6%</td>
+    <td><a href="https://leetcode.com/problems/last-person-to-fit-in-the-bus/" target="_blank">打开</a></td>
+    <td><a href="details/last-person-to-fit-in-the-bus.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>79</td>
+    <td>Monthly Transactions II</td>
+    <td class="Medium">Medium</td>
+    <td>42.0%</td>
+    <td><a href="https://leetcode.com/problems/monthly-transactions-ii/" target="_blank">打开</a></td>
+    <td><a href="details/monthly-transactions-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>80</td>
+    <td>Queries Quality and Percentage</td>
+    <td class="Easy">Easy</td>
+    <td>54.1%</td>
+    <td><a href="https://leetcode.com/problems/queries-quality-and-percentage/" target="_blank">打开</a></td>
+    <td><a href="details/queries-quality-and-percentage.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>81</td>
+    <td>Team Scores in Football Tournament</td>
+    <td class="Medium">Medium</td>
+    <td>55.8%</td>
+    <td><a href="https://leetcode.com/problems/team-scores-in-football-tournament/" target="_blank">打开</a></td>
+    <td><a href="details/team-scores-in-football-tournament.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>82</td>
+    <td>Report Contiguous Dates</td>
+    <td class="Hard">Hard</td>
+    <td>57.1%</td>
+    <td><a href="https://leetcode.com/problems/report-contiguous-dates/" target="_blank">打开</a></td>
+    <td><a href="details/report-contiguous-dates.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>83</td>
+    <td>Number of Comments per Post</td>
+    <td class="Easy">Easy</td>
+    <td>65.6%</td>
+    <td><a href="https://leetcode.com/problems/number-of-comments-per-post/" target="_blank">打开</a></td>
+    <td><a href="details/number-of-comments-per-post.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>84</td>
+    <td>Average Selling Price</td>
+    <td class="Easy">Easy</td>
+    <td>37.6%</td>
+    <td><a href="https://leetcode.com/problems/average-selling-price/" target="_blank">打开</a></td>
+    <td><a href="details/average-selling-price.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>85</td>
+    <td>Page Recommendations</td>
+    <td class="Medium">Medium</td>
+    <td>65.5%</td>
+    <td><a href="https://leetcode.com/problems/page-recommendations/" target="_blank">打开</a></td>
+    <td><a href="details/page-recommendations.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>86</td>
+    <td>All People Report to the Given Manager</td>
+    <td class="Medium">Medium</td>
+    <td>83.8%</td>
+    <td><a href="https://leetcode.com/problems/all-people-report-to-the-given-manager/" target="_blank">打开</a></td>
+    <td><a href="details/all-people-report-to-the-given-manager.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>87</td>
+    <td>Students and Examinations</td>
+    <td class="Easy">Easy</td>
+    <td>61.6%</td>
+    <td><a href="https://leetcode.com/problems/students-and-examinations/" target="_blank">打开</a></td>
+    <td><a href="details/students-and-examinations.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>88</td>
+    <td>Find the Start and End Number of Continuous Ranges</td>
+    <td class="Medium">Medium</td>
+    <td>81.9%</td>
+    <td><a href="https://leetcode.com/problems/find-the-start-and-end-number-of-continuous-ranges/" target="_blank">打开</a></td>
+    <td><a href="details/find-the-start-and-end-number-of-continuous-ranges.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>89</td>
+    <td>Weather Type in Each Country</td>
+    <td class="Easy">Easy</td>
+    <td>67.1%</td>
+    <td><a href="https://leetcode.com/problems/weather-type-in-each-country/" target="_blank">打开</a></td>
+    <td><a href="details/weather-type-in-each-country.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>90</td>
+    <td>Find the Team Size</td>
+    <td class="Easy">Easy</td>
+    <td>89.5%</td>
+    <td><a href="https://leetcode.com/problems/find-the-team-size/" target="_blank">打开</a></td>
+    <td><a href="details/find-the-team-size.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>91</td>
+    <td>Running Total for Different Genders</td>
+    <td class="Medium">Medium</td>
+    <td>86.1%</td>
+    <td><a href="https://leetcode.com/problems/running-total-for-different-genders/" target="_blank">打开</a></td>
+    <td><a href="details/running-total-for-different-genders.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>92</td>
+    <td>Restaurant Growth</td>
+    <td class="Medium">Medium</td>
+    <td>59.4%</td>
+    <td><a href="https://leetcode.com/problems/restaurant-growth/" target="_blank">打开</a></td>
+    <td><a href="details/restaurant-growth.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>93</td>
+    <td>Ads Performance</td>
+    <td class="Easy">Easy</td>
+    <td>58.4%</td>
+    <td><a href="https://leetcode.com/problems/ads-performance/" target="_blank">打开</a></td>
+    <td><a href="details/ads-performance.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>94</td>
+    <td>List the Products Ordered in a Period</td>
+    <td class="Easy">Easy</td>
+    <td>71.9%</td>
+    <td><a href="https://leetcode.com/problems/list-the-products-ordered-in-a-period/" target="_blank">打开</a></td>
+    <td><a href="details/list-the-products-ordered-in-a-period.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>95</td>
+    <td>Number of Transactions per Visit</td>
+    <td class="Hard">Hard</td>
+    <td>47.8%</td>
+    <td><a href="https://leetcode.com/problems/number-of-transactions-per-visit/" target="_blank">打开</a></td>
+    <td><a href="details/number-of-transactions-per-visit.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>96</td>
+    <td>Movie Rating</td>
+    <td class="Medium">Medium</td>
+    <td>44.0%</td>
+    <td><a href="https://leetcode.com/problems/movie-rating/" target="_blank">打开</a></td>
+    <td><a href="details/movie-rating.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>97</td>
+    <td>Students With Invalid Departments</td>
+    <td class="Easy">Easy</td>
+    <td>89.7%</td>
+    <td><a href="https://leetcode.com/problems/students-with-invalid-departments/" target="_blank">打开</a></td>
+    <td><a href="details/students-with-invalid-departments.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>98</td>
+    <td>Activity Participants</td>
+    <td class="Medium">Medium</td>
+    <td>72.0%</td>
+    <td><a href="https://leetcode.com/problems/activity-participants/" target="_blank">打开</a></td>
+    <td><a href="details/activity-participants.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>99</td>
+    <td>Number of Trusted Contacts of a Customer</td>
+    <td class="Medium">Medium</td>
+    <td>74.7%</td>
+    <td><a href="https://leetcode.com/problems/number-of-trusted-contacts-of-a-customer/" target="_blank">打开</a></td>
+    <td><a href="details/number-of-trusted-contacts-of-a-customer.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>100</td>
+    <td>Get the Second Most Recent Activity</td>
+    <td class="Hard">Hard</td>
+    <td>67.3%</td>
+    <td><a href="https://leetcode.com/problems/get-the-second-most-recent-activity/" target="_blank">打开</a></td>
+    <td><a href="details/get-the-second-most-recent-activity.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>101</td>
+    <td>Replace Employee ID With The Unique Identifier</td>
+    <td class="Easy">Easy</td>
+    <td>83.7%</td>
+    <td><a href="https://leetcode.com/problems/replace-employee-id-with-the-unique-identifier/" target="_blank">打开</a></td>
+    <td><a href="details/replace-employee-id-with-the-unique-identifier.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>102</td>
+    <td>Total Sales Amount by Year</td>
+    <td class="Hard">Hard</td>
+    <td>61.2%</td>
+    <td><a href="https://leetcode.com/problems/total-sales-amount-by-year/" target="_blank">打开</a></td>
+    <td><a href="details/total-sales-amount-by-year.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>103</td>
+    <td>Capital Gain/Loss</td>
+    <td class="Medium">Medium</td>
+    <td>84.4%</td>
+    <td><a href="https://leetcode.com/problems/capital-gainloss/" target="_blank">打开</a></td>
+    <td><a href="details/capital-gainloss.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>104</td>
+    <td>Customers Who Bought Products A and B but Not C</td>
+    <td class="Medium">Medium</td>
+    <td>71.5%</td>
+    <td><a href="https://leetcode.com/problems/customers-who-bought-products-a-and-b-but-not-c/" target="_blank">打开</a></td>
+    <td><a href="details/customers-who-bought-products-a-and-b-but-not-c.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>105</td>
+    <td>Top Travellers</td>
+    <td class="Easy">Easy</td>
+    <td>57.6%</td>
+    <td><a href="https://leetcode.com/problems/top-travellers/" target="_blank">打开</a></td>
+    <td><a href="details/top-travellers.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>106</td>
+    <td>Find the Quiet Students in All Exams</td>
+    <td class="Hard">Hard</td>
+    <td>58.0%</td>
+    <td><a href="https://leetcode.com/problems/find-the-quiet-students-in-all-exams/" target="_blank">打开</a></td>
+    <td><a href="details/find-the-quiet-students-in-all-exams.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>107</td>
+    <td>NPV Queries</td>
+    <td class="Easy">Easy</td>
+    <td>82.9%</td>
+    <td><a href="https://leetcode.com/problems/npv-queries/" target="_blank">打开</a></td>
+    <td><a href="details/npv-queries.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>108</td>
+    <td>Create a Session Bar Chart</td>
+    <td class="Easy">Easy</td>
+    <td>74.3%</td>
+    <td><a href="https://leetcode.com/problems/create-a-session-bar-chart/" target="_blank">打开</a></td>
+    <td><a href="details/create-a-session-bar-chart.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>109</td>
+    <td>Evaluate Boolean Expression</td>
+    <td class="Medium">Medium</td>
+    <td>71.7%</td>
+    <td><a href="https://leetcode.com/problems/evaluate-boolean-expression/" target="_blank">打开</a></td>
+    <td><a href="details/evaluate-boolean-expression.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>110</td>
+    <td>Apples & Oranges</td>
+    <td class="Medium">Medium</td>
+    <td>86.0%</td>
+    <td><a href="https://leetcode.com/problems/apples-oranges/" target="_blank">打开</a></td>
+    <td><a href="details/apples-oranges.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>111</td>
+    <td>Active Users</td>
+    <td class="Medium">Medium</td>
+    <td>36.6%</td>
+    <td><a href="https://leetcode.com/problems/active-users/" target="_blank">打开</a></td>
+    <td><a href="details/active-users.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>112</td>
+    <td>Rectangles Area</td>
+    <td class="Medium">Medium</td>
+    <td>68.8%</td>
+    <td><a href="https://leetcode.com/problems/rectangles-area/" target="_blank">打开</a></td>
+    <td><a href="details/rectangles-area.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>113</td>
+    <td>Calculate Salaries</td>
+    <td class="Medium">Medium</td>
+    <td>77.2%</td>
+    <td><a href="https://leetcode.com/problems/calculate-salaries/" target="_blank">打开</a></td>
+    <td><a href="details/calculate-salaries.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>114</td>
+    <td>Sales by Day of the Week</td>
+    <td class="Hard">Hard</td>
+    <td>76.2%</td>
+    <td><a href="https://leetcode.com/problems/sales-by-day-of-the-week/" target="_blank">打开</a></td>
+    <td><a href="details/sales-by-day-of-the-week.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>115</td>
+    <td>Group Sold Products By The Date</td>
+    <td class="Easy">Easy</td>
+    <td>78.1%</td>
+    <td><a href="https://leetcode.com/problems/group-sold-products-by-the-date/" target="_blank">打开</a></td>
+    <td><a href="details/group-sold-products-by-the-date.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>116</td>
+    <td>Friendly Movies Streamed Last Month</td>
+    <td class="Easy">Easy</td>
+    <td>48.9%</td>
+    <td><a href="https://leetcode.com/problems/friendly-movies-streamed-last-month/" target="_blank">打开</a></td>
+    <td><a href="details/friendly-movies-streamed-last-month.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>117</td>
+    <td>Countries You Can Safely Invest In</td>
+    <td class="Medium">Medium</td>
+    <td>50.8%</td>
+    <td><a href="https://leetcode.com/problems/countries-you-can-safely-invest-in/" target="_blank">打开</a></td>
+    <td><a href="details/countries-you-can-safely-invest-in.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>118</td>
+    <td>Customer Order Frequency</td>
+    <td class="Easy">Easy</td>
+    <td>66.4%</td>
+    <td><a href="https://leetcode.com/problems/customer-order-frequency/" target="_blank">打开</a></td>
+    <td><a href="details/customer-order-frequency.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>119</td>
+    <td>Find Users With Valid E-Mails</td>
+    <td class="Easy">Easy</td>
+    <td>35.5%</td>
+    <td><a href="https://leetcode.com/problems/find-users-with-valid-e-mails/" target="_blank">打开</a></td>
+    <td><a href="details/find-users-with-valid-e-mails.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>120</td>
+    <td>Patients With a Condition</td>
+    <td class="Easy">Easy</td>
+    <td>39.1%</td>
+    <td><a href="https://leetcode.com/problems/patients-with-a-condition/" target="_blank">打开</a></td>
+    <td><a href="details/patients-with-a-condition.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>121</td>
+    <td>The Most Recent Three Orders</td>
+    <td class="Medium">Medium</td>
+    <td>69.2%</td>
+    <td><a href="https://leetcode.com/problems/the-most-recent-three-orders/" target="_blank">打开</a></td>
+    <td><a href="details/the-most-recent-three-orders.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>122</td>
+    <td>Fix Product Name Format</td>
+    <td class="Easy">Easy</td>
+    <td>58.8%</td>
+    <td><a href="https://leetcode.com/problems/fix-product-name-format/" target="_blank">打开</a></td>
+    <td><a href="details/fix-product-name-format.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>123</td>
+    <td>The Most Recent Orders for Each Product</td>
+    <td class="Medium">Medium</td>
+    <td>65.0%</td>
+    <td><a href="https://leetcode.com/problems/the-most-recent-orders-for-each-product/" target="_blank">打开</a></td>
+    <td><a href="details/the-most-recent-orders-for-each-product.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>124</td>
+    <td>Bank Account Summary</td>
+    <td class="Medium">Medium</td>
+    <td>52.3%</td>
+    <td><a href="https://leetcode.com/problems/bank-account-summary/" target="_blank">打开</a></td>
+    <td><a href="details/bank-account-summary.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>125</td>
+    <td>Unique Orders and Customers Per Month</td>
+    <td class="Easy">Easy</td>
+    <td>81.9%</td>
+    <td><a href="https://leetcode.com/problems/unique-orders-and-customers-per-month/" target="_blank">打开</a></td>
+    <td><a href="details/unique-orders-and-customers-per-month.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>126</td>
+    <td>Warehouse Manager</td>
+    <td class="Easy">Easy</td>
+    <td>87.2%</td>
+    <td><a href="https://leetcode.com/problems/warehouse-manager/" target="_blank">打开</a></td>
+    <td><a href="details/warehouse-manager.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>127</td>
+    <td>Customer Who Visited but Did Not Make Any Transactions</td>
+    <td class="Easy">Easy</td>
+    <td>68.1%</td>
+    <td><a href="https://leetcode.com/problems/customer-who-visited-but-did-not-make-any-transactions/" target="_blank">打开</a></td>
+    <td><a href="details/customer-who-visited-but-did-not-make-any-transactions.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>128</td>
+    <td>Bank Account Summary II</td>
+    <td class="Easy">Easy</td>
+    <td>83.0%</td>
+    <td><a href="https://leetcode.com/problems/bank-account-summary-ii/" target="_blank">打开</a></td>
+    <td><a href="details/bank-account-summary-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>129</td>
+    <td>The Most Frequently Ordered Products for Each Customer</td>
+    <td class="Medium">Medium</td>
+    <td>77.7%</td>
+    <td><a href="https://leetcode.com/problems/the-most-frequently-ordered-products-for-each-customer/" target="_blank">打开</a></td>
+    <td><a href="details/the-most-frequently-ordered-products-for-each-customer.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>130</td>
+    <td>Sellers With No Sales</td>
+    <td class="Easy">Easy</td>
+    <td>54.3%</td>
+    <td><a href="https://leetcode.com/problems/sellers-with-no-sales/" target="_blank">打开</a></td>
+    <td><a href="details/sellers-with-no-sales.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>131</td>
+    <td>Find the Missing IDs</td>
+    <td class="Medium">Medium</td>
+    <td>72.9%</td>
+    <td><a href="https://leetcode.com/problems/find-the-missing-ids/" target="_blank">打开</a></td>
+    <td><a href="details/find-the-missing-ids.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>132</td>
+    <td>All Valid Triplets That Can Represent a Country</td>
+    <td class="Easy">Easy</td>
+    <td>80.7%</td>
+    <td><a href="https://leetcode.com/problems/all-valid-triplets-that-can-represent-a-country/" target="_blank">打开</a></td>
+    <td><a href="details/all-valid-triplets-that-can-represent-a-country.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>133</td>
+    <td>Percentage of Users Attended a Contest</td>
+    <td class="Easy">Easy</td>
+    <td>60.8%</td>
+    <td><a href="https://leetcode.com/problems/percentage-of-users-attended-a-contest/" target="_blank">打开</a></td>
+    <td><a href="details/percentage-of-users-attended-a-contest.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>134</td>
+    <td>Hopper Company Queries I</td>
+    <td class="Hard">Hard</td>
+    <td>47.9%</td>
+    <td><a href="https://leetcode.com/problems/hopper-company-queries-i/" target="_blank">打开</a></td>
+    <td><a href="details/hopper-company-queries-i.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>135</td>
+    <td>Hopper Company Queries II</td>
+    <td class="Hard">Hard</td>
+    <td>40.0%</td>
+    <td><a href="https://leetcode.com/problems/hopper-company-queries-ii/" target="_blank">打开</a></td>
+    <td><a href="details/hopper-company-queries-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>136</td>
+    <td>Hopper Company Queries III</td>
+    <td class="Hard">Hard</td>
+    <td>65.2%</td>
+    <td><a href="https://leetcode.com/problems/hopper-company-queries-iii/" target="_blank">打开</a></td>
+    <td><a href="details/hopper-company-queries-iii.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>137</td>
+    <td>Average Time of Process per Machine</td>
+    <td class="Easy">Easy</td>
+    <td>66.9%</td>
+    <td><a href="https://leetcode.com/problems/average-time-of-process-per-machine/" target="_blank">打开</a></td>
+    <td><a href="details/average-time-of-process-per-machine.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>138</td>
+    <td>Fix Names in a Table</td>
+    <td class="Easy">Easy</td>
+    <td>60.6%</td>
+    <td><a href="https://leetcode.com/problems/fix-names-in-a-table/" target="_blank">打开</a></td>
+    <td><a href="details/fix-names-in-a-table.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>139</td>
+    <td>Product's Worth Over Invoices</td>
+    <td class="Easy">Easy</td>
+    <td>38.6%</td>
+    <td><a href="https://leetcode.com/problems/products-worth-over-invoices/" target="_blank">打开</a></td>
+    <td><a href="details/products-worth-over-invoices.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>140</td>
+    <td>Invalid Tweets</td>
+    <td class="Easy">Easy</td>
+    <td>85.2%</td>
+    <td><a href="https://leetcode.com/problems/invalid-tweets/" target="_blank">打开</a></td>
+    <td><a href="details/invalid-tweets.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>141</td>
+    <td>Daily Leads and Partners</td>
+    <td class="Easy">Easy</td>
+    <td>86.8%</td>
+    <td><a href="https://leetcode.com/problems/daily-leads-and-partners/" target="_blank">打开</a></td>
+    <td><a href="details/daily-leads-and-partners.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>142</td>
+    <td>Number of Calls Between Two Persons</td>
+    <td class="Medium">Medium</td>
+    <td>80.8%</td>
+    <td><a href="https://leetcode.com/problems/number-of-calls-between-two-persons/" target="_blank">打开</a></td>
+    <td><a href="details/number-of-calls-between-two-persons.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>143</td>
+    <td>Biggest Window Between Visits</td>
+    <td class="Medium">Medium</td>
+    <td>69.7%</td>
+    <td><a href="https://leetcode.com/problems/biggest-window-between-visits/" target="_blank">打开</a></td>
+    <td><a href="details/biggest-window-between-visits.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>144</td>
+    <td>Count Apples and Oranges</td>
+    <td class="Medium">Medium</td>
+    <td>75.7%</td>
+    <td><a href="https://leetcode.com/problems/count-apples-and-oranges/" target="_blank">打开</a></td>
+    <td><a href="details/count-apples-and-oranges.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>145</td>
+    <td>Find Followers Count</td>
+    <td class="Easy">Easy</td>
+    <td>69.6%</td>
+    <td><a href="https://leetcode.com/problems/find-followers-count/" target="_blank">打开</a></td>
+    <td><a href="details/find-followers-count.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>146</td>
+    <td>The Number of Employees Which Report to Each Employee</td>
+    <td class="Easy">Easy</td>
+    <td>53.6%</td>
+    <td><a href="https://leetcode.com/problems/the-number-of-employees-which-report-to-each-employee/" target="_blank">打开</a></td>
+    <td><a href="details/the-number-of-employees-which-report-to-each-employee.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>147</td>
+    <td>Find Total Time Spent by Each Employee</td>
+    <td class="Easy">Easy</td>
+    <td>86.4%</td>
+    <td><a href="https://leetcode.com/problems/find-total-time-spent-by-each-employee/" target="_blank">打开</a></td>
+    <td><a href="details/find-total-time-spent-by-each-employee.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>148</td>
+    <td>Leetflex Banned Accounts</td>
+    <td class="Medium">Medium</td>
+    <td>61.7%</td>
+    <td><a href="https://leetcode.com/problems/leetflex-banned-accounts/" target="_blank">打开</a></td>
+    <td><a href="details/leetflex-banned-accounts.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>149</td>
+    <td>Recyclable and Low Fat Products</td>
+    <td class="Easy">Easy</td>
+    <td>88.6%</td>
+    <td><a href="https://leetcode.com/problems/recyclable-and-low-fat-products/" target="_blank">打开</a></td>
+    <td><a href="details/recyclable-and-low-fat-products.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>150</td>
+    <td>Find the Subtasks That Did Not Execute</td>
+    <td class="Hard">Hard</td>
+    <td>78.5%</td>
+    <td><a href="https://leetcode.com/problems/find-the-subtasks-that-did-not-execute/" target="_blank">打开</a></td>
+    <td><a href="details/find-the-subtasks-that-did-not-execute.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>151</td>
+    <td>Product's Price for Each Store</td>
+    <td class="Easy">Easy</td>
+    <td>82.1%</td>
+    <td><a href="https://leetcode.com/problems/products-price-for-each-store/" target="_blank">打开</a></td>
+    <td><a href="details/products-price-for-each-store.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>152</td>
+    <td>Grand Slam Titles</td>
+    <td class="Medium">Medium</td>
+    <td>83.0%</td>
+    <td><a href="https://leetcode.com/problems/grand-slam-titles/" target="_blank">打开</a></td>
+    <td><a href="details/grand-slam-titles.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>153</td>
+    <td>Primary Department for Each Employee</td>
+    <td class="Easy">Easy</td>
+    <td>75.0%</td>
+    <td><a href="https://leetcode.com/problems/primary-department-for-each-employee/" target="_blank">打开</a></td>
+    <td><a href="details/primary-department-for-each-employee.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>154</td>
+    <td>Rearrange Products Table</td>
+    <td class="Easy">Easy</td>
+    <td>85.5%</td>
+    <td><a href="https://leetcode.com/problems/rearrange-products-table/" target="_blank">打开</a></td>
+    <td><a href="details/rearrange-products-table.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>155</td>
+    <td>Ad-Free Sessions</td>
+    <td class="Easy">Easy</td>
+    <td>59.0%</td>
+    <td><a href="https://leetcode.com/problems/ad-free-sessions/" target="_blank">打开</a></td>
+    <td><a href="details/ad-free-sessions.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>156</td>
+    <td>Find Interview Candidates</td>
+    <td class="Medium">Medium</td>
+    <td>60.7%</td>
+    <td><a href="https://leetcode.com/problems/find-interview-candidates/" target="_blank">打开</a></td>
+    <td><a href="details/find-interview-candidates.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>157</td>
+    <td>Find Customers With Positive Revenue this Year</td>
+    <td class="Easy">Easy</td>
+    <td>87.6%</td>
+    <td><a href="https://leetcode.com/problems/find-customers-with-positive-revenue-this-year/" target="_blank">打开</a></td>
+    <td><a href="details/find-customers-with-positive-revenue-this-year.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>158</td>
+    <td>Maximum Transaction Each Day</td>
+    <td class="Medium">Medium</td>
+    <td>82.5%</td>
+    <td><a href="https://leetcode.com/problems/maximum-transaction-each-day/" target="_blank">打开</a></td>
+    <td><a href="details/maximum-transaction-each-day.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>159</td>
+    <td>League Statistics</td>
+    <td class="Medium">Medium</td>
+    <td>53.4%</td>
+    <td><a href="https://leetcode.com/problems/league-statistics/" target="_blank">打开</a></td>
+    <td><a href="details/league-statistics.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>160</td>
+    <td>Suspicious Bank Accounts</td>
+    <td class="Medium">Medium</td>
+    <td>44.0%</td>
+    <td><a href="https://leetcode.com/problems/suspicious-bank-accounts/" target="_blank">打开</a></td>
+    <td><a href="details/suspicious-bank-accounts.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>161</td>
+    <td>Convert Date Format</td>
+    <td class="Easy">Easy</td>
+    <td>84.8%</td>
+    <td><a href="https://leetcode.com/problems/convert-date-format/" target="_blank">打开</a></td>
+    <td><a href="details/convert-date-format.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>162</td>
+    <td>Orders With Maximum Quantity Above Average</td>
+    <td class="Medium">Medium</td>
+    <td>70.6%</td>
+    <td><a href="https://leetcode.com/problems/orders-with-maximum-quantity-above-average/" target="_blank">打开</a></td>
+    <td><a href="details/orders-with-maximum-quantity-above-average.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>163</td>
+    <td>Calculate Special Bonus</td>
+    <td class="Easy">Easy</td>
+    <td>57.1%</td>
+    <td><a href="https://leetcode.com/problems/calculate-special-bonus/" target="_blank">打开</a></td>
+    <td><a href="details/calculate-special-bonus.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>164</td>
+    <td>Group Employees of the Same Salary</td>
+    <td class="Medium">Medium</td>
+    <td>65.2%</td>
+    <td><a href="https://leetcode.com/problems/group-employees-of-the-same-salary/" target="_blank">打开</a></td>
+    <td><a href="details/group-employees-of-the-same-salary.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>165</td>
+    <td>The Latest Login in 2020</td>
+    <td class="Easy">Easy</td>
+    <td>77.0%</td>
+    <td><a href="https://leetcode.com/problems/the-latest-login-in-2020/" target="_blank">打开</a></td>
+    <td><a href="details/the-latest-login-in-2020.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>166</td>
+    <td>Page Recommendations II</td>
+    <td class="Hard">Hard</td>
+    <td>45.9%</td>
+    <td><a href="https://leetcode.com/problems/page-recommendations-ii/" target="_blank">打开</a></td>
+    <td><a href="details/page-recommendations-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>167</td>
+    <td>Count Salary Categories</td>
+    <td class="Medium">Medium</td>
+    <td>65.0%</td>
+    <td><a href="https://leetcode.com/problems/count-salary-categories/" target="_blank">打开</a></td>
+    <td><a href="details/count-salary-categories.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>168</td>
+    <td>Leetcodify Friends Recommendations</td>
+    <td class="Hard">Hard</td>
+    <td>28.9%</td>
+    <td><a href="https://leetcode.com/problems/leetcodify-friends-recommendations/" target="_blank">打开</a></td>
+    <td><a href="details/leetcodify-friends-recommendations.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>169</td>
+    <td>Leetcodify Similar Friends</td>
+    <td class="Hard">Hard</td>
+    <td>43.4%</td>
+    <td><a href="https://leetcode.com/problems/leetcodify-similar-friends/" target="_blank">打开</a></td>
+    <td><a href="details/leetcodify-similar-friends.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>170</td>
+    <td>Confirmation Rate</td>
+    <td class="Medium">Medium</td>
+    <td>62.4%</td>
+    <td><a href="https://leetcode.com/problems/confirmation-rate/" target="_blank">打开</a></td>
+    <td><a href="details/confirmation-rate.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>171</td>
+    <td>Users That Actively Request Confirmation Messages</td>
+    <td class="Easy">Easy</td>
+    <td>56.7%</td>
+    <td><a href="https://leetcode.com/problems/users-that-actively-request-confirmation-messages/" target="_blank">打开</a></td>
+    <td><a href="details/users-that-actively-request-confirmation-messages.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>172</td>
+    <td>Strong Friendship</td>
+    <td class="Medium">Medium</td>
+    <td>54.7%</td>
+    <td><a href="https://leetcode.com/problems/strong-friendship/" target="_blank">打开</a></td>
+    <td><a href="details/strong-friendship.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>173</td>
+    <td>All the Pairs With the Maximum Number of Common Followers</td>
+    <td class="Medium">Medium</td>
+    <td>69.7%</td>
+    <td><a href="https://leetcode.com/problems/all-the-pairs-with-the-maximum-number-of-common-followers/" target="_blank">打开</a></td>
+    <td><a href="details/all-the-pairs-with-the-maximum-number-of-common-followers.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>174</td>
+    <td>Employees With Missing Information</td>
+    <td class="Easy">Easy</td>
+    <td>73.4%</td>
+    <td><a href="https://leetcode.com/problems/employees-with-missing-information/" target="_blank">打开</a></td>
+    <td><a href="details/employees-with-missing-information.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>175</td>
+    <td>First and Last Call On the Same Day</td>
+    <td class="Hard">Hard</td>
+    <td>51.0%</td>
+    <td><a href="https://leetcode.com/problems/first-and-last-call-on-the-same-day/" target="_blank">打开</a></td>
+    <td><a href="details/first-and-last-call-on-the-same-day.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>176</td>
+    <td>Employees Whose Manager Left the Company</td>
+    <td class="Easy">Easy</td>
+    <td>48.8%</td>
+    <td><a href="https://leetcode.com/problems/employees-whose-manager-left-the-company/" target="_blank">打开</a></td>
+    <td><a href="details/employees-whose-manager-left-the-company.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>177</td>
+    <td>Find Cutoff Score for Each School</td>
+    <td class="Medium">Medium</td>
+    <td>67.0%</td>
+    <td><a href="https://leetcode.com/problems/find-cutoff-score-for-each-school/" target="_blank">打开</a></td>
+    <td><a href="details/find-cutoff-score-for-each-school.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>178</td>
+    <td>Count the Number of Experiments</td>
+    <td class="Medium">Medium</td>
+    <td>48.9%</td>
+    <td><a href="https://leetcode.com/problems/count-the-number-of-experiments/" target="_blank">打开</a></td>
+    <td><a href="details/count-the-number-of-experiments.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>179</td>
+    <td>The Number of Seniors and Juniors to Join the Company</td>
+    <td class="Hard">Hard</td>
+    <td>46.4%</td>
+    <td><a href="https://leetcode.com/problems/the-number-of-seniors-and-juniors-to-join-the-company/" target="_blank">打开</a></td>
+    <td><a href="details/the-number-of-seniors-and-juniors-to-join-the-company.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>180</td>
+    <td>The Number of Seniors and Juniors to Join the Company II</td>
+    <td class="Hard">Hard</td>
+    <td>66.1%</td>
+    <td><a href="https://leetcode.com/problems/the-number-of-seniors-and-juniors-to-join-the-company-ii/" target="_blank">打开</a></td>
+    <td><a href="details/the-number-of-seniors-and-juniors-to-join-the-company-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>181</td>
+    <td>Number of Accounts That Did Not Stream</td>
+    <td class="Medium">Medium</td>
+    <td>71.9%</td>
+    <td><a href="https://leetcode.com/problems/number-of-accounts-that-did-not-stream/" target="_blank">打开</a></td>
+    <td><a href="details/number-of-accounts-that-did-not-stream.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>182</td>
+    <td>Low-Quality Problems</td>
+    <td class="Easy">Easy</td>
+    <td>84.0%</td>
+    <td><a href="https://leetcode.com/problems/low-quality-problems/" target="_blank">打开</a></td>
+    <td><a href="details/low-quality-problems.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>183</td>
+    <td>Accepted Candidates From the Interviews</td>
+    <td class="Medium">Medium</td>
+    <td>78.4%</td>
+    <td><a href="https://leetcode.com/problems/accepted-candidates-from-the-interviews/" target="_blank">打开</a></td>
+    <td><a href="details/accepted-candidates-from-the-interviews.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>184</td>
+    <td>The Category of Each Member in the Store</td>
+    <td class="Medium">Medium</td>
+    <td>70.2%</td>
+    <td><a href="https://leetcode.com/problems/the-category-of-each-member-in-the-store/" target="_blank">打开</a></td>
+    <td><a href="details/the-category-of-each-member-in-the-store.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>185</td>
+    <td>Account Balance</td>
+    <td class="Medium">Medium</td>
+    <td>81.6%</td>
+    <td><a href="https://leetcode.com/problems/account-balance/" target="_blank">打开</a></td>
+    <td><a href="details/account-balance.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>186</td>
+    <td>The Winner University</td>
+    <td class="Easy">Easy</td>
+    <td>75.5%</td>
+    <td><a href="https://leetcode.com/problems/the-winner-university/" target="_blank">打开</a></td>
+    <td><a href="details/the-winner-university.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>187</td>
+    <td>The Number of Rich Customers</td>
+    <td class="Easy">Easy</td>
+    <td>77.3%</td>
+    <td><a href="https://leetcode.com/problems/the-number-of-rich-customers/" target="_blank">打开</a></td>
+    <td><a href="details/the-number-of-rich-customers.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>188</td>
+    <td>Drop Type 1 Orders for Customers With Type 0 Orders</td>
+    <td class="Medium">Medium</td>
+    <td>86.6%</td>
+    <td><a href="https://leetcode.com/problems/drop-type-1-orders-for-customers-with-type-0-orders/" target="_blank">打开</a></td>
+    <td><a href="details/drop-type-1-orders-for-customers-with-type-0-orders.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>189</td>
+    <td>The Airport With the Most Traffic</td>
+    <td class="Medium">Medium</td>
+    <td>71.7%</td>
+    <td><a href="https://leetcode.com/problems/the-airport-with-the-most-traffic/" target="_blank">打开</a></td>
+    <td><a href="details/the-airport-with-the-most-traffic.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>190</td>
+    <td>Build the Equation</td>
+    <td class="Hard">Hard</td>
+    <td>57.2%</td>
+    <td><a href="https://leetcode.com/problems/build-the-equation/" target="_blank">打开</a></td>
+    <td><a href="details/build-the-equation.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>191</td>
+    <td>The Number of Passengers in Each Bus I</td>
+    <td class="Medium">Medium</td>
+    <td>49.1%</td>
+    <td><a href="https://leetcode.com/problems/the-number-of-passengers-in-each-bus-i/" target="_blank">打开</a></td>
+    <td><a href="details/the-number-of-passengers-in-each-bus-i.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>192</td>
+    <td>The Number of Passengers in Each Bus II</td>
+    <td class="Hard">Hard</td>
+    <td>40.4%</td>
+    <td><a href="https://leetcode.com/problems/the-number-of-passengers-in-each-bus-ii/" target="_blank">打开</a></td>
+    <td><a href="details/the-number-of-passengers-in-each-bus-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>193</td>
+    <td>Order Two Columns Independently</td>
+    <td class="Medium">Medium</td>
+    <td>61.8%</td>
+    <td><a href="https://leetcode.com/problems/order-two-columns-independently/" target="_blank">打开</a></td>
+    <td><a href="details/order-two-columns-independently.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>194</td>
+    <td>Longest Winning Streak</td>
+    <td class="Hard">Hard</td>
+    <td>54.5%</td>
+    <td><a href="https://leetcode.com/problems/longest-winning-streak/" target="_blank">打开</a></td>
+    <td><a href="details/longest-winning-streak.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>195</td>
+    <td>The Change in Global Rankings</td>
+    <td class="Medium">Medium</td>
+    <td>60.8%</td>
+    <td><a href="https://leetcode.com/problems/the-change-in-global-rankings/" target="_blank">打开</a></td>
+    <td><a href="details/the-change-in-global-rankings.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>196</td>
+    <td>Finding the Topic of Each Post</td>
+    <td class="Hard">Hard</td>
+    <td>50.4%</td>
+    <td><a href="https://leetcode.com/problems/finding-the-topic-of-each-post/" target="_blank">打开</a></td>
+    <td><a href="details/finding-the-topic-of-each-post.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>197</td>
+    <td>The Number of Users That Are Eligible for Discount</td>
+    <td class="Easy">Easy</td>
+    <td>50.6%</td>
+    <td><a href="https://leetcode.com/problems/the-number-of-users-that-are-eligible-for-discount/" target="_blank">打开</a></td>
+    <td><a href="details/the-number-of-users-that-are-eligible-for-discount.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>198</td>
+    <td>Users With Two Purchases Within Seven Days</td>
+    <td class="Medium">Medium</td>
+    <td>47.0%</td>
+    <td><a href="https://leetcode.com/problems/users-with-two-purchases-within-seven-days/" target="_blank">打开</a></td>
+    <td><a href="details/users-with-two-purchases-within-seven-days.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>199</td>
+    <td>The Users That Are Eligible for Discount</td>
+    <td class="Easy">Easy</td>
+    <td>50.9%</td>
+    <td><a href="https://leetcode.com/problems/the-users-that-are-eligible-for-discount/" target="_blank">打开</a></td>
+    <td><a href="details/the-users-that-are-eligible-for-discount.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>200</td>
+    <td>Number of Times a Driver Was a Passenger</td>
+    <td class="Medium">Medium</td>
+    <td>71.7%</td>
+    <td><a href="https://leetcode.com/problems/number-of-times-a-driver-was-a-passenger/" target="_blank">打开</a></td>
+    <td><a href="details/number-of-times-a-driver-was-a-passenger.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>201</td>
+    <td>Dynamic Pivoting of a Table</td>
+    <td class="Hard">Hard</td>
+    <td>57.4%</td>
+    <td><a href="https://leetcode.com/problems/dynamic-pivoting-of-a-table/" target="_blank">打开</a></td>
+    <td><a href="details/dynamic-pivoting-of-a-table.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>202</td>
+    <td>Dynamic Unpivoting of a Table</td>
+    <td class="Hard">Hard</td>
+    <td>69.5%</td>
+    <td><a href="https://leetcode.com/problems/dynamic-unpivoting-of-a-table/" target="_blank">打开</a></td>
+    <td><a href="details/dynamic-unpivoting-of-a-table.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>203</td>
+    <td>Products With Three or More Orders in Two Consecutive Years</td>
+    <td class="Medium">Medium</td>
+    <td>40.8%</td>
+    <td><a href="https://leetcode.com/problems/products-with-three-or-more-orders-in-two-consecutive-years/" target="_blank">打开</a></td>
+    <td><a href="details/products-with-three-or-more-orders-in-two-consecutive-years.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>204</td>
+    <td>Tasks Count in the Weekend</td>
+    <td class="Medium">Medium</td>
+    <td>81.7%</td>
+    <td><a href="https://leetcode.com/problems/tasks-count-in-the-weekend/" target="_blank">打开</a></td>
+    <td><a href="details/tasks-count-in-the-weekend.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>205</td>
+    <td>Arrange Table by Gender</td>
+    <td class="Medium">Medium</td>
+    <td>70.9%</td>
+    <td><a href="https://leetcode.com/problems/arrange-table-by-gender/" target="_blank">打开</a></td>
+    <td><a href="details/arrange-table-by-gender.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>206</td>
+    <td>The First Day of the Maximum Recorded Degree in Each City</td>
+    <td class="Medium">Medium</td>
+    <td>73.6%</td>
+    <td><a href="https://leetcode.com/problems/the-first-day-of-the-maximum-recorded-degree-in-each-city/" target="_blank">打开</a></td>
+    <td><a href="details/the-first-day-of-the-maximum-recorded-degree-in-each-city.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>207</td>
+    <td>Product Sales Analysis IV</td>
+    <td class="Medium">Medium</td>
+    <td>75.9%</td>
+    <td><a href="https://leetcode.com/problems/product-sales-analysis-iv/" target="_blank">打开</a></td>
+    <td><a href="details/product-sales-analysis-iv.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>208</td>
+    <td>Product Sales Analysis V</td>
+    <td class="Easy">Easy</td>
+    <td>70.9%</td>
+    <td><a href="https://leetcode.com/problems/product-sales-analysis-v/" target="_blank">打开</a></td>
+    <td><a href="details/product-sales-analysis-v.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>209</td>
+    <td>All the Matches of the League</td>
+    <td class="Easy">Easy</td>
+    <td>88.4%</td>
+    <td><a href="https://leetcode.com/problems/all-the-matches-of-the-league/" target="_blank">打开</a></td>
+    <td><a href="details/all-the-matches-of-the-league.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>210</td>
+    <td>Compute the Rank as a Percentage</td>
+    <td class="Medium">Medium</td>
+    <td>33.9%</td>
+    <td><a href="https://leetcode.com/problems/compute-the-rank-as-a-percentage/" target="_blank">打开</a></td>
+    <td><a href="details/compute-the-rank-as-a-percentage.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>211</td>
+    <td>Number of Unique Subjects Taught by Each Teacher</td>
+    <td class="Easy">Easy</td>
+    <td>89.2%</td>
+    <td><a href="https://leetcode.com/problems/number-of-unique-subjects-taught-by-each-teacher/" target="_blank">打开</a></td>
+    <td><a href="details/number-of-unique-subjects-taught-by-each-teacher.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>212</td>
+    <td>Generate the Invoice</td>
+    <td class="Hard">Hard</td>
+    <td>76.1%</td>
+    <td><a href="https://leetcode.com/problems/generate-the-invoice/" target="_blank">打开</a></td>
+    <td><a href="details/generate-the-invoice.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>213</td>
+    <td>Calculate the Influence of Each Salesperson</td>
+    <td class="Medium">Medium</td>
+    <td>83.8%</td>
+    <td><a href="https://leetcode.com/problems/calculate-the-influence-of-each-salesperson/" target="_blank">打开</a></td>
+    <td><a href="details/calculate-the-influence-of-each-salesperson.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>214</td>
+    <td>Sort the Olympic Table</td>
+    <td class="Easy">Easy</td>
+    <td>79.4%</td>
+    <td><a href="https://leetcode.com/problems/sort-the-olympic-table/" target="_blank">打开</a></td>
+    <td><a href="details/sort-the-olympic-table.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>215</td>
+    <td>Change Null Values in a Table to the Previous Value</td>
+    <td class="Medium">Medium</td>
+    <td>51.6%</td>
+    <td><a href="https://leetcode.com/problems/change-null-values-in-a-table-to-the-previous-value/" target="_blank">打开</a></td>
+    <td><a href="details/change-null-values-in-a-table-to-the-previous-value.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>216</td>
+    <td>Employees With Deductions</td>
+    <td class="Medium">Medium</td>
+    <td>42.9%</td>
+    <td><a href="https://leetcode.com/problems/employees-with-deductions/" target="_blank">打开</a></td>
+    <td><a href="details/employees-with-deductions.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>217</td>
+    <td>Customers With Strictly Increasing Purchases</td>
+    <td class="Hard">Hard</td>
+    <td>50.3%</td>
+    <td><a href="https://leetcode.com/problems/customers-with-strictly-increasing-purchases/" target="_blank">打开</a></td>
+    <td><a href="details/customers-with-strictly-increasing-purchases.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>218</td>
+    <td>Form a Chemical Bond</td>
+    <td class="Easy">Easy</td>
+    <td>80.1%</td>
+    <td><a href="https://leetcode.com/problems/form-a-chemical-bond/" target="_blank">打开</a></td>
+    <td><a href="details/form-a-chemical-bond.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>219</td>
+    <td>Merge Overlapping Events in the Same Hall</td>
+    <td class="Hard">Hard</td>
+    <td>37.7%</td>
+    <td><a href="https://leetcode.com/problems/merge-overlapping-events-in-the-same-hall/" target="_blank">打开</a></td>
+    <td><a href="details/merge-overlapping-events-in-the-same-hall.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>220</td>
+    <td>Concatenate the Name and the Profession</td>
+    <td class="Easy">Easy</td>
+    <td>80.3%</td>
+    <td><a href="https://leetcode.com/problems/concatenate-the-name-and-the-profession/" target="_blank">打开</a></td>
+    <td><a href="details/concatenate-the-name-and-the-profession.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>221</td>
+    <td>Find Latest Salaries</td>
+    <td class="Easy">Easy</td>
+    <td>75.1%</td>
+    <td><a href="https://leetcode.com/problems/find-latest-salaries/" target="_blank">打开</a></td>
+    <td><a href="details/find-latest-salaries.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>222</td>
+    <td>Count Artist Occurrences On Spotify Ranking List</td>
+    <td class="Easy">Easy</td>
+    <td>74.2%</td>
+    <td><a href="https://leetcode.com/problems/count-artist-occurrences-on-spotify-ranking-list/" target="_blank">打开</a></td>
+    <td><a href="details/count-artist-occurrences-on-spotify-ranking-list.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>223</td>
+    <td>Immediate Food Delivery III</td>
+    <td class="Medium">Medium</td>
+    <td>70.4%</td>
+    <td><a href="https://leetcode.com/problems/immediate-food-delivery-iii/" target="_blank">打开</a></td>
+    <td><a href="details/immediate-food-delivery-iii.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>224</td>
+    <td>Bikes Last Time Used </td>
+    <td class="Easy">Easy</td>
+    <td>80.6%</td>
+    <td><a href="https://leetcode.com/problems/bikes-last-time-used/" target="_blank">打开</a></td>
+    <td><a href="details/bikes-last-time-used.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>225</td>
+    <td>Find Active Users</td>
+    <td class="Medium">Medium</td>
+    <td>45.1%</td>
+    <td><a href="https://leetcode.com/problems/find-active-users/" target="_blank">打开</a></td>
+    <td><a href="details/find-active-users.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>226</td>
+    <td>Consecutive Transactions with Increasing Amounts</td>
+    <td class="Hard">Hard</td>
+    <td>35.2%</td>
+    <td><a href="https://leetcode.com/problems/consecutive-transactions-with-increasing-amounts/" target="_blank">打开</a></td>
+    <td><a href="details/consecutive-transactions-with-increasing-amounts.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>227</td>
+    <td>Popularity Percentage</td>
+    <td class="Hard">Hard</td>
+    <td>53.5%</td>
+    <td><a href="https://leetcode.com/problems/popularity-percentage/" target="_blank">打开</a></td>
+    <td><a href="details/popularity-percentage.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>228</td>
+    <td>Count Occurrences in Text</td>
+    <td class="Medium">Medium</td>
+    <td>54.3%</td>
+    <td><a href="https://leetcode.com/problems/count-occurrences-in-text/" target="_blank">打开</a></td>
+    <td><a href="details/count-occurrences-in-text.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>229</td>
+    <td>Customers with Maximum Number of Transactions on Consecutive Days</td>
+    <td class="Hard">Hard</td>
+    <td>42.4%</td>
+    <td><a href="https://leetcode.com/problems/customers-with-maximum-number-of-transactions-on-consecutive-days/" target="_blank">打开</a></td>
+    <td><a href="details/customers-with-maximum-number-of-transactions-on-consecutive-days.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>230</td>
+    <td>Flight Occupancy and Waitlist Analysis</td>
+    <td class="Medium">Medium</td>
+    <td>38.9%</td>
+    <td><a href="https://leetcode.com/problems/flight-occupancy-and-waitlist-analysis/" target="_blank">打开</a></td>
+    <td><a href="details/flight-occupancy-and-waitlist-analysis.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>231</td>
+    <td>Total Traveled Distance</td>
+    <td class="Easy">Easy</td>
+    <td>76.9%</td>
+    <td><a href="https://leetcode.com/problems/total-traveled-distance/" target="_blank">打开</a></td>
+    <td><a href="details/total-traveled-distance.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>232</td>
+    <td>Highest Salaries Difference</td>
+    <td class="Easy">Easy</td>
+    <td>73.3%</td>
+    <td><a href="https://leetcode.com/problems/highest-salaries-difference/" target="_blank">打开</a></td>
+    <td><a href="details/highest-salaries-difference.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>233</td>
+    <td>Rolling Average Steps</td>
+    <td class="Medium">Medium</td>
+    <td>68.8%</td>
+    <td><a href="https://leetcode.com/problems/rolling-average-steps/" target="_blank">打开</a></td>
+    <td><a href="details/rolling-average-steps.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>234</td>
+    <td>Calculate Orders Within Each Interval</td>
+    <td class="Medium">Medium</td>
+    <td>67.2%</td>
+    <td><a href="https://leetcode.com/problems/calculate-orders-within-each-interval/" target="_blank">打开</a></td>
+    <td><a href="details/calculate-orders-within-each-interval.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>235</td>
+    <td>Market Analysis III</td>
+    <td class="Medium">Medium</td>
+    <td>42.3%</td>
+    <td><a href="https://leetcode.com/problems/market-analysis-iii/" target="_blank">打开</a></td>
+    <td><a href="details/market-analysis-iii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>236</td>
+    <td>Symmetric Coordinates</td>
+    <td class="Medium">Medium</td>
+    <td>41.0%</td>
+    <td><a href="https://leetcode.com/problems/symmetric-coordinates/" target="_blank">打开</a></td>
+    <td><a href="details/symmetric-coordinates.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>237</td>
+    <td>Find Peak Calling Hours for Each City</td>
+    <td class="Medium">Medium</td>
+    <td>61.1%</td>
+    <td><a href="https://leetcode.com/problems/find-peak-calling-hours-for-each-city/" target="_blank">打开</a></td>
+    <td><a href="details/find-peak-calling-hours-for-each-city.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>238</td>
+    <td>Calculate Compressed Mean</td>
+    <td class="Easy">Easy</td>
+    <td>86.0%</td>
+    <td><a href="https://leetcode.com/problems/calculate-compressed-mean/" target="_blank">打开</a></td>
+    <td><a href="details/calculate-compressed-mean.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>239</td>
+    <td>Find Third Transaction</td>
+    <td class="Medium">Medium</td>
+    <td>53.8%</td>
+    <td><a href="https://leetcode.com/problems/find-third-transaction/" target="_blank">打开</a></td>
+    <td><a href="details/find-third-transaction.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>240</td>
+    <td>Find Expensive Cities</td>
+    <td class="Easy">Easy</td>
+    <td>77.1%</td>
+    <td><a href="https://leetcode.com/problems/find-expensive-cities/" target="_blank">打开</a></td>
+    <td><a href="details/find-expensive-cities.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>241</td>
+    <td>Manager of the Largest Department</td>
+    <td class="Medium">Medium</td>
+    <td>80.7%</td>
+    <td><a href="https://leetcode.com/problems/manager-of-the-largest-department/" target="_blank">打开</a></td>
+    <td><a href="details/manager-of-the-largest-department.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>242</td>
+    <td>Class Performance</td>
+    <td class="Medium">Medium</td>
+    <td>88.5%</td>
+    <td><a href="https://leetcode.com/problems/class-performance/" target="_blank">打开</a></td>
+    <td><a href="details/class-performance.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>243</td>
+    <td>Loan Types</td>
+    <td class="Easy">Easy</td>
+    <td>64.3%</td>
+    <td><a href="https://leetcode.com/problems/loan-types/" target="_blank">打开</a></td>
+    <td><a href="details/loan-types.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>244</td>
+    <td>Top Three Wineries </td>
+    <td class="Hard">Hard</td>
+    <td>54.1%</td>
+    <td><a href="https://leetcode.com/problems/top-three-wineries/" target="_blank">打开</a></td>
+    <td><a href="details/top-three-wineries.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>245</td>
+    <td>Friday Purchases I</td>
+    <td class="Medium">Medium</td>
+    <td>81.1%</td>
+    <td><a href="https://leetcode.com/problems/friday-purchases-i/" target="_blank">打开</a></td>
+    <td><a href="details/friday-purchases-i.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>246</td>
+    <td>Friday Purchases II </td>
+    <td class="Hard">Hard</td>
+    <td>73.5%</td>
+    <td><a href="https://leetcode.com/problems/friday-purchases-ii/" target="_blank">打开</a></td>
+    <td><a href="details/friday-purchases-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>247</td>
+    <td>Viewers Turned Streamers</td>
+    <td class="Hard">Hard</td>
+    <td>42.9%</td>
+    <td><a href="https://leetcode.com/problems/viewers-turned-streamers/" target="_blank">打开</a></td>
+    <td><a href="details/viewers-turned-streamers.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>248</td>
+    <td>Pizza Toppings Cost Analysis</td>
+    <td class="Medium">Medium</td>
+    <td>69.0%</td>
+    <td><a href="https://leetcode.com/problems/pizza-toppings-cost-analysis/" target="_blank">打开</a></td>
+    <td><a href="details/pizza-toppings-cost-analysis.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>249</td>
+    <td>Find Candidates for Data Scientist Position</td>
+    <td class="Easy">Easy</td>
+    <td>75.5%</td>
+    <td><a href="https://leetcode.com/problems/find-candidates-for-data-scientist-position/" target="_blank">打开</a></td>
+    <td><a href="details/find-candidates-for-data-scientist-position.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>250</td>
+    <td>Maximize Items</td>
+    <td class="Hard">Hard</td>
+    <td>74.5%</td>
+    <td><a href="https://leetcode.com/problems/maximize-items/" target="_blank">打开</a></td>
+    <td><a href="details/maximize-items.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>251</td>
+    <td>Classifying Triangles by Lengths</td>
+    <td class="Easy">Easy</td>
+    <td>51.2%</td>
+    <td><a href="https://leetcode.com/problems/classifying-triangles-by-lengths/" target="_blank">打开</a></td>
+    <td><a href="details/classifying-triangles-by-lengths.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>252</td>
+    <td>Binary Tree Nodes</td>
+    <td class="Medium">Medium</td>
+    <td>78.2%</td>
+    <td><a href="https://leetcode.com/problems/binary-tree-nodes/" target="_blank">打开</a></td>
+    <td><a href="details/binary-tree-nodes.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>253</td>
+    <td>Top Percentile Fraud</td>
+    <td class="Medium">Medium</td>
+    <td>57.4%</td>
+    <td><a href="https://leetcode.com/problems/top-percentile-fraud/" target="_blank">打开</a></td>
+    <td><a href="details/top-percentile-fraud.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>254</td>
+    <td>Snaps Analysis</td>
+    <td class="Medium">Medium</td>
+    <td>58.9%</td>
+    <td><a href="https://leetcode.com/problems/snaps-analysis/" target="_blank">打开</a></td>
+    <td><a href="details/snaps-analysis.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>255</td>
+    <td>Employees Project Allocation</td>
+    <td class="Hard">Hard</td>
+    <td>67.5%</td>
+    <td><a href="https://leetcode.com/problems/employees-project-allocation/" target="_blank">打开</a></td>
+    <td><a href="details/employees-project-allocation.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>256</td>
+    <td>Friends With No Mutual Friends</td>
+    <td class="Medium">Medium</td>
+    <td>48.9%</td>
+    <td><a href="https://leetcode.com/problems/friends-with-no-mutual-friends/" target="_blank">打开</a></td>
+    <td><a href="details/friends-with-no-mutual-friends.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>257</td>
+    <td>Find All Unique Email Domains</td>
+    <td class="Easy">Easy</td>
+    <td>70.3%</td>
+    <td><a href="https://leetcode.com/problems/find-all-unique-email-domains/" target="_blank">打开</a></td>
+    <td><a href="details/find-all-unique-email-domains.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>258</td>
+    <td>User Activities within Time Bounds</td>
+    <td class="Hard">Hard</td>
+    <td>41.9%</td>
+    <td><a href="https://leetcode.com/problems/user-activities-within-time-bounds/" target="_blank">打开</a></td>
+    <td><a href="details/user-activities-within-time-bounds.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>259</td>
+    <td>Calculate Trapping Rain Water</td>
+    <td class="Hard">Hard</td>
+    <td>81.6%</td>
+    <td><a href="https://leetcode.com/problems/calculate-trapping-rain-water/" target="_blank">打开</a></td>
+    <td><a href="details/calculate-trapping-rain-water.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>260</td>
+    <td>Find Trending Hashtags</td>
+    <td class="Medium">Medium</td>
+    <td>61.5%</td>
+    <td><a href="https://leetcode.com/problems/find-trending-hashtags/" target="_blank">打开</a></td>
+    <td><a href="details/find-trending-hashtags.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>261</td>
+    <td>Find Bursty Behavior</td>
+    <td class="Medium">Medium</td>
+    <td>38.0%</td>
+    <td><a href="https://leetcode.com/problems/find-bursty-behavior/" target="_blank">打开</a></td>
+    <td><a href="details/find-bursty-behavior.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>262</td>
+    <td>Find Trending Hashtags II </td>
+    <td class="Hard">Hard</td>
+    <td>66.4%</td>
+    <td><a href="https://leetcode.com/problems/find-trending-hashtags-ii/" target="_blank">打开</a></td>
+    <td><a href="details/find-trending-hashtags-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>263</td>
+    <td>Friday Purchase III </td>
+    <td class="Medium">Medium</td>
+    <td>55.1%</td>
+    <td><a href="https://leetcode.com/problems/friday-purchase-iii/" target="_blank">打开</a></td>
+    <td><a href="details/friday-purchase-iii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>264</td>
+    <td>Find Longest Calls</td>
+    <td class="Medium">Medium</td>
+    <td>64.0%</td>
+    <td><a href="https://leetcode.com/problems/find-longest-calls/" target="_blank">打开</a></td>
+    <td><a href="details/find-longest-calls.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>265</td>
+    <td>Server Utilization Time</td>
+    <td class="Medium">Medium</td>
+    <td>60.7%</td>
+    <td><a href="https://leetcode.com/problems/server-utilization-time/" target="_blank">打开</a></td>
+    <td><a href="details/server-utilization-time.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>266</td>
+    <td>Consecutive Available Seats II</td>
+    <td class="Medium">Medium</td>
+    <td>55.6%</td>
+    <td><a href="https://leetcode.com/problems/consecutive-available-seats-ii/" target="_blank">打开</a></td>
+    <td><a href="details/consecutive-available-seats-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>267</td>
+    <td>Invalid Tweets II</td>
+    <td class="Easy">Easy</td>
+    <td>85.0%</td>
+    <td><a href="https://leetcode.com/problems/invalid-tweets-ii/" target="_blank">打开</a></td>
+    <td><a href="details/invalid-tweets-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>268</td>
+    <td>Employee Task Duration and Concurrent Tasks</td>
+    <td class="Hard">Hard</td>
+    <td>39.5%</td>
+    <td><a href="https://leetcode.com/problems/employee-task-duration-and-concurrent-tasks/" target="_blank">打开</a></td>
+    <td><a href="details/employee-task-duration-and-concurrent-tasks.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>269</td>
+    <td>Calculate Parking Fees and Duration</td>
+    <td class="Medium">Medium</td>
+    <td>52.8%</td>
+    <td><a href="https://leetcode.com/problems/calculate-parking-fees-and-duration/" target="_blank">打开</a></td>
+    <td><a href="details/calculate-parking-fees-and-duration.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>270</td>
+    <td>Second Day Verification</td>
+    <td class="Easy">Easy</td>
+    <td>66.7%</td>
+    <td><a href="https://leetcode.com/problems/second-day-verification/" target="_blank">打开</a></td>
+    <td><a href="details/second-day-verification.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>271</td>
+    <td>Find Top Scoring Students</td>
+    <td class="Medium">Medium</td>
+    <td>50.1%</td>
+    <td><a href="https://leetcode.com/problems/find-top-scoring-students/" target="_blank">打开</a></td>
+    <td><a href="details/find-top-scoring-students.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>272</td>
+    <td>Find Top Scoring Students II</td>
+    <td class="Hard">Hard</td>
+    <td>39.7%</td>
+    <td><a href="https://leetcode.com/problems/find-top-scoring-students-ii/" target="_blank">打开</a></td>
+    <td><a href="details/find-top-scoring-students-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>273</td>
+    <td>Find Cities in Each State</td>
+    <td class="Easy">Easy</td>
+    <td>79.2%</td>
+    <td><a href="https://leetcode.com/problems/find-cities-in-each-state/" target="_blank">打开</a></td>
+    <td><a href="details/find-cities-in-each-state.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>274</td>
+    <td>Bitwise User Permissions Analysis</td>
+    <td class="Medium">Medium</td>
+    <td>92.5%</td>
+    <td><a href="https://leetcode.com/problems/bitwise-user-permissions-analysis/" target="_blank">打开</a></td>
+    <td><a href="details/bitwise-user-permissions-analysis.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>275</td>
+    <td>Year on Year Growth Rate</td>
+    <td class="Hard">Hard</td>
+    <td>51.5%</td>
+    <td><a href="https://leetcode.com/problems/year-on-year-growth-rate/" target="_blank">打开</a></td>
+    <td><a href="details/year-on-year-growth-rate.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>276</td>
+    <td>Odd and Even Transactions</td>
+    <td class="Medium">Medium</td>
+    <td>68.4%</td>
+    <td><a href="https://leetcode.com/problems/odd-and-even-transactions/" target="_blank">打开</a></td>
+    <td><a href="details/odd-and-even-transactions.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>277</td>
+    <td>Customer Purchasing Behavior Analysis</td>
+    <td class="Medium">Medium</td>
+    <td>36.5%</td>
+    <td><a href="https://leetcode.com/problems/customer-purchasing-behavior-analysis/" target="_blank">打开</a></td>
+    <td><a href="details/customer-purchasing-behavior-analysis.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>278</td>
+    <td>CEO Subordinate Hierarchy</td>
+    <td class="Hard">Hard</td>
+    <td>69.8%</td>
+    <td><a href="https://leetcode.com/problems/ceo-subordinate-hierarchy/" target="_blank">打开</a></td>
+    <td><a href="details/ceo-subordinate-hierarchy.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>279</td>
+    <td>Premier League Table Ranking</td>
+    <td class="Easy">Easy</td>
+    <td>78.5%</td>
+    <td><a href="https://leetcode.com/problems/premier-league-table-ranking/" target="_blank">打开</a></td>
+    <td><a href="details/premier-league-table-ranking.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>280</td>
+    <td>Premier League Table Ranking II</td>
+    <td class="Medium">Medium</td>
+    <td>55.5%</td>
+    <td><a href="https://leetcode.com/problems/premier-league-table-ranking-ii/" target="_blank">打开</a></td>
+    <td><a href="details/premier-league-table-ranking-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>281</td>
+    <td>Find Overlapping Shifts</td>
+    <td class="Medium">Medium</td>
+    <td>57.9%</td>
+    <td><a href="https://leetcode.com/problems/find-overlapping-shifts/" target="_blank">打开</a></td>
+    <td><a href="details/find-overlapping-shifts.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>282</td>
+    <td>Find Overlapping Shifts II</td>
+    <td class="Hard">Hard</td>
+    <td>55.6%</td>
+    <td><a href="https://leetcode.com/problems/find-overlapping-shifts-ii/" target="_blank">打开</a></td>
+    <td><a href="details/find-overlapping-shifts-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>283</td>
+    <td>Find Candidates for Data Scientist Position II</td>
+    <td class="Medium">Medium</td>
+    <td>43.2%</td>
+    <td><a href="https://leetcode.com/problems/find-candidates-for-data-scientist-position-ii/" target="_blank">打开</a></td>
+    <td><a href="details/find-candidates-for-data-scientist-position-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>284</td>
+    <td>Calculate Product Final Price</td>
+    <td class="Medium">Medium</td>
+    <td>78.7%</td>
+    <td><a href="https://leetcode.com/problems/calculate-product-final-price/" target="_blank">打开</a></td>
+    <td><a href="details/calculate-product-final-price.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>285</td>
+    <td>Find Top Performing Driver</td>
+    <td class="Medium">Medium</td>
+    <td>49.0%</td>
+    <td><a href="https://leetcode.com/problems/find-top-performing-driver/" target="_blank">打开</a></td>
+    <td><a href="details/find-top-performing-driver.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>286</td>
+    <td>Premier League Table Ranking III</td>
+    <td class="Medium">Medium</td>
+    <td>70.3%</td>
+    <td><a href="https://leetcode.com/problems/premier-league-table-ranking-iii/" target="_blank">打开</a></td>
+    <td><a href="details/premier-league-table-ranking-iii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>287</td>
+    <td>Find Cities in Each State II</td>
+    <td class="Medium">Medium</td>
+    <td>66.8%</td>
+    <td><a href="https://leetcode.com/problems/find-cities-in-each-state-ii/" target="_blank">打开</a></td>
+    <td><a href="details/find-cities-in-each-state-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>288</td>
+    <td>Second Highest Salary II</td>
+    <td class="Medium">Medium</td>
+    <td>86.4%</td>
+    <td><a href="https://leetcode.com/problems/second-highest-salary-ii/" target="_blank">打开</a></td>
+    <td><a href="details/second-highest-salary-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>289</td>
+    <td>Books with NULL Ratings</td>
+    <td class="Easy">Easy</td>
+    <td>82.2%</td>
+    <td><a href="https://leetcode.com/problems/books-with-null-ratings/" target="_blank">打开</a></td>
+    <td><a href="details/books-with-null-ratings.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>290</td>
+    <td>First Letter Capitalization</td>
+    <td class="Hard">Hard</td>
+    <td>86.4%</td>
+    <td><a href="https://leetcode.com/problems/first-letter-capitalization/" target="_blank">打开</a></td>
+    <td><a href="details/first-letter-capitalization.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>291</td>
+    <td>First Letter Capitalization II</td>
+    <td class="Hard">Hard</td>
+    <td>41.4%</td>
+    <td><a href="https://leetcode.com/problems/first-letter-capitalization-ii/" target="_blank">打开</a></td>
+    <td><a href="details/first-letter-capitalization-ii.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>292</td>
+    <td>Team Dominance by Pass Success</td>
+    <td class="Hard">Hard</td>
+    <td>71.7%</td>
+    <td><a href="https://leetcode.com/problems/team-dominance-by-pass-success/" target="_blank">打开</a></td>
+    <td><a href="details/team-dominance-by-pass-success.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>293</td>
+    <td>Longest Team Pass Streak</td>
+    <td class="Hard">Hard</td>
+    <td>40.4%</td>
+    <td><a href="https://leetcode.com/problems/longest-team-pass-streak/" target="_blank">打开</a></td>
+    <td><a href="details/longest-team-pass-streak.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>294</td>
+    <td>Find Circular Gift Exchange Chains</td>
+    <td class="Hard">Hard</td>
+    <td>50.4%</td>
+    <td><a href="https://leetcode.com/problems/find-circular-gift-exchange-chains/" target="_blank">打开</a></td>
+    <td><a href="details/find-circular-gift-exchange-chains.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>295</td>
+    <td>Find Products with Three Consecutive Digits </td>
+    <td class="Easy">Easy</td>
+    <td>80.1%</td>
+    <td><a href="https://leetcode.com/problems/find-products-with-three-consecutive-digits/" target="_blank">打开</a></td>
+    <td><a href="details/find-products-with-three-consecutive-digits.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>296</td>
+    <td>Find Students Who Improved</td>
+    <td class="Medium">Medium</td>
+    <td>49.4%</td>
+    <td><a href="https://leetcode.com/problems/find-students-who-improved/" target="_blank">打开</a></td>
+    <td><a href="details/find-students-who-improved.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>297</td>
+    <td>Find Valid Emails</td>
+    <td class="Easy">Easy</td>
+    <td>43.3%</td>
+    <td><a href="https://leetcode.com/problems/find-valid-emails/" target="_blank">打开</a></td>
+    <td><a href="details/find-valid-emails.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>298</td>
+    <td>Find Invalid IP Addresses</td>
+    <td class="Hard">Hard</td>
+    <td>48.3%</td>
+    <td><a href="https://leetcode.com/problems/find-invalid-ip-addresses/" target="_blank">打开</a></td>
+    <td><a href="details/find-invalid-ip-addresses.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>299</td>
+    <td>Find Products with Valid Serial Numbers</td>
+    <td class="Easy">Easy</td>
+    <td>28.9%</td>
+    <td><a href="https://leetcode.com/problems/find-products-with-valid-serial-numbers/" target="_blank">打开</a></td>
+    <td><a href="details/find-products-with-valid-serial-numbers.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>300</td>
+    <td>DNA Pattern Recognition </td>
+    <td class="Medium">Medium</td>
+    <td>85.1%</td>
+    <td><a href="https://leetcode.com/problems/dna-pattern-recognition/" target="_blank">打开</a></td>
+    <td><a href="details/dna-pattern-recognition.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>301</td>
+    <td>Analyze Organization Hierarchy</td>
+    <td class="Hard">Hard</td>
+    <td>61.5%</td>
+    <td><a href="https://leetcode.com/problems/analyze-organization-hierarchy/" target="_blank">打开</a></td>
+    <td><a href="details/analyze-organization-hierarchy.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>302</td>
+    <td>Analyze Subscription Conversion </td>
+    <td class="Medium">Medium</td>
+    <td>74.2%</td>
+    <td><a href="https://leetcode.com/problems/analyze-subscription-conversion/" target="_blank">打开</a></td>
+    <td><a href="details/analyze-subscription-conversion.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>303</td>
+    <td>Find Product Recommendation Pairs</td>
+    <td class="Medium">Medium</td>
+    <td>62.3%</td>
+    <td><a href="https://leetcode.com/problems/find-product-recommendation-pairs/" target="_blank">打开</a></td>
+    <td><a href="details/find-product-recommendation-pairs.html" target="_blank">查看</a></td>
+  </tr><tr class="Hard">
+    <td>304</td>
+    <td>Find Category Recommendation Pairs</td>
+    <td class="Hard">Hard</td>
+    <td>64.1%</td>
+    <td><a href="https://leetcode.com/problems/find-category-recommendation-pairs/" target="_blank">打开</a></td>
+    <td><a href="details/find-category-recommendation-pairs.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>305</td>
+    <td>Seasonal Sales Analysis</td>
+    <td class="Medium">Medium</td>
+    <td>62.9%</td>
+    <td><a href="https://leetcode.com/problems/seasonal-sales-analysis/" target="_blank">打开</a></td>
+    <td><a href="details/seasonal-sales-analysis.html" target="_blank">查看</a></td>
+  </tr><tr class="Easy">
+    <td>306</td>
+    <td>Find Books with No Available Copies</td>
+    <td class="Easy">Easy</td>
+    <td>54.3%</td>
+    <td><a href="https://leetcode.com/problems/find-books-with-no-available-copies/" target="_blank">打开</a></td>
+    <td><a href="details/find-books-with-no-available-copies.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>307</td>
+    <td>Find Consistently Improving Employees</td>
+    <td class="Medium">Medium</td>
+    <td>57.2%</td>
+    <td><a href="https://leetcode.com/problems/find-consistently-improving-employees/" target="_blank">打开</a></td>
+    <td><a href="details/find-consistently-improving-employees.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>308</td>
+    <td>Find COVID Recovery Patients</td>
+    <td class="Medium">Medium</td>
+    <td>43.3%</td>
+    <td><a href="https://leetcode.com/problems/find-covid-recovery-patients/" target="_blank">打开</a></td>
+    <td><a href="details/find-covid-recovery-patients.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>309</td>
+    <td>Find Drivers with Improved Fuel Efficiency</td>
+    <td class="Medium">Medium</td>
+    <td>47.6%</td>
+    <td><a href="https://leetcode.com/problems/find-drivers-with-improved-fuel-efficiency/" target="_blank">打开</a></td>
+    <td><a href="details/find-drivers-with-improved-fuel-efficiency.html" target="_blank">查看</a></td>
+  </tr><tr class="Medium">
+    <td>310</td>
+    <td>Find Overbooked Employees</td>
+    <td class="Medium">Medium</td>
+    <td>44.0%</td>
+    <td><a href="https://leetcode.com/problems/find-overbooked-employees/" target="_blank">打开</a></td>
+    <td><a href="details/find-overbooked-employees.html" target="_blank">查看</a></td>
+  </tr></tbody></table>
+<script>
+function filterTable() {
+  const input = document.getElementById('search');
+  const filter = input.value.toUpperCase();
+  const rows = document.querySelectorAll('#problems tbody tr');
+  rows.forEach(row => {
+    const text = row.textContent.toUpperCase();
+    row.style.display = text.includes(filter) ? '' : 'none';
+  });
+}
+function filterDifficulty(diff, btn) {
+  document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const rows = document.querySelectorAll('#problems tbody tr');
+  rows.forEach(row => {
+    row.style.display = (diff === 'all' || row.classList.contains(diff)) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

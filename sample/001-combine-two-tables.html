@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>175. Combine Two Tables - LeetCode SQL</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+  .card { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+  h1 { color: #333; margin-top: 0; }
+  .meta { color: #666; font-size: 14px; margin-bottom: 20px; }
+  .meta span { margin-right: 20px; }
+  .Easy { color: #4CAF50; font-weight: bold; }
+  .Medium { color: #FF9800; font-weight: bold; }
+  .Hard { color: #f44336; font-weight: bold; }
+  pre { background: #f0f0f0; padding: 16px; border-radius: 6px; overflow-x: auto; }
+  code { font-family: 'Consolas', 'Monaco', monospace; }
+  a { color: #1a73e8; }
+  .hint { background: #fff8e1; border-left: 4px solid #FF9800; padding: 12px; margin: 10px 0; border-radius: 0 6px 6px 0; }
+  .back { display: inline-block; margin-bottom: 20px; color: #666; text-decoration: none; }
+  .back:hover { color: #1a73e8; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { border: 1px solid #ddd; padding: 8px; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">&larr; 返回题目列表</a>
+<div class="card">
+  <h1>175. Combine Two Tables</h1>
+  <div class="meta">
+    <span class="Easy">Easy</span>
+    <span>通过率: 79.8%</span>
+    <span><a href="https://leetcode.com/problems/combine-two-tables/" target="_blank">在 LeetCode 上打开</a></span>
+  </div>
+  <hr>
+  <h3>题目描述</h3>
+  <p>Table: <code>Person</code></p>
+
+<pre>
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| personId    | int     |
+| lastName    | varchar |
+| firstName   | varchar |
++-------------+---------+
+personId is the primary key (column with unique values) for this table.
+This table contains information about the ID of some persons and their first and last names.
+</pre>
+
+<p>&nbsp;</p>
+
+<p>Table: <code>Address</code></p>
+
+<pre>
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| addressId   | int     |
+| personId    | int     |
+| city        | varchar |
+| state       | varchar |
++-------------+---------+
+addressId is the primary key (column with unique values) for this table.
+Each row of this table contains information about the city and state of one person with ID = PersonId.
+</pre>
+
+<p>&nbsp;</p>
+
+<p>Write a solution to report the first name, last name, city, and state of each person in the <code>Person</code> table. If the address of a <code>personId</code> is not present in the <code>Address</code> table, report <code>null</code> instead.</p>
+
+<p>Return the result table in <strong>any order</strong>.</p>
+
+<p>The result format is in the following example.</p>
+
+<p>&nbsp;</p>
+<p><strong class="example">Example 1:</strong></p>
+
+<pre>
+<strong>Input:</strong> 
+Person table:
++----------+----------+-----------+
+| personId | lastName | firstName |
++----------+----------+-----------+
+| 1        | Wang     | Allen     |
+| 2        | Alice    | Bob       |
++----------+----------+-----------+
+Address table:
++-----------+----------+---------------+------------+
+| addressId | personId | city          | state      |
++-----------+----------+---------------+------------+
+| 1         | 2        | New York City | New York   |
+| 2         | 3        | Leetcode      | California |
++-----------+----------+---------------+------------+
+<strong>Output:</strong> 
++-----------+----------+---------------+----------+
+| firstName | lastName | city          | state    |
++-----------+----------+---------------+----------+
+| Allen     | Wang     | Null          | Null     |
+| Bob       | Alice    | New York City | New York |
++-----------+----------+---------------+----------+
+<strong>Explanation:</strong> 
+There is no address in the address table for the personId = 1 so we return null in their city and state.
+addressId = 1 contains information about the address of personId = 2.
+</pre>
+
+  <h3>MySQL Schema</h3>
+  <pre><code>Create table If Not Exists Person (personId int, firstName varchar(255), lastName varchar(255)),Create table If Not Exists Address (addressId int, personId int, city varchar(255), state varchar(255)),Truncate table Person,insert into Person (personId, lastName, firstName) values ('1', 'Wang', 'Allen'),insert into Person (personId, lastName, firstName) values ('2', 'Alice', 'Bob'),Truncate table Address,insert into Address (addressId, personId, city, state) values ('1', '2', 'New York City', 'New York'),insert into Address (addressId, personId, city, state) values ('2', '3', 'Leetcode', 'California')</code></pre>
+  <h3>提示</h3>
+  暂无提示
+</div>
+</body>
+</html>

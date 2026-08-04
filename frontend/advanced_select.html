@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL 知识图谱 - 进阶选择题</title>
+<style>
+  :root { --bg: #f5f6f8; --card: #ffffff; --text: #2c3e50; --text2: #7a8599; --border: #e4e7ed; --accent: #5a7d9a; --accent-hover: #4a6a82; --tag-bg: #eef1f5; --success: #6b9e7a; --error: #c97a7a; }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; color: var(--text); margin: 0; padding: 20px; line-height: 1.5; }
+  .container { max-width: 780px; margin: 0 auto; }
+  .page-title { text-align: center; margin: 0 0 1.5rem 0; }
+  .page-title h1 { font-size: 1.4rem; margin: 0 0 0.25rem 0; }
+  .page-title p { font-size: 0.8rem; color: var(--text2); margin: 0; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--text2); font-size: 0.65rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 0.25rem; }
+  .flex { display: flex; }
+  .gap-2 { gap: 0.5rem; }
+  .flex-wrap { flex-wrap: wrap; }
+  .mb-2 { margin-bottom: 0.5rem; }
+  .title-serif { font-weight: 600; font-size: 1rem; margin: 0.25rem 0 0.5rem 0; }
+  .question-desc { white-space: pre-wrap; font-size: 0.85rem; line-height: 1.7; margin-bottom: 0.75rem; padding: 0.75rem 1rem; background: var(--tag-bg); border-left: 3px solid var(--accent); border-radius: 0 0.375rem 0.375rem 0; color: var(--text); font-weight: 500; }
+  .section-title { font-size: 0.75rem; font-weight: 700; color: var(--accent); margin: 0.75rem 0 0.3rem 0; padding-bottom: 0.3rem; border-bottom: 2px solid var(--border); text-transform: uppercase; letter-spacing: 0.06em; }
+  .table-label { font-size: 0.65rem; font-weight: 600; color: var(--text2); margin: 0.3rem 0 0.15rem 0; }
+  .data-table { margin: 0 0 0.5rem 0; border-collapse: collapse; font-size: 0.7rem; font-family: 'SF Mono', 'Consolas', monospace; }
+  .data-table th { background: var(--text); color: #fff; padding: 0.3rem 0.5rem; text-align: left; font-weight: 600; }
+  .data-table td { padding: 0.25rem 0.5rem; border-bottom: 1px solid var(--border); color: var(--text); }
+  .data-table tr:nth-child(even) td { background: var(--tag-bg); }
+  .sql-toggle { display: inline-flex; align-items: center; gap: 4px; font-size: 0.65rem; color: var(--accent); cursor: pointer; font-weight: 600; font-family: 'SF Mono', 'Consolas', monospace; user-select: none; padding: 2px 8px; border: 1px solid var(--border); border-radius: 0.25rem; background: var(--card); margin-bottom: 0.5rem; }
+  .sql-toggle:hover { background: var(--tag-bg); }
+  .sql-panel { display: none; margin-bottom: 0.75rem; }
+  .sql-panel.open { display: block; }
+  .sql-code { background: var(--text); color: #d4dce8; padding: 0.75rem 1rem; border-radius: 0.375rem; font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.7rem; line-height: 1.6; white-space: pre-wrap; overflow-x: auto; }
+  .options { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.75rem; }
+  .option { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; cursor: pointer; font-size: 0.82rem; transition: all 0.12s; user-select: none; font-family: 'SF Mono', 'Consolas', monospace; }
+  .option:hover { border-color: var(--accent); background: var(--tag-bg); }
+  .option .opt-key { flex-shrink: 0; width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center; background: var(--tag-bg); border-radius: 0.25rem; font-weight: 600; font-size: 0.72rem; color: var(--text2); font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+  .option.correct { border-color: var(--success); background: #eaf4ee; }
+  .option.correct .opt-key { background: var(--success); color: #fff; }
+  .option.wrong { border-color: var(--error); background: #f5ebeb; }
+  .option.wrong .opt-key { background: var(--error); color: #fff; }
+  .option.disabled { cursor: default; opacity: 0.6; }
+  .option.disabled:hover { border-color: var(--border); background: var(--card); }
+  .result-box { margin-top: 0.75rem; padding: 0.75rem; border-radius: 0.375rem; font-size: 0.8rem; display: none; }
+  .result-box.show { display: block; }
+  .result-box.correct { background: #eaf4ee; border: 1px solid #c8dfce; color: #3d7a4d; }
+  .result-box.wrong { background: #f5ebeb; border: 1px solid #e4c8c8; color: #8a4040; }
+  .result-box .answer { font-weight: 600; }
+  .summary { position: sticky; bottom: 10px; text-align: center; font-size: 0.75rem; color: var(--text2); background: rgba(255,255,255,.9); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.4rem; }
+</style>
+</head>
+<body>
+<a href="/" style="display:inline-block;margin-bottom:10px;color:var(--accent);text-decoration:none;font-weight:600;font-size:0.85rem;">← 返回主页</a>
+<div class="container">
+  <div class="page-title">
+    <h1>SQL 知识图谱 · 进阶选择题</h1>
+    <p>共 29 题，覆盖图谱全部二级分类知识点。点击选项查看答案。</p>
+  </div>
+
+  <!-- 1 -->
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DML</span><span class="tag">第 1 题</span></div>
+    <h3 class="title-serif">SELECT</h3>
+    <p class="question-desc">查询所有不重复的部门名称，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">employee</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th><th>department</th></tr></thead><tbody><tr><td>1</td><td>Alice</td><td>IT</td></tr><tr><td>2</td><td>Bob</td><td>HR</td></tr><tr><td>3</td><td>Carol</td><td>IT</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE employee (id INT, name VARCHAR(32), department VARCHAR(32));<br>INSERT INTO employee VALUES (1,'Alice','IT'),(2,'Bob','HR'),(3,'Carol','IT');</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>department</th></tr></thead><tbody><tr><td>IT</td></tr><tr><td>HR</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT department FROM employee</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT DISTINCT department FROM employee</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT UNIQUE department FROM employee</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT department FROM employee WHERE department IS DISTINCT</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 2 -->
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DML</span><span class="tag">第 2 题</span></div>
+    <h3 class="title-serif">INSERT</h3>
+    <p class="question-desc">一次插入多行数据，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">product</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th></tr></thead><tbody><tr><td>1</td><td>A</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE product (id INT, name VARCHAR(32));<br>INSERT INTO product VALUES (1,'A');</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">插入后 product 表</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th></tr></thead><tbody><tr><td>1</td><td>A</td></tr><tr><td>2</td><td>B</td></tr><tr><td>3</td><td>C</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>INSERT INTO product VALUES (2,'B'),(3,'C')</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>INSERT INTO product VALUES (2,'B') VALUES (3,'C')</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>INSERT INTO product SELECT (2,'B') UNION (3,'C')</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>INSERT ALL INTO product VALUES (2,'B') INTO product VALUES (3,'C')</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 3 -->
+  <div class="card" data-answer="D">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DML</span><span class="tag">第 3 题</span></div>
+    <h3 class="title-serif">UPDATE</h3>
+    <p class="question-desc">将 employee 表所有工资加 10%，NULL 保持 NULL，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">employee</div>
+    <table class="data-table"><thead><tr><th>id</th><th>salary</th></tr></thead><tbody><tr><td>1</td><td>5000</td></tr><tr><td>2</td><td>NULL</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE employee (id INT, salary INT);<br>INSERT INTO employee VALUES (1,5000),(2,NULL);</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">UPDATE 后</div>
+    <table class="data-table"><thead><tr><th>id</th><th>salary</th></tr></thead><tbody><tr><td>1</td><td>5500</td></tr><tr><td>2</td><td>NULL</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>UPDATE employee SET salary = 5500 WHERE id = 1</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>UPDATE employee SET salary = salary * 1.1 WHERE salary IS NOT NULL</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>UPDATE employee SET salary = salary * 1.1 WHERE salary &gt; 0</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>UPDATE employee SET salary = salary * 1.1</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 4 -->
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DML</span><span class="tag">第 4 题</span></div>
+    <h3 class="title-serif">DELETE</h3>
+    <p class="question-desc">删除重复的邮箱记录，只保留每个邮箱中 id 最小的那条，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">person</div>
+    <table class="data-table"><thead><tr><th>id</th><th>email</th></tr></thead><tbody><tr><td>1</td><td>a@b.com</td></tr><tr><td>2</td><td>c@d.com</td></tr><tr><td>3</td><td>a@b.com</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE person (id INT, email VARCHAR(64));<br>INSERT INTO person VALUES (1,'a@b.com'),(2,'c@d.com'),(3,'a@b.com');</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">删除后 person 表</div>
+    <table class="data-table"><thead><tr><th>id</th><th>email</th></tr></thead><tbody><tr><td>1</td><td>a@b.com</td></tr><tr><td>2</td><td>c@d.com</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>DELETE FROM person WHERE id &gt; 1</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>DELETE p1 FROM person p1 JOIN person p2 ON p1.email = p2.email AND p1.id &gt; p2.id</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>DELETE FROM person WHERE email IN (SELECT email FROM person GROUP BY email HAVING COUNT(*) &gt; 1)</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>TRUNCATE person</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 5 -->
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DDL</span><span class="tag">第 5 题</span></div>
+    <h3 class="title-serif">CREATE</h3>
+    <p class="question-desc">复制 table1 的结构和数据到 table2（不复制索引、约束、默认值），应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">table1</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th></tr></thead><tbody><tr><td>1</td><td>A</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE table1 (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(32) NOT NULL DEFAULT 'X');<br>INSERT INTO table1 (name) VALUES ('A');</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">table2 结构与数据</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th></tr></thead><tbody><tr><td>1</td><td>A</td></tr></tbody></table>
+    <div class="table-label">但 table2 的 id 无 AUTO_INCREMENT 和 PRIMARY KEY</div>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>CREATE TABLE table2 LIKE table1; INSERT INTO table2 SELECT * FROM table1</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>CREATE TABLE table2 AS SELECT * FROM table1</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>CREATE TABLE table2 AS SELECT * FROM table1 WITH DATA</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>CREATE TABLE table2 COPY table1</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 6 -->
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DDL</span><span class="tag">第 6 题</span></div>
+    <h3 class="title-serif">ALTER</h3>
+    <p class="question-desc">为已有表增加一列 age，默认值 0，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">employee</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th></tr></thead><tbody><tr><td>1</td><td>Alice</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE employee (id INT, name VARCHAR(32));<br>INSERT INTO employee VALUES (1,'Alice');</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">ALTER 后 employee 表</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th><th>age</th></tr></thead><tbody><tr><td>1</td><td>Alice</td><td>0</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>ALTER TABLE employee ADD COLUMN age INT DEFAULT 0</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>ALTER TABLE employee ADD age INT, SET DEFAULT 0</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>ALTER TABLE employee ADD age INT, MODIFY age INT DEFAULT 0</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>ALTER TABLE employee ADD age INT, ALTER COLUMN age SET DEFAULT 0</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 7 -->
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DDL</span><span class="tag">第 7 题</span></div>
+    <h3 class="title-serif">DROP</h3>
+    <p class="question-desc">删除表 demo_table 且表不存在时也不报错，应使用哪条语句？</p>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">-- 表 demo_table 可能存在也可能不存在<br>-- 需要安全删除，不存在时不报错</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">执行后无报错，成功/警告均不中断</div>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>DROP TABLE IF EXISTS demo_table</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>DROP TABLE demo_table</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>DROP TABLE demo_table IF EXISTS</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>DROP TABLE demo_table WITH IGNORE</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 8 -->
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DDL</span><span class="tag">第 8 题</span></div>
+    <h3 class="title-serif">TRUNCATE</h3>
+    <p class="question-desc">清空表所有数据但保留表结构，且重置自增计数器，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">log</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th></tr></thead><tbody><tr><td>1</td><td>A</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE log (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(32));<br>INSERT INTO log VALUES (1,'A');</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">TRUNCATE 后 log 表为空</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th></tr></thead><tbody></tbody></table>
+    <div class="table-label">且下次 INSERT 自增从 1 开始</div>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>DELETE FROM log</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>TRUNCATE TABLE log</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>DROP TABLE log; CREATE TABLE log (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(32))</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>ALTER TABLE log DELETE ROWS</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 9 -->
+  <div class="card" data-answer="C">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DDL</span><span class="tag">第 9 题</span></div>
+    <h3 class="title-serif">RENAME</h3>
+    <p class="question-desc">将表 old_name 重命名为 new_name，应使用哪条语句？</p>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE old_name (id INT);<br>INSERT INTO old_name VALUES (1);</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">RENAME 后，表 old_name 被改名为 new_name，SHOW TABLES 中只显示 new_name。</div>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>ALTER TABLE old_name RENAME COLUMN TO new_name</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>ALTER TABLE old_name MODIFY NAME new_name</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>RENAME TABLE old_name TO new_name</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>UPDATE TABLE old_name SET name = new_name</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 10 -->
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DDL</span><span class="tag">第 10 题</span></div>
+    <h3 class="title-serif">COMMENT</h3>
+    <p class="question-desc">为表 employee 的列 name 添加注释"员工姓名"，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">employee</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th></tr></thead><tbody><tr><td>1</td><td>Alice</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE employee (id INT, name VARCHAR(32));<br>INSERT INTO employee VALUES (1,'Alice');</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">查询 information_schema.COLUMNS 可见注释</div>
+    <table class="data-table"><thead><tr><th>COLUMN_NAME</th><th>COLUMN_COMMENT</th></tr></thead><tbody><tr><td>name</td><td>员工姓名</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>ALTER TABLE employee MODIFY name VARCHAR(32) COMMENT '员工姓名'</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>COMMENT ON COLUMN employee.name IS '员工姓名'</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>ALTER TABLE employee ADD COMMENT '员工姓名' ON name</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>COMMENT employee.name = '员工姓名'</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 11 -->
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">函数</span><span class="tag">第 11 题</span></div>
+    <h3 class="title-serif">字符串函数</h3>
+    <p class="question-desc">返回 message 表中 msg 字符串列的字节长度和字符长度，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">message</div>
+    <table class="data-table"><thead><tr><th>id</th><th>msg</th></tr></thead><tbody><tr><td>1</td><td>你好</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE message (id INT, msg VARCHAR(64));<br>INSERT INTO message VALUES (1,'你好');</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>LENGTH(msg)</th><th>CHAR_LENGTH(msg)</th></tr></thead><tbody><tr><td>6</td><td>2</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT LENGTH(msg), CHAR_LENGTH(msg) FROM message</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT LENGTH(msg), LENGTH(msg) FROM message</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT CHAR_LENGTH(msg), LENGTH(msg) FROM message</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT BYTE_LENGTH(msg), CHAR_LENGTH(msg) FROM message</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 12 -->
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">函数</span><span class="tag">第 12 题</span></div>
+    <h3 class="title-serif">数字函数</h3>
+    <p class="question-desc">返回 price 表中 -2.5 的绝对值、舍入到整数、向下取整，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">price</div>
+    <table class="data-table"><thead><tr><th>id</th><th>value</th></tr></thead><tbody><tr><td>1</td><td>-2.5</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE price (id INT, value DECIMAL(10,2));<br>INSERT INTO price VALUES (1,-2.5);</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>ABS(value)</th><th>ROUND(value)</th><th>FLOOR(value)</th></tr></thead><tbody><tr><td>2.50</td><td>-3</td><td>-3</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT ABS(value), ROUND(value), TRUNCATE(value,0) FROM price</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT ABS(value), ROUND(value), FLOOR(value) FROM price</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT ABS(value), CEIL(value), FLOOR(value) FROM price</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT ABS(value), ROUND(value), CEIL(value) FROM price</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 13 -->
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">函数</span><span class="tag">第 13 题</span></div>
+    <h3 class="title-serif">聚合函数</h3>
+    <p class="question-desc">统计总行数和 val 非空行数，结果分别为 5 和 3，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">sample</div>
+    <table class="data-table"><thead><tr><th>val</th></tr></thead><tbody><tr><td>1</td></tr><tr><td>NULL</td></tr><tr><td>2</td></tr><tr><td>NULL</td></tr><tr><td>3</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE sample (val INT);<br>INSERT INTO sample VALUES (1),(NULL),(2),(NULL),(3);</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>COUNT(*)</th><th>COUNT(val)</th></tr></thead><tbody><tr><td>5</td><td>3</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT COUNT(*) FROM sample; SELECT COUNT(*) FROM sample WHERE val IS NOT NULL</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT COUNT(*), COUNT(val) FROM sample</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT COUNT(*), COUNT(1) FROM sample</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT COUNT(*), COUNT(*) - COUNT(val) FROM sample</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 14 -->
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">函数</span><span class="tag">第 14 题</span></div>
+    <h3 class="title-serif">转换函数</h3>
+    <p class="question-desc">将 event 表中 event_date 字符串列显式转换为 DATE 类型，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">event</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th><th>event_date</th></tr></thead><tbody><tr><td>1</td><td>会议</td><td>2024-01-15</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE event (id INT, name VARCHAR(32), event_date VARCHAR(32));<br>INSERT INTO event VALUES (1,'会议','2024-01-15');</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>CAST(event_date AS DATE)</th></tr></thead><tbody><tr><td>2024-01-15</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT CAST(event_date AS DATE) FROM event</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT CONVERT(event_date, DATE) FROM event</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT DATE(event_date) FROM event</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT event_date::DATE FROM event</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 15 -->
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">函数</span><span class="tag">第 15 题</span></div>
+    <h3 class="title-serif">窗口函数</h3>
+    <p class="question-desc">按分数从高到低排名，并列时排名相同且下一名次不跳号，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">score</div>
+    <table class="data-table"><thead><tr><th>id</th><th>score</th></tr></thead><tbody><tr><td>1</td><td>100</td></tr><tr><td>2</td><td>100</td></tr><tr><td>3</td><td>90</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE score (id INT, score INT);<br>INSERT INTO score VALUES (1,100),(2,100),(3,90);</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果（id 排名）</div>
+    <table class="data-table"><thead><tr><th>id</th><th>rnk</th></tr></thead><tbody><tr><td>1</td><td>1</td></tr><tr><td>2</td><td>1</td></tr><tr><td>3</td><td>2</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT id, ROW_NUMBER() OVER (ORDER BY score DESC) AS rnk FROM score</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT id, DENSE_RANK() OVER (ORDER BY score DESC) AS rnk FROM score</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT id, RANK() OVER (ORDER BY score DESC) AS rnk FROM score</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT id, NTILE(2) OVER (ORDER BY score DESC) AS rnk FROM score</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 16 -->
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">表连接</span><span class="tag">第 16 题</span></div>
+    <h3 class="title-serif">内连接</h3>
+    <p class="question-desc">查询每个员工及其部门名称，只返回有部门的员工，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">employee</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th><th>department_id</th></tr></thead><tbody><tr><td>1</td><td>Alice</td><td>1</td></tr><tr><td>2</td><td>Bob</td><td>NULL</td></tr></tbody></table>
+    <div class="table-label">department</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th></tr></thead><tbody><tr><td>1</td><td>IT</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE employee (id INT, name VARCHAR(32), department_id INT);<br>CREATE TABLE department (id INT, name VARCHAR(32));<br>INSERT INTO employee VALUES (1,'Alice',1),(2,'Bob',NULL);<br>INSERT INTO department VALUES (1,'IT');</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>name</th><th>department_name</th></tr></thead><tbody><tr><td>Alice</td><td>IT</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT e.name, d.name FROM employee e LEFT JOIN department d ON e.department_id = d.id</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT e.name, d.name FROM employee e INNER JOIN department d ON e.department_id = d.id</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT e.name, d.name FROM employee e RIGHT JOIN department d ON e.department_id = d.id</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT e.name, d.name FROM employee e CROSS JOIN department d WHERE e.department_id = d.id</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 17 -->
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">表连接</span><span class="tag">第 17 题</span></div>
+    <h3 class="title-serif">外连接</h3>
+    <p class="question-desc">查询所有员工及其部门名称，无部门的员工也保留，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">employee</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th><th>department_id</th></tr></thead><tbody><tr><td>1</td><td>Alice</td><td>1</td></tr><tr><td>2</td><td>Bob</td><td>NULL</td></tr></tbody></table>
+    <div class="table-label">department</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th></tr></thead><tbody><tr><td>1</td><td>IT</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE employee (id INT, name VARCHAR(32), department_id INT);<br>CREATE TABLE department (id INT, name VARCHAR(32));<br>INSERT INTO employee VALUES (1,'Alice',1),(2,'Bob',NULL);<br>INSERT INTO department VALUES (1,'IT');</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>name</th><th>department_name</th></tr></thead><tbody><tr><td>Alice</td><td>IT</td></tr><tr><td>Bob</td><td>NULL</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT e.name, d.name FROM employee e LEFT JOIN department d ON e.department_id = d.id</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT e.name, d.name FROM employee e INNER JOIN department d ON e.department_id = d.id</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT e.name, d.name FROM employee e RIGHT JOIN department d ON e.department_id = d.id</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT e.name, d.name FROM employee e, department d WHERE e.department_id = d.id</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 18 -->
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">表连接</span><span class="tag">第 18 题</span></div>
+    <h3 class="title-serif">自连接</h3>
+    <p class="question-desc">查找比经理工资更高的员工姓名，使用自连接方式，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">employee</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th><th>salary</th><th>manager_id</th></tr></thead><tbody><tr><td>1</td><td>老板</td><td>10000</td><td>NULL</td></tr><tr><td>2</td><td>小王</td><td>8000</td><td>1</td></tr><tr><td>3</td><td>小李</td><td>12000</td><td>1</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE employee (id INT, name VARCHAR(32), salary INT, manager_id INT);<br>INSERT INTO employee VALUES (1,'老板',10000,NULL),(2,'小王',8000,1),(3,'小李',12000,1);</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>name</th></tr></thead><tbody><tr><td>小李</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT e.name FROM employee e WHERE e.salary &gt; (SELECT salary FROM employee WHERE id = e.manager_id)</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT e.name FROM employee e JOIN employee m ON e.manager_id = m.id AND e.salary &gt; m.salary</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT e.name FROM employee e JOIN employee m ON e.id = m.manager_id AND e.salary &gt; m.salary</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT e.name FROM employee e, employee m WHERE e.manager_id = m.id</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 19 -->
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">表连接</span><span class="tag">第 19 题</span></div>
+    <h3 class="title-serif">交叉连接</h3>
+    <p class="question-desc">生成 table_a 表与 table_b 表所有行的笛卡尔积，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">table_a</div>
+    <table class="data-table"><thead><tr><th>id</th></tr></thead><tbody><tr><td>1</td></tr><tr><td>2</td></tr></tbody></table>
+    <div class="table-label">table_b</div>
+    <table class="data-table"><thead><tr><th>id</th></tr></thead><tbody><tr><td>X</td></tr><tr><td>Y</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE table_a (id INT);<br>CREATE TABLE table_b (id VARCHAR(8));<br>INSERT INTO table_a VALUES (1),(2);<br>INSERT INTO table_b VALUES ('X'),('Y');</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果（4 行）</div>
+    <table class="data-table"><thead><tr><th>table_a.id</th><th>table_b.id</th></tr></thead><tbody><tr><td>1</td><td>X</td></tr><tr><td>1</td><td>Y</td></tr><tr><td>2</td><td>X</td></tr><tr><td>2</td><td>Y</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT * FROM table_a CROSS JOIN table_b</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT * FROM table_a INNER JOIN table_b ON 1=1</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT * FROM table_a LEFT JOIN table_b ON 1=0</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT * FROM table_a, table_b</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 20 -->
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">约束</span><span class="tag">第 20 题</span></div>
+    <h3 class="title-serif">主键</h3>
+    <p class="question-desc">创建表 member，id 列为主键且自增，应使用哪条语句？</p>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">-- 需要 id 自增且为主键</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">DESC member 结果</div>
+    <table class="data-table"><thead><tr><th>Field</th><th>Type</th><th>Key</th><th>Extra</th></tr></thead><tbody><tr><td>id</td><td>int</td><td>PRI</td><td>auto_increment</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>CREATE TABLE member (id INT, name VARCHAR(32), PRIMARY KEY (id))</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>CREATE TABLE member (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(32))</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>CREATE TABLE member (id INT PRIMARY KEY, name VARCHAR(32))</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>CREATE TABLE member (id INT AUTO_INCREMENT, name VARCHAR(32), PRIMARY KEY (id, name))</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 21 -->
+  <div class="card" data-answer="D">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">约束</span><span class="tag">第 21 题</span></div>
+    <h3 class="title-serif">外键</h3>
+    <p class="question-desc">创建子表，pid 引用父表 id，父表删除时子表相关行自动删除，应使用哪条语句？</p>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE parent (id INT PRIMARY KEY);</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">SHOW CREATE TABLE child 中 FOREIGN KEY 定义包含 ON DELETE CASCADE</div>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>CREATE TABLE child (id INT, pid INT, FOREIGN KEY (pid) REFERENCES parent(id))</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>CREATE TABLE child (id INT, pid INT, FOREIGN KEY (pid) REFERENCES parent(id) ON DELETE SET NULL)</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>CREATE TABLE child (id INT, pid INT, FOREIGN KEY (pid) REFERENCES parent(id) ON DELETE RESTRICT)</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>CREATE TABLE child (id INT, pid INT, FOREIGN KEY (pid) REFERENCES parent(id) ON DELETE CASCADE)</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 22 -->
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">子查询</span><span class="tag">第 22 题</span></div>
+    <h3 class="title-serif">标量子查询</h3>
+    <p class="question-desc">查询每个员工及其所属部门名，使用标量子查询，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">employee</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th><th>department_id</th></tr></thead><tbody><tr><td>1</td><td>Alice</td><td>1</td></tr></tbody></table>
+    <div class="table-label">department</div>
+    <table class="data-table"><thead><tr><th>id</th><th>name</th></tr></thead><tbody><tr><td>1</td><td>IT</td></tr><tr><td>2</td><td>HR</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE employee (id INT, name VARCHAR(32), department_id INT);<br>CREATE TABLE department (id INT, name VARCHAR(32));<br>INSERT INTO employee VALUES (1,'Alice',1);<br>INSERT INTO department VALUES (1,'IT'),(2,'HR');</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>name</th><th>department_name</th></tr></thead><tbody><tr><td>Alice</td><td>IT</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT e.name, (SELECT name FROM department) AS department_name FROM employee e</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT e.name, (SELECT name FROM department WHERE id = e.department_id) AS department_name FROM employee e</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT e.name, (SELECT name FROM department WHERE id = e.department_id) AS FROM employee e</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT e.name, (SELECT id FROM department WHERE id = e.department_id) AS department_name FROM employee e</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 23 -->
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">子查询</span><span class="tag">第 23 题</span></div>
+    <h3 class="title-serif">列子查询</h3>
+    <p class="question-desc">查询 table1 中 val 不在 table2 中存在的行，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">table1</div>
+    <table class="data-table"><thead><tr><th>val</th></tr></thead><tbody><tr><td>1</td></tr><tr><td>2</td></tr></tbody></table>
+    <div class="table-label">table2</div>
+    <table class="data-table"><thead><tr><th>val</th></tr></thead><tbody><tr><td>2</td></tr><tr><td>NULL</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE table1 (val INT);<br>CREATE TABLE table2 (val INT);<br>INSERT INTO table1 VALUES (1),(2);<br>INSERT INTO table2 VALUES (2),(NULL);</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>val</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT * FROM table1 WHERE val NOT IN (SELECT val FROM table2)</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT * FROM table1 WHERE NOT EXISTS (SELECT 1 FROM table2 WHERE table2.val = table1.val)</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT * FROM table1 WHERE val IN (SELECT val FROM table2)</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT * FROM table1 WHERE val NOT IN (SELECT DISTINCT val FROM table2)</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 24 -->
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">子查询</span><span class="tag">第 24 题</span></div>
+    <h3 class="title-serif">表子查询</h3>
+    <p class="question-desc">先用 CTE 过滤出工资超过 5000 的员工，再从中查询各部门人数，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">employee</div>
+    <table class="data-table"><thead><tr><th>id</th><th>department</th><th>salary</th></tr></thead><tbody><tr><td>1</td><td>IT</td><td>6000</td></tr><tr><td>2</td><td>IT</td><td>3000</td></tr><tr><td>3</td><td>HR</td><td>7000</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE employee (id INT, department VARCHAR(8), salary INT);<br>INSERT INTO employee VALUES (1,'IT',6000),(2,'IT',3000),(3,'HR',7000);</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>department</th><th>COUNT(*)</th></tr></thead><tbody><tr><td>IT</td><td>1</td></tr><tr><td>HR</td><td>1</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>WITH high AS (SELECT * FROM employee WHERE salary &gt; 5000) SELECT department, COUNT(*) FROM high GROUP BY department</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT department, COUNT(*) FROM employee WHERE salary &gt; 5000 GROUP BY department</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT department, COUNT(*) FROM employee GROUP BY department HAVING salary &gt; 5000</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>WITH high AS (SELECT * FROM employee WHERE salary &gt; 5000) SELECT department, COUNT(*) FROM high</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 25 -->
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">子查询</span><span class="tag">第 25 题</span></div>
+    <h3 class="title-serif">IN 子查询</h3>
+    <p class="question-desc">查询 table1 中 val 在 table2 中存在的行（即使 table2 含 NULL 也不受影响），应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">table1</div>
+    <table class="data-table"><thead><tr><th>val</th></tr></thead><tbody><tr><td>1</td></tr><tr><td>2</td></tr></tbody></table>
+    <div class="table-label">table2</div>
+    <table class="data-table"><thead><tr><th>val</th></tr></thead><tbody><tr><td>2</td></tr><tr><td>NULL</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE table1 (val INT);<br>CREATE TABLE table2 (val INT);<br>INSERT INTO table1 VALUES (1),(2);<br>INSERT INTO table2 VALUES (2),(NULL);</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>val</th></tr></thead><tbody><tr><td>2</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT * FROM table1 WHERE val IN (SELECT val FROM table2)</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT * FROM table1 WHERE val NOT IN (SELECT val FROM table2)</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT * FROM table1 WHERE val NOT EXISTS (SELECT val FROM table2)</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT * FROM table1 WHERE val IN (SELECT val FROM table2 WHERE val IS NULL)</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 26 -->
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">SELECT</span><span class="tag">第 26 题</span></div>
+    <h3 class="title-serif">基本 SELECT</h3>
+    <p class="question-desc">查询员工姓名和年薪（月薪 * 12），列名显示为 annual_salary，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">employee</div>
+    <table class="data-table"><thead><tr><th>name</th><th>salary</th></tr></thead><tbody><tr><td>Alice</td><td>5000</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE employee (name VARCHAR(32), salary INT);<br>INSERT INTO employee VALUES ('Alice',5000);</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>name</th><th>annual_salary</th></tr></thead><tbody><tr><td>Alice</td><td>60000</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT name, salary * 12 AS annual_salary, annual_salary + 1000 FROM employee</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT name, salary * 12 AS annual_salary FROM employee</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT name, salary * 12 AS 'annual_salary' FROM employee</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT name, salary * 12 annual salary FROM employee</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 27 -->
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">SELECT</span><span class="tag">第 27 题</span></div>
+    <h3 class="title-serif">WHERE 条件筛选</h3>
+    <p class="question-desc">查询工资大于 5000 的员工，且包含工资为 NULL 的员工（即未知工资也返回），应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">employee</div>
+    <table class="data-table"><thead><tr><th>name</th><th>salary</th></tr></thead><tbody><tr><td>Alice</td><td>6000</td></tr><tr><td>Bob</td><td>NULL</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE employee (name VARCHAR(32), salary INT);<br>INSERT INTO employee VALUES ('Alice',6000),('Bob',NULL);</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>name</th><th>salary</th></tr></thead><tbody><tr><td>Alice</td><td>6000</td></tr><tr><td>Bob</td><td>NULL</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT * FROM employee WHERE salary &gt; 5000</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT * FROM employee WHERE salary &gt; 5000 OR salary IS NULL</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT * FROM employee WHERE salary &gt; 5000 OR salary = NULL</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT * FROM employee WHERE salary &gt; 5000 UNION SELECT * FROM employee WHERE salary IS NULL</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 28 -->
+  <div class="card" data-answer="C">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">SELECT</span><span class="tag">第 28 题</span></div>
+    <h3 class="title-serif">聚合函数与 GROUP BY</h3>
+    <p class="question-desc">按部门统计每个部门的平均工资，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">employee</div>
+    <table class="data-table"><thead><tr><th>name</th><th>department</th><th>salary</th></tr></thead><tbody><tr><td>Alice</td><td>IT</td><td>5000</td></tr><tr><td>Bob</td><td>IT</td><td>7000</td></tr><tr><td>Carol</td><td>HR</td><td>6000</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE employee (name VARCHAR(32), department VARCHAR(8), salary INT);<br>INSERT INTO employee VALUES ('Alice','IT',5000),('Bob','IT',7000),('Carol','HR',6000);</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>department</th><th>AVG(salary)</th></tr></thead><tbody><tr><td>IT</td><td>6000</td></tr><tr><td>HR</td><td>6000</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT department, salary, AVG(salary) FROM employee GROUP BY department</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT department, AVG(salary) FROM employee</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT department, AVG(salary) FROM employee GROUP BY department</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT department, AVG(salary) FROM employee GROUP BY department, salary</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <!-- 29 -->
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">SELECT</span><span class="tag">第 29 题</span></div>
+    <h3 class="title-serif">HAVING 子句</h3>
+    <p class="question-desc">按部门统计人数，只返回人数超过 1 的部门，应使用哪条语句？</p>
+    <div class="section-title">建表数据</div>
+    <div class="table-label">employee</div>
+    <table class="data-table"><thead><tr><th>name</th><th>department</th></tr></thead><tbody><tr><td>Alice</td><td>IT</td></tr><tr><td>Bob</td><td>IT</td></tr><tr><td>Carol</td><td>HR</td></tr></tbody></table>
+    <div class="section-title">建表 SQL</div>
+    <div class="sql-toggle" onclick="toggleSql(this)"><span>展开 SQL</span></div>
+    <div class="sql-panel"><div class="sql-code">CREATE TABLE employee (name VARCHAR(32), department VARCHAR(8));<br>INSERT INTO employee VALUES ('Alice','IT'),('Bob','IT'),('Carol','HR');</div></div>
+    <div class="section-title">预期输出</div>
+    <div class="table-label">结果</div>
+    <table class="data-table"><thead><tr><th>department</th><th>COUNT(*)</th></tr></thead><tbody><tr><td>IT</td><td>2</td></tr></tbody></table>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT department, COUNT(*) FROM employee GROUP BY department HAVING COUNT(*) &gt; 1</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT department, COUNT(*) FROM employee WHERE COUNT(*) &gt; 1 GROUP BY department</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>SELECT department, COUNT(*) FROM employee GROUP BY department WHERE COUNT(*) &gt; 1</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT department, COUNT(*) FROM employee HAVING COUNT(*) &gt; 1 GROUP BY department</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span></div>
+  </div>
+
+  <div class="summary" id="summary">已答 0 / 29 题</div>
+</div>
+
+<script>
+function toggleSql(el) {
+  var p = el.parentElement.querySelector('.sql-panel');
+  p.classList.toggle('open');
+  el.querySelector('span').textContent = p.classList.contains('open') ? '收起 SQL' : '展开 SQL';
+}
+document.querySelectorAll('.card[data-answer]').forEach(function(card) {
+  var answer = card.dataset.answer;
+  var result = card.querySelector('.result-box');
+  var answerEl = result.querySelector('.answer');
+  card.querySelectorAll('.option').forEach(function(opt) {
+    opt.addEventListener('click', function() {
+      if (card.dataset.done) return;
+      card.dataset.done = '1';
+      var key = opt.dataset.key;
+      var isCorrect = key === answer;
+      card.querySelectorAll('.option').forEach(function(o) { o.classList.add('disabled'); });
+      opt.classList.add(isCorrect ? 'correct' : 'wrong');
+      if (isCorrect) {
+        card.querySelectorAll('.option').forEach(function(o) { if (o.dataset.key === answer) o.classList.add('correct'); });
+        result.classList.add('show', 'correct');
+        answerEl.textContent = '回答正确！正确答案：' + answer;
+      } else {
+        card.querySelectorAll('.option').forEach(function(o) { if (o.dataset.key === answer) o.classList.add('correct'); });
+        result.classList.add('show', 'wrong');
+        answerEl.textContent = '回答错误，正确答案：' + answer;
+      }
+      updateSummary();
+    });
+  });
+});
+function updateSummary() {
+  var done = document.querySelectorAll('.card[data-done]').length;
+  var total = document.querySelectorAll('.card[data-answer]').length;
+  document.getElementById('summary').textContent = '已答 ' + done + ' / ' + total + ' 题';
+}
+updateSummary();
+</script>
+</body>
+</html>

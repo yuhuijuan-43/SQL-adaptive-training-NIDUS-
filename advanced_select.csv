@@ -1,0 +1,30 @@
+序号,题目名称,tags,difficulty
+1,SELECT,dml_select,Easy
+2,INSERT,dml_insert,Easy
+3,UPDATE,dml_update,Easy
+4,DELETE,dml_delete,Easy
+5,CREATE,ddl_create,Easy
+6,ALTER,ddl_alter,Medium
+7,DROP,ddl_drop,Easy
+8,TRUNCATE,ddl_truncate,Easy
+9,RENAME,ddl_rename,Easy
+10,COMMENT,ddl_comment,Easy
+11,字符串函数,string_func,Easy
+12,数字函数,numeric_func,Easy
+13,聚合函数,aggregate_func,Medium
+14,转换函数,cast_func,Medium
+15,窗口函数,window_func,Hard
+16,内连接,join_inner,Medium
+17,外连接,join_outer,Medium
+18,自连接,join_self,Hard
+19,交叉连接,join_cross,Medium
+20,主键,constraint_primary_key,Easy
+21,外键,constraint_foreign_key,Medium
+22,标量子查询,subquery_scalar,Medium
+23,列子查询,subquery_column,Medium
+24,表子查询,subquery_table,Hard
+25,IN 子查询,subquery_in,Hard
+26,基本 SELECT,select_basic,Easy
+27,WHERE 条件筛选,where_basic,Easy
+28,聚合函数与 GROUP BY,group_by,Medium
+29,HAVING 子句,having,Hard

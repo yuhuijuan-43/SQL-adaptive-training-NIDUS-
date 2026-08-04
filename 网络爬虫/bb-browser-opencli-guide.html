@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>bb-browser & OpenCLI 系统讲解</title>
+<style>
+  body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; line-height: 1.8; }
+  h1 { border-bottom: 3px solid #2563eb; padding-bottom: 10px; font-size: 24px; }
+  h2 { color: #2563eb; margin-top: 32px; font-size: 20px; border-left: 4px solid #2563eb; padding-left: 12px; }
+  h3 { font-size: 16px; margin-top: 24px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; }
+  th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: left; }
+  th { background: #f3f4f6; font-weight: 600; }
+  tr:nth-child(even) { background: #f9fafb; }
+  code { background: #f3f4f6; padding: 2px 6px; border-radius: 3px; font-family: "Cascadia Code", "Fira Code", monospace; font-size: 13px; }
+  pre { background: #1e293b; color: #e2e8f0; padding: 14px 18px; border-radius: 6px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+  pre code { background: transparent; color: inherit; padding: 0; }
+  .correct { background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+  .accurate { background: #f0fdf4; border-left: 4px solid #22c55e; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+  .strong { font-weight: 700; color: #dc2626; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<h1>bb-browser &amp; OpenCLI 系统讲解</h1>
+
+<p>安装路径：<code>E:\my normal txt\DigQuant\项目\SQL自适应训练\SQL自适应训练\网络爬虫</code></p>
+<p>安装版本：bb-browser <strong>0.14.2</strong> | opencli <strong>1.8.6</strong></p>
+
+<h2>一、核心概念纠正</h2>
+
+<div class="correct">
+<strong>⚠️ 常见误解：</strong>"bb-browser 是可视的模拟真人操作；opencli 是不可视的走背后编码"
+</div>
+
+<div class="accurate">
+<strong>✅ 正确理解：</strong>两个工具的底层<strong>完全一样</strong>——都是通过 CDP（Chrome DevTools Protocol）操控<strong>真实的 Chrome 浏览器</strong>。浏览器窗口里标签页切换、页面加载，你都看得见。真正的区别是<strong>抽象层级</strong>，不是可视与否。
+</div>
+
+<h2>二、正确的二分法</h2>
+
+<pre><code>获取网页数据的方式
+├── 直接调 API（不可视，不需要浏览器）
+│   └── fetch / curl → 拿 JSON
+│       例：fetch('https://gw-c.nowcoder.com/api/...')
+│
+└── 浏览器自动化（可视，需要 Chrome CDP）
+    ├── bb-browser  → 低层原语，灵活但繁琐
+    ├── opencli     → 高层命令，快捷但受限于适配器
+    └── auto-browser → 你的自研版，同理</code></pre>
+
+<h3>打个比方</h3>
+
+<table>
+  <tr><th>方式</th><th>类比</th></tr>
+  <tr><td>直接调 API</td><td>给仓库管理员打电话查库存 → 拿到一个数字</td></tr>
+  <tr><td>bb-browser（低层原语）</td><td>给你方向盘、油门、刹车，你自己开车去仓库看</td></tr>
+  <tr><td>opencli（高层命令）</td><td>给你一个「去仓库」按钮，按一下就到</td></tr>
+</table>
+
+<p>后两种都开了真车，区别只是你握方向盘还是按自动驾驶按钮。</p>
+
+<h2>三、架构全景图</h2>
+
+<pre><code>┌─────────────────────────────────────────────────────┐
+│                  AI Agent / CLI 用户                  │
+└────────┬──────────────┬──────────────────────────────┘
+         │              │
+    bb-browser       opencli
+    (低层原语)        (高层适配器)
+         │              │
+         ▼              ▼
+    ┌─────────────────────────────────────┐
+    │        Chrome DevTools Protocol      │
+    │        127.0.0.1:9222 (WebSocket)    │
+    └──────────────┬──────────────────────┘
+                   │
+                   ▼
+    ┌─────────────────────────────────────┐
+    │   你的 Chrome（带登录态、Cookie）      │
+    │   网站看到的是你，不是机器人             │
+    └─────────────────────────────────────┘</code></pre>
+
+<div class="page-break"></div>
+
+<h2>四、详细对比</h2>
+
+<table>
+  <tr><th>维度</th><th>bb-browser</th><th>opencli</th></tr>
+  <tr><td>定位</td><td>浏览器自动化原语层</td><td>站点适配器 + CLI 生态层</td></tr>
+  <tr><td>抽象层级</td><td>低：click / fill / eval / snap</td><td>高：bilibili hot / zhihu hot</td></tr>
+  <tr><td>命令数</td><td>103 条原语命令</td><td>70-100+ 站点适配器</td></tr>
+  <tr><td>MCP 支持</td><td>✅ 原生 MCP Server</td><td>❌ 不直接提供</td></tr>
+  <tr><td>CLI Hub</td><td>❌</td><td>✅ 透传 gh / docker / tg 等</td></tr>
+  <tr><td>桌面应用操控</td><td>❌</td><td>✅ 可操控 Electron 应用</td></tr>
+  <tr><td>底层机制</td><td>CDP → Puppeteer</td><td>CDP → Puppeteer（相同）</td></tr>
+  <tr><td>是否可视</td><td>✅ 真实 Chrome 窗口</td><td>✅ 真实 Chrome 窗口（相同）</td></tr>
+  <tr><td>GitHub Stars</td><td>~3.3k</td><td>~20k</td></tr>
+</table>
+
+<h2>五、bb-browser 详解</h2>
+
+<p>提供「原子操作」，不关心是什么网站，所有页面一视同仁：</p>
+
+<pre><code># 页面操作
+bb-browser open https://example.com
+bb-browser snap                    # 拍快照，标注所有可交互元素
+bb-browser click @3                # 点第 3 号元素
+bb-browser fill @5 "hello"         # 填表单
+bb-browser eval "document.title"   # 执行 JS
+bb-browser screenshot              # 截图
+
+# 网络抓包（比解析 DOM 高效得多）
+bb-browser network start
+bb-browser network requests --with-body --json
+bb-browser network stop
+
+# 站点适配器（社区贡献的高层封装）
+bb-browser site zhihu/hot
+bb-browser site github-repo owner=torvalds repo=linux</code></pre>
+
+<p><strong>核心机制 —— Page Map：</strong></p>
+<ol>
+  <li><code>snap</code> 扫描页面所有可交互元素 → 生成编号快照</li>
+  <li>后续用 <code>@N</code> 引用元素，无需手写 CSS 选择器</li>
+  <li>7 层检测：CSS selector → XPath → Shadow DOM → 语义匹配</li>
+</ol>
+
+<div class="page-break"></div>
+
+<h2>六、opencli 详解</h2>
+
+<p>每个网站就是一个命令，一行出结构化结果：</p>
+
+<pre><code># 热榜类
+opencli bilibili hot -f json           # B站热门
+opencli zhihu hot --limit 10            # 知乎热榜
+opencli hackernews top -f table         # HN 头条
+
+# 搜索类
+opencli baidu "keyword" -n 5
+opencli google "keyword"
+
+# 开发类
+opencli github trending --lang python
+opencli arxiv search "LLM agent"
+
+# CLI Hub（透传其他命令行工具）
+opencli gh pr list        # 自动检测并安装 GitHub CLI
+opencli docker ps
+opencli obsidian search   # 搜 Obsidian 笔记</code></pre>
+
+<p><strong>opencli 独有的三大能力：</strong></p>
+<ol>
+  <li><strong>CLI Hub</strong>：不仅是浏览器工具，还是命令行聚合器，自动安装缺失工具</li>
+  <li><strong>桌面应用操控</strong>：通过 CDP 操控 Cursor、ChatGPT Desktop 等 Electron 应用</li>
+  <li><strong>零 Token 消耗</strong>：命令在浏览器本地执行，数据直接返回，不经过 LLM</li>
+</ol>
+
+<h2>七、选型指南</h2>
+
+<pre><code>你需要什么？
+├── 给 AI Agent 上网能力（MCP 集成）
+│   → bb-browser（原生 MCP Server）
+│
+├── 快速从常见网站提取结构化数据
+│   → opencli（高层站点适配器，一行出结果）
+│
+├── 操控非标准网站、自定义交互流程
+│   → bb-browser（低层原语：open→snap→click→fill→eval）
+│
+├── 扒 API 响应（比解析 DOM 更高效）
+│   → bb-browser network capture
+│
+├── 操控桌面 Electron 应用
+│   → opencli
+│
+└── 两个都要（互补）
+    → 都装。opencli 快速出活，bb-browser 兜底复杂场景</code></pre>
+
+<h2>八、与你已有项目的关系</h2>
+
+<table>
+  <tr><th></th><th>auto-browser</th><th>bb-browser</th><th>opencli</th></tr>
+  <tr><td>架构</td><td>CDP → Puppeteer</td><td>CDP → Puppeteer</td><td>CDP → Puppeteer</td></tr>
+  <tr><td>站点适配器</td><td>site/registry/*.mjs</td><td>site/ 社区适配器</td><td>内置 70+</td></tr>
+  <tr><td>CLI 风格</td><td>cli.mjs site nowcoder-sql</td><td>bb-browser site xxx</td><td>opencli xxx</td></tr>
+  <tr><td>成熟度</td><td>自用原型</td><td>3.3k⭐ 社区维护</td><td>20k⭐ 社区维护</td></tr>
+</table>
+
+<p>你的 <code>nowcoder-sql.adapter.mjs</code> 就是标准的 bb-browser site adapter 写法——adapter 函数签名为 <code>async function execute(page, params)</code>，返回结构化数据，社区里叫 Tier-1 适配器。</p>
+
+<h2>九、总结一句话</h2>
+
+<div class="accurate">
+<strong>bb-browser 和 opencli 是同一套 CDP 机制的两层皮——前者给你螺丝刀自己拧，后者给你一键开关。真正的「不可视」方案是直接调 API（fetch/curl），那才不走浏览器。</strong>
+</div>
+
+</body>
+</html>

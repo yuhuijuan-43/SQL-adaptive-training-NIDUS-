@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL 自适应训练 · 智能学习平台</title>
+<style>
+/* ============================================================
+   SQL 自适应训练 — 门户入口页（浅色玻璃拟态 · 大厂风）
+   ============================================================ */
+:root {
+  --bg-0: #eef3fc;
+  --bg-1: #e3ecf9;
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-strong: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(88, 110, 170, 0.14);
+  --glass-border-hover: rgba(88, 110, 170, 0.30);
+  --text-1: #1b2747;
+  --text-2: #48577c;
+  --text-3: #8b96b4;
+  --accent: #4a7dff;
+  --accent-2: #8b5bff;
+  --accent-grad: linear-gradient(135deg, #4a7dff 0%, #8b5bff 100%);
+  --success: #0ea678;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --sans: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  --mono: 'SF Mono', Consolas, 'Courier New', monospace;
+  --shadow: 0 10px 34px rgba(58, 82, 148, 0.13);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans); color: var(--text-1); line-height: 1.6; overflow-x: hidden;
+  background:
+    radial-gradient(1100px 700px at 88% -12%, rgba(140, 120, 255, 0.16), transparent 60%),
+    radial-gradient(900px 620px at -8% 18%, rgba(80, 140, 255, 0.15), transparent 55%),
+    radial-gradient(800px 560px at 50% 115%, rgba(70, 190, 210, 0.12), transparent 55%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%);
+  min-height: 100vh;
+}
+/* ---- 背景光球（浅色柔光） ---- */
+.orb { position: fixed; border-radius: 50%; filter: blur(100px); z-index: 0; pointer-events: none; }
+.orb-1 { width: 520px; height: 520px; background: #b9a6ff; top: -160px; right: -120px; opacity: 0.30; animation: drift 19s ease-in-out infinite; }
+.orb-2 { width: 440px; height: 440px; background: #9cc0ff; top: 42%; left: -200px; opacity: 0.28; animation: drift 24s ease-in-out infinite reverse; }
+.orb-3 { width: 380px; height: 380px; background: #93e2ea; bottom: -140px; right: 20%; opacity: 0.26; animation: drift 27s ease-in-out infinite; }
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(42px, -28px) scale(1.07); }
+  66% { transform: translate(-30px, 24px) scale(0.94); }
+}
+/* ---- 玻璃 ---- */
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+/* ---- 顶部导航 ---- */
+.navbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px);
+  border-bottom: 1px solid rgba(88, 110, 170, 0.12);
+}
+.nav-inner { max-width: 1180px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; gap: 30px; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; cursor: pointer; user-select: none; }
+.logo-badge {
+  width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px; overflow: hidden;
+  background: rgba(255, 255, 255, 0.7);
+  filter: drop-shadow(0 2px 6px rgba(58, 82, 148, 0.18));
+}
+.logo-badge img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.nav-links { display: flex; gap: 4px; flex: 1; }
+.nav-link {
+  padding: 7px 14px; border-radius: 999px; font-size: 13.5px; color: var(--text-2);
+  cursor: pointer; transition: all 0.2s; border: none; background: none; font-family: inherit;
+}
+.nav-link:hover { color: var(--text-1); background: rgba(88, 110, 170, 0.08); }
+.nav-link.active { color: #fff; background: var(--accent-grad); box-shadow: 0 4px 14px rgba(90, 100, 255, 0.35); }
+/* ---- 按钮 ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 40px; padding: 0 20px; border-radius: 11px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 600; transition: all 0.2s; white-space: nowrap;
+}
+.btn-primary { background: var(--accent-grad); color: #fff; box-shadow: 0 4px 18px rgba(90, 100, 255, 0.35); }
+.btn-primary:hover { box-shadow: 0 7px 26px rgba(90, 100, 255, 0.5); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-ghost { background: rgba(255, 255, 255, 0.7); color: var(--text-2); border: 1px solid rgba(88, 110, 170, 0.2); }
+.btn-ghost:hover { color: var(--text-1); border-color: rgba(88, 110, 170, 0.4); background: #fff; }
+.btn-sm { height: 32px; padding: 0 14px; font-size: 12.5px; border-radius: 9px; }
+/* ---- 容器 ---- */
+.container { max-width: 1180px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+/* ============================================================
+   Hero：左右分栏（左栏文案 + 右栏双按钮）
+   ============================================================ */
+.hero {
+  padding: 48px 0 70px; display: grid; grid-template-columns: 1.12fr 0.88fr;
+  grid-template-areas: "head btns" "desc btns" "feats btns";
+  column-gap: 56px; row-gap: 0; align-items: start;
+}
+.hero-left { display: contents; }
+.hero-head { grid-area: head; text-align: left; min-width: 0; }
+.hero-desc { grid-area: desc; }
+.hero-feats { grid-area: feats; }
+.hero-right {
+  grid-area: btns; display: flex; flex-direction: column; gap: 22px; min-width: 0;
+  align-self: end; /* 与左栏底部对齐 */
+}
+.hero .badge {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: var(--accent);
+  background: rgba(255, 255, 255, 0.75); border: 1px solid rgba(88, 110, 170, 0.18);
+  box-shadow: 0 3px 12px rgba(58, 82, 148, 0.08);
+}
+.hero .badge .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.8s infinite; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(74, 125, 255, 0.4); } 50% { box-shadow: 0 0 0 7px rgba(74, 125, 255, 0); } }
+.hero-title-wrap { margin: 16px 0 12px; }
+.hero-title { font-size: 40px; font-weight: 800; line-height: 1.75; letter-spacing: -0.01em; }
+.hero-title .grad { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero-desc { font-size: 14px; color: var(--text-2); line-height: 1.75; max-width: 520px; }
+.hero-feats { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+.hero-feat {
+  font-size: 13px; color: var(--text-1);
+  padding: 13px 18px; border-radius: 14px; text-align: left;
+  background: var(--glass); border: 1px solid var(--glass-border);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 6px 20px rgba(58, 82, 148, 0.08);
+  transition: all 0.25s;
+}
+.hero-feat:hover { border-color: var(--glass-border-hover); transform: translateY(-3px); box-shadow: 0 10px 28px rgba(58, 82, 148, 0.14); }
+.hero-feat b { font-weight: 700; display: block; font-size: 13px; margin-bottom: 2px; }
+.hero-feat span { font-size: 11.5px; color: var(--text-3); }
+/* 数据小条（行内嵌入标题第一行，紧贴 SQL 学习） */
+.hero-data { display: inline-flex; gap: 22px; margin-left: 18px; vertical-align: middle; flex-wrap: wrap; }
+.hero-data .hd { text-align: left; }
+.hero-data .hd .v { font-size: 22px; font-weight: 800; font-family: var(--mono); background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero-data .hd .l { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+/* ============================================================
+   进入平台 / 了解我们（右栏双卡片 · DeepSeek 风格）
+   ============================================================ */
+.cta-card {
+  padding: 48px 50px; cursor: pointer; text-align: left;
+  position: relative; overflow: hidden; transition: all 0.28s;
+}
+.cta-card::after {
+  content: ''; position: absolute; width: 180px; height: 180px; border-radius: 50%;
+  right: -60px; top: -60px; background: radial-gradient(circle, rgba(120, 100, 255, 0.16), transparent 70%);
+}
+.cta-card:hover { transform: translateY(-4px); border-color: rgba(74, 125, 255, 0.45); box-shadow: 0 18px 48px rgba(58, 82, 148, 0.2); }
+.cta-title { font-size: 27px; font-weight: 800; letter-spacing: 0.01em; display: flex; align-items: center; gap: 12px; }
+.cta-title .arrow { color: var(--accent); font-size: 22px; font-family: var(--mono); transition: transform 0.25s; }
+.cta-card:hover .cta-title .arrow { transform: translateX(6px); }
+.cta-title .grad { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cta-sub { font-size: 14.5px; color: var(--text-2); margin-top: 14px; line-height: 1.8; }
+.cta-sub b { color: var(--text-1); font-weight: 600; }
+/* ---- 页脚 ---- */
+.footer {
+  border-top: 1px solid rgba(88, 110, 170, 0.14); padding: 24px 0 30px; text-align: center;
+  font-size: 12px; color: var(--text-3); position: relative; z-index: 1;
+}
+.footer a { color: var(--text-2); text-decoration: none; }
+.footer a:hover { color: var(--accent); }
+/* ---- Toast ---- */
+.toast-wrap { position: fixed; top: 80px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 10px; }
+.toast {
+  min-width: 260px; max-width: 360px; padding: 13px 17px; border-radius: 13px; font-size: 13px;
+  background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(18px);
+  border: 1px solid rgba(88, 110, 170, 0.2); box-shadow: 0 10px 34px rgba(58, 82, 148, 0.18);
+  display: flex; gap: 11px; align-items: center; color: var(--text-1);
+  animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.toast.ok { border-color: rgba(14, 166, 120, 0.35); } .toast.ok .tdot { background: var(--success); box-shadow: 0 0 8px rgba(14, 166, 120, 0.5); }
+.toast.bad { border-color: rgba(240, 80, 90, 0.35); } .toast.bad .tdot { background: #e04a55; box-shadow: 0 0 8px rgba(224, 74, 85, 0.5); }
+.toast.info { border-color: rgba(74, 125, 255, 0.35); } .toast.info .tdot { background: var(--accent); box-shadow: 0 0 8px rgba(74, 125, 255, 0.5); }
+.toast .tdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.toast.out { animation: slideOut 0.3s ease forwards; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(30px); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.fade-up { animation: fadeUp 0.55s ease both; }
+/* ---- 滚动条 ---- */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: rgba(88, 110, 170, 0.25); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(88, 110, 170, 0.4); }
+::-webkit-scrollbar-track { background: transparent; }
+/* ---- 响应式 ---- */
+@media (max-width: 960px) {
+  .hero { grid-template-columns: 1fr; grid-template-areas: "head" "desc" "feats" "btns"; column-gap: 0; padding: 34px 0 56px; }
+  .hero-title { font-size: 32px; }
+  .hero-feats { flex-direction: row; flex-wrap: wrap; }
+  .hero-feat { flex: 1; min-width: 220px; }
+  .hero-right { flex-direction: row; margin-top: 26px; }
+  .cta-card { flex: 1; padding: 38px 34px; }
+  .cta-title { font-size: 23px; }
+  .nav-links { display: none; }
+}
+@media (max-width: 560px) {
+  .container { padding: 0 16px; }
+  .nav-inner { padding: 0 16px; }
+  .hero { padding: 28px 0 46px; }
+  .hero-title { font-size: 27px; }
+  .hero-feats { flex-direction: column; }
+  .hero-data { gap: 22px; }
+  .hero-right { flex-direction: column; }
+  .cta-card { padding: 28px 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 背景光球 -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- ========== 顶部导航 ========== -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="logo" onclick="scrollToId('top')">
+      <div class="logo-badge"><img src="nidus_logo.png" alt="NIDUS"></div>
+      <span>SQL 自适应训练</span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-link active" onclick="scrollToId('top')">首页</button>
+      <button class="nav-link" onclick="window.location.href='about.html'">了解我们</button>
+      <button class="nav-link" onclick="window.location.href='login_glass.html'">进入平台</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container" id="top">
+
+  <!-- ========== Hero：左栏文案 + 右栏双按钮 ========== -->
+  <section class="hero">
+    <div class="hero-left">
+      <div class="hero-head">
+        <div class="fade-up" style="animation-delay:0s">
+          <span class="badge"><span class="pulse-dot"></span>自适应引擎在线 · BKT 画像实时更新</span>
+        </div>
+        <div class="hero-title-wrap fade-up" style="animation-delay:0.06s">
+        <h1 class="hero-title">
+          <span>让 SQL 学习</span><div class="hero-data">
+            <div class="hd"><div class="v">356+</div><div class="l">精选题目</div></div>
+            <div class="hd"><div class="v">100%</div><div class="l">免费使用</div></div>
+          </div><br>
+          <span>像打怪升级一样<span class="grad">千人千面</span></span>
+        </h1>
+      </div>
+      </div>
+      <p class="hero-desc fade-up" style="animation-delay:0.14s">
+        基于贝叶斯知识追踪（BKT）与 Thompson 采样构建的自适应刷题平台。
+        系统读懂你的每一次作答，自动推送最适合当前水平的下一道题——答对了就往前走，答错了就陪你练到掌握。
+      </p>
+      <div class="hero-feats fade-up" style="animation-delay:0.2s">
+        <div class="hero-feat">
+          <b>知识图谱驱动</b><span>37 个知识点 · 三层结构 · 前置依赖一目了然</span>
+        </div>
+        <div class="hero-feat">
+          <b>自适应推荐引擎</b><span>冷启动 → 探索利用 → 精熟期，三阶段动态切换</span>
+        </div>
+        <div class="hero-feat">
+          <b>深度模式 · 举一反三</b><span>选择题答对自动推送同知识点填空题，概念到实战一步到位</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-right fade-up" style="animation-delay:0.2s">
+      <div class="cta-card glass" onclick="window.location.href='login_glass.html'">
+        <div class="cta-title">进入平台<span class="arrow">→</span></div>
+        <div class="cta-sub"><b>开始自适应 SQL 学习之旅</b><br>千人千面 · 智能推送 · 免费使用</div>
+      </div>
+      <div class="cta-card glass" onclick="window.location.href='about.html'">
+        <div class="cta-title">了解我们<span class="arrow">→</span></div>
+        <div class="cta-sub"><b>查看最新功能与更新动态</b><br>开发进度 · 持续迭代</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ========== 页脚 ========== -->
+<footer class="footer">
+  © 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台 —
+  <a href="login_glass.html">进入做题前端</a>
+</footer>
+
+<!-- Toast -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ============================================================
+   门户页交互（浅色玻璃拟态演示版）
+   ============================================================ */
+const $ = id => document.getElementById(id);
+
+function scrollToId(id) {
+  const el = document.getElementById(id) || document.querySelector('.hero');
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+  if (event && event.target) event.target.classList.add('active');
+}
+
+/* Toast */
+function toast(msg, type) {
+  const wrap = $('toastWrap');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span class="tdot"></span><span>${msg}</span>`;
+  wrap.appendChild(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3400);
+}
+</script>
+</body>
+</html>

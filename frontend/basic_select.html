@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL 知识图谱 - 基础选择题</title>
+<style>
+  :root { --bg: #f5f6f8; --card: #ffffff; --text: #2c3e50; --text2: #7a8599; --border: #e4e7ed; --accent: #5a7d9a; --accent-hover: #4a6a82; --tag-bg: #eef1f5; --success: #6b9e7a; --error: #c97a7a; }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; color: var(--text); margin: 0; padding: 20px; line-height: 1.5; }
+  .container { max-width: 780px; margin: 0 auto; }
+  .page-title { text-align: center; margin: 0 0 1.5rem 0; }
+  .page-title h1 { font-size: 1.4rem; margin: 0 0 0.25rem 0; }
+  .page-title p { font-size: 0.8rem; color: var(--text2); margin: 0; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--text2); font-size: 0.65rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 0.25rem; }
+  .flex { display: flex; }
+  .gap-2 { gap: 0.5rem; }
+  .flex-wrap { flex-wrap: wrap; }
+  .mb-2 { margin-bottom: 0.5rem; }
+  .title-serif { font-weight: 600; font-size: 1rem; margin: 0.25rem 0 0.5rem 0; }
+  .question-desc { white-space: pre-wrap; font-size: 0.85rem; line-height: 1.7; margin-bottom: 0.75rem; padding: 0.75rem 1rem; background: var(--tag-bg); border-left: 3px solid var(--accent); border-radius: 0 0.375rem 0.375rem 0; color: var(--text); font-weight: 500; }
+  .options { display: flex; flex-direction: column; gap: 0.4rem; }
+  .option { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; cursor: pointer; font-size: 0.82rem; transition: all 0.12s; user-select: none; }
+  .option:hover { border-color: var(--accent); background: var(--tag-bg); }
+  .option .opt-key { flex-shrink: 0; width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center; background: var(--tag-bg); border-radius: 0.25rem; font-weight: 600; font-size: 0.72rem; color: var(--text2); }
+  .option.correct { border-color: var(--success); background: #eaf4ee; }
+  .option.correct .opt-key { background: var(--success); color: #fff; }
+  .option.wrong { border-color: var(--error); background: #f5ebeb; }
+  .option.wrong .opt-key { background: var(--error); color: #fff; }
+  .option.disabled { cursor: default; opacity: 0.6; }
+  .option.disabled:hover { border-color: var(--border); background: var(--card); }
+  .result-box { margin-top: 0.75rem; padding: 0.75rem; border-radius: 0.375rem; font-size: 0.8rem; display: none; }
+  .result-box.show { display: block; }
+  .result-box.correct { background: #eaf4ee; border: 1px solid #c8dfce; color: #3d7a4d; }
+  .result-box.wrong { background: #f5ebeb; border: 1px solid #e4c8c8; color: #8a4040; }
+  .result-box .answer { font-weight: 600; }
+  .result-box .explanation { margin-top: 0.4rem; color: var(--text2); font-size: 0.75rem; }
+  .summary { position: sticky; bottom: 10px; text-align: center; font-size: 0.75rem; color: var(--text2); background: rgba(255,255,255,.9); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.4rem; }
+</style>
+</head>
+<body>
+<a href="/" style="display:inline-block;margin-bottom:10px;color:var(--accent);text-decoration:none;font-weight:600;font-size:0.85rem;">← 返回主页</a>
+<div class="container">
+  <div class="page-title">
+    <h1>SQL 知识图谱 · 基础选择题</h1>
+    <p>共 29 题，覆盖图谱全部二级分类知识点。点击选项查看答案。</p>
+  </div>
+
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DML</span><span class="tag">第 1 题</span></div>
+    <h3 class="title-serif">SELECT（DML）</h3>
+    <p class="question-desc">从数据库表中检索数据，应使用哪个 SQL 语句？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>DELETE</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SELECT</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>UPDATE</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>INSERT</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DML</span><span class="tag">第 2 题</span></div>
+    <h3 class="title-serif">INSERT</h3>
+    <p class="question-desc">向表中插入一条新记录，应使用哪个 SQL 语句？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>UPDATE</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>INSERT INTO</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>DELETE</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELECT</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="C">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DML</span><span class="tag">第 3 题</span></div>
+    <h3 class="title-serif">UPDATE</h3>
+    <p class="question-desc">修改表中已有记录的数据，应使用哪个 SQL 语句？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SELECT</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>INSERT</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>UPDATE</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>DELETE</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DML</span><span class="tag">第 4 题</span></div>
+    <h3 class="title-serif">DELETE</h3>
+    <p class="question-desc">删除表中的指定行记录，应使用哪个 SQL 语句？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>DELETE FROM</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>TRUNCATE</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>DROP</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>UPDATE</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DDL</span><span class="tag">第 5 题</span></div>
+    <h3 class="title-serif">CREATE</h3>
+    <p class="question-desc">在数据库中创建一张新表，应使用哪个 SQL 语句？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>ALTER TABLE</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>CREATE TABLE</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>DROP TABLE</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>INSERT INTO</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DDL</span><span class="tag">第 6 题</span></div>
+    <h3 class="title-serif">ALTER</h3>
+    <p class="question-desc">为已存在的表添加一个新列，应使用哪个 SQL 语句？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>ALTER TABLE ... ADD</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>UPDATE TABLE ... ADD</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>CREATE COLUMN</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>INSERT COLUMN</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="C">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DDL</span><span class="tag">第 7 题</span></div>
+    <h3 class="title-serif">DROP</h3>
+    <p class="question-desc">永久删除整张表及其结构，应使用哪个 SQL 语句？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>TRUNCATE TABLE</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>DELETE TABLE</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>DROP TABLE</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>REMOVE TABLE</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DDL</span><span class="tag">第 8 题</span></div>
+    <h3 class="title-serif">TRUNCATE</h3>
+    <p class="question-desc">清空表中所有数据、但保留表结构，应使用哪个 SQL 语句？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>DELETE FROM</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>TRUNCATE TABLE</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>DROP TABLE</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>ALTER TABLE</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DDL</span><span class="tag">第 9 题</span></div>
+    <h3 class="title-serif">RENAME</h3>
+    <p class="question-desc">重命名一张数据库表的表名，应使用哪个关键字？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>RENAME</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>UPDATE</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>MODIFY</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>CHANGE</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">DDL</span><span class="tag">第 10 题</span></div>
+    <h3 class="title-serif">COMMENT</h3>
+    <p class="question-desc">为表或列添加注释说明信息，应使用哪个关键字？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>COMMENT</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>NOTE</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>LABEL</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>REMARK</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">函数</span><span class="tag">第 11 题</span></div>
+    <h3 class="title-serif">字符串函数</h3>
+    <p class="question-desc">计算一个字符串的字符长度，应使用下列哪个函数？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>LENGTH()</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>SUM()</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>COUNT()</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>ABS()</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">函数</span><span class="tag">第 12 题</span></div>
+    <h3 class="title-serif">数字函数</h3>
+    <p class="question-desc">求一个数值的绝对值，应使用下列哪个函数？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>ROUND()</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>ABS()</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>CEIL()</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>MOD()</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="C">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">函数</span><span class="tag">第 13 题</span></div>
+    <h3 class="title-serif">聚合函数</h3>
+    <p class="question-desc">统计一张表中符合条件的记录行数，应使用下列哪个聚合函数？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>SUM()</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>AVG()</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>COUNT()</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>MAX()</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">函数</span><span class="tag">第 14 题</span></div>
+    <h3 class="title-serif">转换函数</h3>
+    <p class="question-desc">将一种数据类型转换为另一种数据类型（如数值转字符串），应使用下列哪个函数？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>CAST()</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>LENGTH()</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>NOW()</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>ABS()</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">函数</span><span class="tag">第 15 题</span></div>
+    <h3 class="title-serif">窗口函数</h3>
+    <p class="question-desc">对每一行在其所属分组内计算排名、同时保留所有原始行，应使用下列哪种写法？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>ROW_NUMBER() OVER (PARTITION BY ...)</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>GROUP BY</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>DISTINCT</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>HAVING</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">表连接</span><span class="tag">第 16 题</span></div>
+    <h3 class="title-serif">内连接</h3>
+    <p class="question-desc">只返回两张表中能相互匹配到的行，应使用哪种连接方式？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>LEFT JOIN</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>INNER JOIN</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>RIGHT JOIN</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>FULL OUTER JOIN</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">表连接</span><span class="tag">第 17 题</span></div>
+    <h3 class="title-serif">外连接</h3>
+    <p class="question-desc">返回左表的全部行，即使右表中没有匹配也以 NULL 补齐，应使用哪种连接方式？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>INNER JOIN</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>LEFT OUTER JOIN</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>CROSS JOIN</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>SELF JOIN</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">表连接</span><span class="tag">第 18 题</span></div>
+    <h3 class="title-serif">自连接</h3>
+    <p class="question-desc">在员工表中查找"比经理工资更高"的员工，需要将员工表与什么进行连接？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>员工表自身（同一张表）</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>部门表</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>临时视图</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>无法实现</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">表连接</span><span class="tag">第 19 题</span></div>
+    <h3 class="title-serif">交叉连接</h3>
+    <p class="question-desc">返回两张表所有行的笛卡尔积（每行与对方所有行组合），应使用哪种连接方式？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>CROSS JOIN</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>INNER JOIN</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>LEFT JOIN</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>FULL JOIN</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">约束</span><span class="tag">第 20 题</span></div>
+    <h3 class="title-serif">主键</h3>
+    <p class="question-desc">关于主键（PRIMARY KEY）的说法，下列哪个是正确的？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>唯一且非空，用于唯一标识一行</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>允许重复</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>允许为 NULL</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>只能定义在整数字段上</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">约束</span><span class="tag">第 21 题</span></div>
+    <h3 class="title-serif">外键</h3>
+    <p class="question-desc">外键（FOREIGN KEY）的主要作用是什么？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>建立与另一张表主键之间的引用关系</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>对行进行排序</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>提升查询性能</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>对字段取绝对值</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">子查询</span><span class="tag">第 22 题</span></div>
+    <h3 class="title-serif">标量子查询</h3>
+    <p class="question-desc">返回单个值（一个字段、一行）的子查询，称为哪种子查询？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>标量子查询</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>列子查询</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>表子查询</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>行子查询</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">子查询</span><span class="tag">第 23 题</span></div>
+    <h3 class="title-serif">列子查询</h3>
+    <p class="question-desc">返回一列多行的子查询，常与 IN 配合使用，称为哪种子查询？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>标量子查询</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>列子查询</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>表子查询</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>相关子查询</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">子查询</span><span class="tag">第 24 题</span></div>
+    <h3 class="title-serif">表子查询</h3>
+    <p class="question-desc">返回多行多列、可放在 FROM 子句中当作临时表使用的子查询，称为哪种子查询？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>表子查询</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>标量子查询</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>列子查询</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>行子查询</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">子查询</span><span class="tag">第 25 题</span></div>
+    <h3 class="title-serif">IN 子查询</h3>
+    <p class="question-desc">判断某字段的值是否落在子查询返回的结果集中，应使用哪个关键字？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>IN</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>BETWEEN</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>LIKE</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>IS</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">SELECT</span><span class="tag">第 26 题</span></div>
+    <h3 class="title-serif">基本 SELECT：字段、别名、常量</h3>
+    <p class="question-desc">在 SELECT 中为查询结果列起一个别名，应使用哪个关键字？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>AS</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>IN</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>BY</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>OF</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">SELECT</span><span class="tag">第 27 题</span></div>
+    <h3 class="title-serif">WHERE 条件筛选</h3>
+    <p class="question-desc">只查询 salary 大于 10000 的员工记录，应使用哪个子句进行行级筛选？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>WHERE salary &gt; 10000</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>HAVING salary &gt; 10000</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>ORDER BY salary</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>GROUP BY salary</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="A">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">SELECT</span><span class="tag">第 28 题</span></div>
+    <h3 class="title-serif">聚合函数与 GROUP BY</h3>
+    <p class="question-desc">按部门分组并统计每个部门的员工人数，应使用下列哪种写法？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>GROUP BY 部门 + COUNT()</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>WHERE 部门 + COUNT()</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>ORDER BY 部门 + COUNT()</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>DISTINCT 部门 + COUNT()</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="card" data-answer="B">
+    <div class="flex gap-2 flex-wrap mb-2"><span class="tag">SELECT</span><span class="tag">第 29 题</span></div>
+    <h3 class="title-serif">HAVING 子句</h3>
+    <p class="question-desc">对 GROUP BY 分组后的聚合结果进行筛选（如只保留人数超过 5 的部门），应使用哪个子句？</p>
+    <div class="options">
+      <div class="option" data-key="A"><span class="opt-key">A</span><span>WHERE</span></div>
+      <div class="option" data-key="B"><span class="opt-key">B</span><span>HAVING</span></div>
+      <div class="option" data-key="C"><span class="opt-key">C</span><span>ORDER BY</span></div>
+      <div class="option" data-key="D"><span class="opt-key">D</span><span>LIMIT</span></div>
+    </div>
+    <div class="result-box"><span class="answer"></span><div class="explanation"></div></div>
+  </div>
+
+  <div class="summary" id="summary">已答 0 / 29 题</div>
+</div>
+
+<script>
+document.querySelectorAll('.card[data-answer]').forEach(card => {
+  const answer = card.dataset.answer
+  const result = card.querySelector('.result-box')
+  const answerEl = result.querySelector('.answer')
+  const explEl = result.querySelector('.explanation')
+
+  card.querySelectorAll('.option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (card.dataset.done) return
+      card.dataset.done = '1'
+      const key = opt.dataset.key
+      const isCorrect = key === answer
+      card.querySelectorAll('.option').forEach(o => { o.classList.add('disabled') })
+      opt.classList.add(isCorrect ? 'correct' : 'wrong')
+      if (isCorrect) {
+        card.querySelectorAll('.option').forEach(o => { if (o.dataset.key === answer) o.classList.add('correct') })
+        result.classList.add('show', 'correct')
+        answerEl.textContent = '回答正确！正确答案：' + answer
+        explEl.textContent = ''
+      } else {
+        card.querySelectorAll('.option').forEach(o => { if (o.dataset.key === answer) o.classList.add('correct') })
+        result.classList.add('show', 'wrong')
+        answerEl.textContent = '回答错误，正确答案：' + answer
+        explEl.textContent = ''
+      }
+      updateSummary()
+    })
+  })
+})
+
+function updateSummary() {
+  const done = document.querySelectorAll('.card[data-done]').length
+  const total = document.querySelectorAll('.card[data-answer]').length
+  document.getElementById('summary').textContent = '已答 ' + done + ' / ' + total + ' 题'
+}
+updateSummary()
+</script>
+</body>
+</html>

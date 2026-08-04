@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL 知识图谱 · 交互式力导向图</title>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #f4f7fd;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .graph-wrapper {
+            width: 100%;
+            max-width: 1400px;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 40px -12px rgba(0,20,40,0.25);
+            padding: 20px 20px 10px 20px;
+        }
+        .graph-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 12px 16px 12px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #e9edf4;
+        }
+        .graph-header h1 {
+            font-weight: 600;
+            font-size: 1.7rem;
+            letter-spacing: -0.3px;
+            color: #0b1a33;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .graph-header h1 i {
+            color: #3b7cff;
+            font-size: 1.9rem;
+        }
+        .legend-tip {
+            font-size: 0.9rem;
+            background: #f0f4fe;
+            padding: 6px 18px;
+            border-radius: 40px;
+            color: #1e3a6b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .legend-tip i {
+            color: #3b7cff;
+        }
+        #graph-container {
+            width: 100%;
+            height: 740px;
+            background: #ffffff;
+            border-radius: 24px;
+            margin: 8px 0 6px 0;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #eef2f9;
+        }
+        #graph-container svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .graph-footer {
+            display: flex;
+            justify-content: flex-end;
+            padding: 12px 12px 4px 12px;
+            color: #6b7a93;
+            font-size: 0.85rem;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .graph-footer span i {
+            margin-right: 6px;
+            color: #4f7df3;
+        }
+        .tooltip-d3 {
+            position: absolute;
+            background: #0e1d34;
+            color: #f0f6ff;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            pointer-events: none;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: opacity 0.15s;
+            white-space: nowrap;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .tooltip-d3 i {
+            margin-right: 8px;
+            color: #8ab4ff;
+        }
+        @media (max-width: 700px) {
+            .graph-header {
+                flex-direction: column;
+                align-items: start;
+                gap: 8px;
+            }
+            .graph-header h1 {
+                font-size: 1.4rem;
+            }
+            #graph-container {
+                height: 560px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="graph-wrapper">
+    <div class="graph-header">
+        <h1>
+            <i class="fas fa-project-diagram"></i> 
+            SQL 知识图谱
+            <span style="font-size: 1rem; font-weight: 400; color: #4b6a92; margin-left: 8px;">· 学习路径</span>
+        </h1>
+        <div class="legend-tip">
+            <i class="fas fa-mouse-pointer"></i> 拖拽 · 滚轮缩放
+            <span style="margin:0 6px; opacity:0.3;">|</span>
+            <i class="fas fa-circle" style="color:#3b7cff;"></i> 核心节点
+        </div>
+    </div>
+    <div id="graph-container"></div>
+    <div class="graph-footer">
+        <span><i class="fas fa-code-branch"></i> 节点颜色按类别区分</span>
+        <span><i class="fas fa-arrow-right"></i> 边表示依赖 / 进阶</span>
+        <span><i class="fas fa-layer-group"></i> 层级深度 0–6</span>
+    </div>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+    (function() {
+        // ---------- 原始数据 ----------
+        const graphData = {
+            "edges": [
+                {"from_node":"select_basic","id":1,"to_node":"alias"},
+                {"from_node":"select_basic","id":2,"to_node":"distinct"},
+                {"from_node":"select_basic","id":3,"to_node":"where_basic"},
+                {"from_node":"select_basic","id":4,"to_node":"order_by"},
+                {"from_node":"select_basic","id":5,"to_node":"aggregate_basic"},
+                {"from_node":"where_basic","id":6,"to_node":"where_andor"},
+                {"from_node":"where_basic","id":7,"to_node":"where_like"},
+                {"from_node":"where_basic","id":8,"to_node":"where_null"},
+                {"from_node":"where_basic","id":9,"to_node":"where_in"},
+                {"from_node":"where_basic","id":10,"to_node":"where_between"},
+                {"from_node":"order_by","id":11,"to_node":"limit_offset"},
+                {"from_node":"aggregate_basic","id":12,"to_node":"group_by"},
+                {"from_node":"group_by","id":13,"to_node":"having"},
+                {"from_node":"group_by","id":14,"to_node":"avg"},
+                {"from_node":"group_by","id":15,"to_node":"count_distinct"},
+                {"from_node":"group_by","id":16,"to_node":"case_when"},
+                {"from_node":"select_basic","id":17,"to_node":"join_inner"},
+                {"from_node":"join_inner","id":18,"to_node":"join_left"},
+                {"from_node":"join_inner","id":19,"to_node":"join_self"},
+                {"from_node":"join_left","id":20,"to_node":"join_multi"},
+                {"from_node":"join_left","id":21,"to_node":"join_full"},
+                {"from_node":"select_basic","id":22,"to_node":"subquery_basic"},
+                {"from_node":"subquery_basic","id":23,"to_node":"subquery_exists"},
+                {"from_node":"subquery_basic","id":24,"to_node":"subquery_all"},
+                {"from_node":"subquery_basic","id":25,"to_node":"subquery_select"},
+                {"from_node":"subquery_select","id":26,"to_node":"cte"}
+            ],
+            "nodes": [
+                {"category":"SELECT","description":"从单表中查询列","icon":"fa-table","id":"select_basic","level":0,"name":"SELECT 基础查询"},
+                {"category":"SELECT","description":"为列或表取别名","icon":"fa-tag","id":"alias","level":1,"name":"别名 AS"},
+                {"category":"SELECT","description":"去除重复行","icon":"fa-eraser","id":"distinct","level":1,"name":"DISTINCT 去重"},
+                {"category":"ORDER BY","description":"对结果集排序","icon":"fa-sort","id":"order_by","level":1,"name":"ORDER BY 排序"},
+                {"category":"WHERE","description":"按条件过滤行","icon":"fa-filter","id":"where_basic","level":1,"name":"WHERE 条件筛选"},
+                {"category":"聚合","description":"COUNT/SUM/MAX/MIN","icon":"fa-calculator","id":"aggregate_basic","level":2,"name":"聚合函数基础"},
+                {"category":"JOIN","description":"等值连接两表","icon":"fa-link","id":"join_inner","level":2,"name":"INNER JOIN 内连接"},
+                {"category":"ORDER BY","description":"限制返回行数","icon":"fa-cut","id":"limit_offset","level":2,"name":"LIMIT / OFFSET 分页"},
+                {"category":"子查询","description":"WHERE 中子查询","icon":"fa-indent","id":"subquery_basic","level":2,"name":"子查询基础"},
+                {"category":"WHERE","description":"组合多个条件","icon":"fa-plus-circle","id":"where_andor","level":2,"name":"AND / OR 多条件"},
+                {"category":"WHERE","description":"值区间筛选","icon":"fa-arrows-alt-h","id":"where_between","level":2,"name":"BETWEEN 范围查询"},
+                {"category":"WHERE","description":"匹配值列表","icon":"fa-list-ul","id":"where_in","level":2,"name":"IN 运算符"},
+                {"category":"WHERE","description":"字符串模式匹配","icon":"fa-search","id":"where_like","level":2,"name":"LIKE 模糊查询"},
+                {"category":"WHERE","description":"IS NULL / IS NOT NULL","icon":"fa-question-circle","id":"where_null","level":2,"name":"NULL 值判断"},
+                {"category":"聚合","description":"按列分组聚合","icon":"fa-object-group","id":"group_by","level":3,"name":"GROUP BY 分组"},
+                {"category":"JOIN","description":"保留左表全部记录","icon":"fa-arrow-right","id":"join_left","level":3,"name":"LEFT JOIN 左连接"},
+                {"category":"JOIN","description":"同一表连接自身","icon":"fa-redo","id":"join_self","level":3,"name":"自连接"},
+                {"category":"聚合","description":"计算平均值","icon":"fa-chart-line","id":"avg","level":4,"name":"AVG 平均值"},
+                {"category":"聚合","description":"去重计数","icon":"fa-sort-numeric-up","id":"count_distinct","level":4,"name":"COUNT(DISTINCT)"},
+                {"category":"聚合","description":"过滤分组后结果","icon":"fa-filter","id":"having","level":4,"name":"HAVING 过滤分组"},
+                {"category":"JOIN","description":"连续 JOIN 多表","icon":"fa-project-diagram","id":"join_multi","level":4,"name":"多表 JOIN"},
+                {"category":"子查询","description":"多行比较","icon":"fa-greater-than","id":"subquery_all","level":4,"name":"ALL / ANY 子查询"},
+                {"category":"子查询","description":"存在性检查","icon":"fa-check-double","id":"subquery_exists","level":4,"name":"EXISTS 子查询"},
+                {"category":"聚合","description":"条件分支逻辑","icon":"fa-code-branch","id":"case_when","level":5,"name":"CASE WHEN 条件"},
+                {"category":"JOIN","description":"全外连接模拟","icon":"fa-arrows-alt","id":"join_full","level":5,"name":"FULL OUTER JOIN"},
+                {"category":"子查询","description":"标量子查询","icon":"fa-code","id":"subquery_select","level":5,"name":"SELECT 中子查询"},
+                {"category":"子查询","description":"公共表表达式","icon":"fa-layer-group","id":"cte","level":6,"name":"CTE (WITH)"}
+            ]
+        };
+
+        // 颜色映射
+        const categoryColor = {
+            "SELECT": "#3b7cff",
+            "ORDER BY": "#f5a623",
+            "WHERE": "#00b894",
+            "聚合": "#d35f8a",
+            "JOIN": "#a55eea",
+            "子查询": "#eb5e5e"
+        };
+
+        // 构建节点 map 和 节点数组 (带颜色)
+        const nodeMap = {};
+        const nodes = graphData.nodes.map(n => {
+            const color = categoryColor[n.category] || "#8b9bb5";
+            const iconClass = n.icon ? (n.icon.startsWith('fa-') ? `fas ${n.icon}` : `fas fa-${n.icon}`) : 'fas fa-circle';
+            nodeMap[n.id] = { ...n, color, iconClass };
+            return nodeMap[n.id];
+        });
+
+        // 构建边 (使用节点引用)
+        const edges = graphData.edges.map(e => {
+            const source = nodeMap[e.from_node];
+            const target = nodeMap[e.to_node];
+            return { ...e, source: source || { id: e.from_node }, target: target || { id: e.to_node } };
+        }).filter(e => e.source && e.target);
+
+        // ---------- D3 力导向图 ----------
+        const container = document.getElementById('graph-container');
+        const width = container.clientWidth || 1200;
+        const height = container.clientHeight || 740;
+
+        const svg = d3.select("#graph-container")
+            .append("svg")
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .style("background", "#ffffff");
+
+        // 箭头定义
+        svg.append("defs")
+            .append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "-0 -5 10 10")
+            .attr("refX", 24)
+            .attr("refY", 0)
+            .attr("orient", "auto")
+            .attr("markerWidth", 8)
+            .attr("markerHeight", 8)
+            .append("path")
+            .attr("d", "M 0 -4 L 8 0 L 0 4")
+            .attr("fill", "#b0c4de")
+            .style("opacity", 0.8);
+
+        // 力仿真
+        const simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(edges).id(d => d.id).distance(150).strength(0.5))
+            .force("charge", d3.forceManyBody().strength(-700).distanceMin(50).distanceMax(450))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collision", d3.forceCollide().radius(55).strength(0.7))
+            .force("x", d3.forceX(width / 2).strength(0.02))
+            .force("y", d3.forceY(height / 2).strength(0.02));
+
+        // ----- 绘制边 (先绘制边，让节点在上层) -----
+        const link = svg.append("g")
+            .attr("class", "links")
+            .selectAll("line")
+            .data(edges)
+            .enter().append("line")
+            .attr("stroke", "#b7c9e0")
+            .attr("stroke-width", 2.0)
+            .attr("stroke-opacity", 0.8)
+            .attr("marker-end", "url(#arrowhead)");
+
+        // ----- 绘制节点 -----
+        const nodeGroup = svg.append("g")
+            .attr("class", "nodes")
+            .selectAll("g")
+            .data(nodes)
+            .enter().append("g")
+            .attr("data-id", d => d.id)
+            .call(d3.drag()
+                .on("start", (event, d) => {
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    d.fx = d.x;
+                    d.fy = d.y;
+                })
+                .on("drag", (event, d) => {
+                    d.fx = event.x;
+                    d.fy = event.y;
+                })
+                .on("end", (event, d) => {
+                    if (!event.active) simulation.alphaTarget(0);
+                    d.fx = null;
+                    d.fy = null;
+                })
+            );
+
+        // 节点圆形
+        nodeGroup.append("circle")
+            .attr("r", 30)
+            .attr("fill", d => d.color)
+            .attr("stroke", "#ffffff")
+            .attr("stroke-width", 2.8)
+            .attr("filter", "drop-shadow(0 2px 8px rgba(0,0,0,0.08))");
+
+        // 图标 (使用 FontAwesome unicode)
+        nodeGroup.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "central")
+            .attr("font-size", "20px")
+            .attr("fill", "#ffffff")
+            .attr("pointer-events", "none")
+            .html(d => {
+                const iconMap = {
+                    "fa-table": "", "fa-tag": "", "fa-eraser": "", "fa-sort": "",
+                    "fa-filter": "", "fa-calculator": "", "fa-link": "", "fa-cut": "",
+                    "fa-indent": "", "fa-plus-circle": "", "fa-arrows-alt-h": "",
+                    "fa-list-ul": "", "fa-search": "", "fa-question-circle": "",
+                    "fa-object-group": "", "fa-arrow-right": "", "fa-redo": "",
+                    "fa-chart-line": "", "fa-sort-numeric-up": "", "fa-project-diagram": "",
+                    "fa-greater-than": "", "fa-check-double": "", "fa-code-branch": "",
+                    "fa-arrows-alt": "", "fa-code": "", "fa-layer-group": ""
+                };
+                let iconUnicode = "";
+                if (d.icon) {
+                    const key = d.icon.startsWith('fa-') ? d.icon : `fa-${d.icon}`;
+                    if (iconMap[key]) iconUnicode = iconMap[key];
+                }
+                return iconUnicode;
+            })
+            .attr("font-family", "Font Awesome 6 Free, 'Segoe UI', sans-serif")
+            .attr("font-weight", "900");
+
+        // 节点名称
+        nodeGroup.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "hanging")
+            .attr("y", 42)
+            .attr("font-size", "11px")
+            .attr("fill", "#1f2a44")
+            .attr("font-weight", "600")
+            .attr("letter-spacing", "0.2px")
+            .text(d => d.name)
+            .style("text-shadow", "0 1px 4px rgba(255,255,255,0.6)")
+            .style("pointer-events", "none");
+
+        // 类别小标签
+        nodeGroup.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "hanging")
+            .attr("y", 58)
+            .attr("font-size", "8px")
+            .attr("fill", "#60708f")
+            .attr("font-weight", "400")
+            .text(d => d.category)
+            .style("pointer-events", "none");
+
+        // Tooltip
+        const tooltip = d3.select("#graph-container")
+            .append("div")
+            .attr("class", "tooltip-d3")
+            .style("opacity", 0)
+            .style("position", "absolute");
+
+        nodeGroup.on("mouseover", function(event, d) {
+                tooltip.style("opacity", 1)
+                    .html(`<i class="${d.iconClass}"></i> ${d.name} <span style="opacity:0.7;margin:0 4px;">·</span> ${d.description}`)
+                    .style("left", (event.pageX - 40) + "px")
+                    .style("top", (event.pageY - 50) + "px");
+            })
+            .on("mousemove", function(event, d) {
+                tooltip.style("left", (event.pageX - 40) + "px")
+                    .style("top", (event.pageY - 50) + "px");
+            })
+            .on("mouseout", function() {
+                tooltip.style("opacity", 0);
+            });
+
+        // 更新位置
+        simulation.on("tick", () => {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            nodeGroup
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+        });
+
+        // 重启仿真，使布局稳定
+        simulation.alpha(0.5).restart();
+        setTimeout(() => simulation.alpha(0.2).restart(), 600);
+
+        // resize 自适应 (viewBox 固定)
+        window.addEventListener('resize', () => {});
+    })();
+</script>
+</body>
+</html>

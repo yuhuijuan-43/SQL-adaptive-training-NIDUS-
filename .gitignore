@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+venv/
+.venv/
+
+# 数据（可由 questions.json/exam_questions.json 重新生成）
+backend/questions.db
+backend/questions.db-wal
+backend/questions.db-shm
+
+# 内网穿透二进制
+ngrok/
+
+# 第三方依赖
+网络爬虫/node_modules/
+
+# Claude Code 本地配置
+.claude/settings.local.json

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>175. Combine Two Tables - 题目展示</title>
+<style>
+  :root { --bg: #f5f6f8; --card: #ffffff; --text: #2c3e50; --text2: #7a8599; --border: #e4e7ed; --accent: #5a7d9a; --accent-hover: #4a6a82; --tag-bg: #eef1f5; --code-bg: #f0f2f5; --success: #6b9e7a; --error: #c97a7a; }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; color: var(--text); margin: 0; padding: 20px; line-height: 1.5; }
+  .container { max-width: 800px; margin: 0 auto; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--text2); font-size: 0.65rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 0.25rem; }
+  .tag-easy { background: #eaf4ee; color: #5a8f6a; }
+  .tag-medium { background: #f0eddf; color: #8a7a4a; }
+  .tag-hard { background: #f0e4e4; color: #b06060; }
+  .question-desc { white-space: pre-wrap; font-size: 0.85rem; line-height: 1.7; margin-bottom: 0.75rem; padding: 0.75rem 1rem; background: var(--tag-bg); border-left: 3px solid var(--accent); border-radius: 0 0.375rem 0.375rem 0; color: var(--text); font-weight: 500; }
+  .title-serif { font-weight: 600; font-size: 1rem; }
+  .data-table { margin: 0 0 0.5rem 0; border-collapse: collapse; font-size: 0.7rem; font-family: 'SF Mono', 'Consolas', monospace; }
+  .data-table th { background: var(--text); color: #fff; padding: 0.3rem 0.5rem; text-align: left; font-weight: 600; }
+  .data-table td { padding: 0.25rem 0.5rem; border-bottom: 1px solid var(--border); color: var(--text); }
+  .data-table tr:nth-child(even) td { background: var(--tag-bg); }
+  .table-label { font-size: 0.65rem; font-weight: 600; color: var(--text2); margin: 0.5rem 0 0.25rem 0; text-transform: uppercase; letter-spacing: 0.04em; }
+  .exp-label { font-size: 0.65rem; font-weight: 600; color: var(--text); margin: 0.75rem 0 0.25rem 0; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sql-toggle { display: inline-flex; align-items: center; gap: 4px; font-size: 0.65rem; color: var(--accent); cursor: pointer; font-weight: 600; font-family: 'SF Mono', 'Consolas', monospace; user-select: none; padding: 2px 8px; border: 1px solid var(--border); border-radius: 0.25rem; background: var(--card); margin-bottom: 0.5rem; }
+  .sql-toggle:hover { background: var(--tag-bg); }
+  .sql-panel { display: none; margin-bottom: 0.75rem; }
+  .sql-panel.open { display: block; }
+  .sql-code { background: var(--text); color: #d4dce8; padding: 0.75rem 1rem; border-radius: 0.375rem; font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.7rem; line-height: 1.6; white-space: pre-wrap; overflow-x: auto; }
+  .code-input { width: 100%; min-height: 72px; padding: 0.6rem 0.75rem; font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.8rem; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 0.375rem; outline: none; resize: vertical; transition: border-color 0.15s; }
+  .code-input:focus { border-color: var(--accent); }
+  .result-box { margin-top: 0.75rem; padding: 0.75rem; border-radius: 0.375rem; font-size: 0.8rem; display: none; }
+  .result-box.correct { display: block; background: #eaf4ee; border: 1px solid #c8dfce; color: #3d7a4d; }
+  .result-box.wrong { display: block; background: #f5ebeb; border: 1px solid #e4c8c8; color: #8a4040; }
+  .result-box .explanation { margin-top: 0.4rem; color: var(--text2); font-size: 0.75rem; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 1rem; font-family: inherit; font-size: 0.75rem; font-weight: 600; border-radius: 0.375rem; border: 1px solid transparent; cursor: pointer; transition: all 0.12s; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+  .flex { display: flex; }
+  .gap-2 { gap: 0.5rem; }
+  .flex-wrap { flex-wrap: wrap; }
+  .mb-2 { margin-bottom: 0.5rem; }
+  .mb-3 { margin-bottom: 0.75rem; }
+  .mt-2 { margin-top: 0.5rem; }
+  .text-lg { font-size: 1rem; }
+  .text-xs { font-size: 0.65rem; }
+  .mr-1 { margin-right: 0.25rem; }
+  .opacity-60 { opacity: 0.6; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <div id="questionArea"></div>
+  </div>
+</div>
+
+<script>
+const q = {
+  "id": 175,
+  "source": "leetcode",
+  "category": "join_left",
+  "difficulty": "easy",
+  "star_difficulty": "⭐⭐",
+  "title": "175. Combine Two Tables",
+  "description": "Write a solution to report the first name, last name, city, and state of each person in the Person table. If the address of a personId is not present in the Address table, report null instead.\n\nReturn the result table in any order.",
+  "table_schema": "CREATE TABLE Person (personId INT, firstName VARCHAR(255), lastName VARCHAR(255));\nCREATE TABLE Address (addressId INT, personId INT, city VARCHAR(255), state VARCHAR(255));",
+  "initial_data": "INSERT INTO Person VALUES (1, 'Wang', 'Allen'), (2, 'Alice', 'Bob');\nINSERT INTO Address VALUES (1, 2, 'New York City', 'New York'), (2, 3, 'Leetcode', 'California');",
+  "correct_answer": "SELECT p.firstName, p.lastName, a.city, a.state FROM Person p LEFT JOIN Address a ON p.personId = a.personId;",
+  "explanation": "LEFT JOIN 会保留左表 Person 中的所有行。当 Address 表中没有匹配的 personId 时，city 和 state 返回 NULL。",
+  "expected_output": "firstName | lastName | city          | state\n----------+----------+---------------+----------\nAllen     | Wang     | Null          | Null\nBob       | Alice    | New York City | New York"
+};
+
+function parseSchemaToMap(schemaStr) {
+  var map = {};
+  if (!schemaStr) return map;
+  var stmts = schemaStr.split(';');
+  for (var s = 0; s < stmts.length; s++) {
+    var m = stmts[s].match(/(?:CREATE\s+TABLE\s+)?(\w+)\s*\((.*)\)/i);
+    if (!m) continue;
+    var tbl = m[1], raw = m[2], depth = 0, cur = '', cols = [];
+    for (var i = 0; i < raw.length; i++) {
+      var ch = raw[i];
+      if (ch === '(') { depth++; cur += ch; }
+      else if (ch === ')') { depth--; cur += ch; }
+      else if (ch === ',' && depth === 0) { var p = cur.trim().split(/\s+/); if (p[0]) cols.push(p[0]); cur = ''; }
+      else { cur += ch; }
+    }
+    if (cur.trim()) { var p = cur.trim().split(/\s+/); if (p[0]) cols.push(p[0]); }
+    map[tbl] = cols;
+  }
+  return map;
+}
+
+function renderDataTable(dataStr, schemaStr) {
+  if (!dataStr) return '';
+  var schemaMap = parseSchemaToMap(schemaStr);
+  var tableRows = {};
+  var stmts = dataStr.split(';');
+  for (var s = 0; s < stmts.length; s++) {
+    var stmt = stmts[s].trim();
+    if (!stmt) continue;
+    var m = stmt.match(/INSERT\s+INTO\s+(\w+)\s+VALUES\s*(.*)/i);
+    if (!m) continue;
+    var tbl = m[1], vp = m[2], depth = 0, cur = '', groups = [];
+    for (var i = 0; i < vp.length; i++) {
+      var ch = vp[i];
+      if (ch === '(' && depth === 0) { cur = ''; depth = 1; }
+      else if (ch === '(' && depth > 0) { cur += ch; depth++; }
+      else if (ch === ')' && depth > 1) { cur += ch; depth--; }
+      else if (ch === ')' && depth === 1) { depth = 0; groups.push(cur); cur = ''; }
+      else if (depth > 0) { cur += ch; }
+    }
+    if (!tableRows[tbl]) tableRows[tbl] = [];
+    for (var g = 0; g < groups.length; g++) {
+      var vals = [], vcur = '', inQ = false, qch = null;
+      for (var i = 0; i < groups[g].length; i++) {
+        var ch = groups[g][i];
+        if (inQ) { if (ch === qch) inQ = false; else vcur += ch; }
+        else if (ch === "'" || ch === '"') { inQ = true; qch = ch; }
+        else if (ch === ',') { vals.push(vcur.trim()); vcur = ''; }
+        else { vcur += ch; }
+      }
+      if (vcur.trim()) vals.push(vcur.trim());
+      if (vals.length) tableRows[tbl].push(vals);
+    }
+  }
+  var html = '';
+  var tblNames = Object.keys(tableRows);
+  for (var t = 0; t < tblNames.length; t++) {
+    var tbl = tblNames[t];
+    var rows = tableRows[tbl];
+    if (!rows.length) continue;
+    var hdrs = (schemaMap[tbl] && schemaMap[tbl].length) ? schemaMap[tbl] : rows[0].map(function(_, i) { return 'col' + (i+1); });
+    html += '<div class="table-label">' + tbl + '</div><table class="data-table"><thead><tr>';
+    for (var h = 0; h < hdrs.length; h++) html += '<th>' + hdrs[h] + '</th>';
+    html += '</tr></thead><tbody>';
+    for (var r = 0; r < rows.length; r++) {
+      html += '<tr>';
+      for (var c = 0; c < rows[r].length; c++) html += '<td>' + rows[r][c] + '</td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+  }
+  return html;
+}
+
+function renderExpectedOutput(expStr) {
+  if (!expStr) return '';
+  try {
+    var data = JSON.parse(expStr);
+    if (data.rows && data.rows.length) {
+      var html = '<div class="exp-label">\u9884\u671f\u8f93\u51fa</div><table class="data-table"><thead><tr>';
+      for (var h = 0; h < data.headers.length; h++) html += '<th>' + data.headers[h] + '</th>';
+      html += '</tr></thead><tbody>';
+      for (var r = 0; r < data.rows.length; r++) {
+        html += '<tr>';
+        for (var c = 0; c < data.rows[r].length; c++) html += '<td>' + (data.rows[r][c] === null ? 'NULL' : data.rows[r][c]) + '</td>';
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      return html;
+    }
+  } catch(e) {}
+  var lines = expStr.split('\n');
+  if (lines.length < 2) return '<div class="exp-label">\u9884\u671f\u8f93\u51fa</div><pre class="expected-output-text">' + expStr + '</pre>';
+  var headerLine = lines[0];
+  var sepLine = lines[1] || '';
+  var dataLines = [];
+  for (var i = 2; i < lines.length; i++) { if (lines[i].trim()) dataLines.push(lines[i]); }
+  if (/^[-+]+$/.test(sepLine.trim())) {
+    var headers = headerLine.split('|').map(function(s) { return s.trim(); });
+    var html = '<div class="exp-label">\u9884\u671f\u8f93\u51fa</div><table class="data-table"><thead><tr>';
+    for (var h = 0; h < headers.length; h++) html += '<th>' + headers[h] + '</th>';
+    html += '</tr></thead><tbody>';
+    for (var r = 0; r < dataLines.length; r++) {
+      var cells = dataLines[r].split('|').map(function(s) { return s.trim(); });
+      html += '<tr>';
+      for (var c = 0; c < cells.length; c++) html += '<td>' + cells[c] + '</td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    return html;
+  }
+  return '<div class="exp-label">\u9884\u671f\u8f93\u51fa</div><pre class="expected-output-text">' + expStr + '</pre>';
+}
+
+function normalizeSql(sql) {
+  return sql.replace(/;/g, '').replace(/\s+/g, ' ').replace(/'/g, '').replace(/"/g, '').trim().toLowerCase();
+}
+
+function renderQuestion(q) {
+  var hasOpts = q.options && (typeof q.options === 'string' ? q.options.trim() : q.options.length);
+  var html = '<div class="flex gap-2 flex-wrap mb-2">';
+  html += '<span class="tag">' + (q.category || '') + '</span>';
+  html += '<span class="tag" style="color:#b8860b">' + (q.star_difficulty || '') + '</span>';
+  html += '<span class="tag" style="background:' + (hasOpts ? 'rgba(52,119,191,0.15)' : 'rgba(193,124,74,0.20)') + ';color:' + (hasOpts ? '#3477bf' : '#a8683e') + '">' + (hasOpts ? '\u9009\u62e9\u9898' : '\u586b\u7a7a\u9898') + '</span>';
+  html += '</div>';
+  html += '<h3 class="title-serif text-lg mb-2">' + q.title + '</h3>';
+  html += '<p class="question-desc">' + q.description + '</p>';
+  html += renderDataTable(q.initial_data, q.table_schema);
+  html += '<div class="sql-toggle" onclick="var p=document.getElementById(\'sqlPanel\');p.classList.toggle(\'open\');this.querySelector(\'span\').textContent=p.classList.contains(\'open\')?\'\u6536\u8d77 SQL\':\'\u5c55\u5f00 SQL\'"><span>\u5c55\u5f00 SQL</span></div><div class="sql-panel" id="sqlPanel"><div class="sql-code">' + (q.table_schema || '').replace(/</g, '&lt;') + ';\n' + (q.initial_data || '').replace(/</g, '&lt;') + '</div></div>';
+  if (q.expected_output) html += renderExpectedOutput(q.expected_output);
+  html += '<textarea class="code-input" id="sqlInput" placeholder="\u624b\u52a8\u8f93\u5165\u4f60\u7684 SQL \u8bed\u53e5..."></textarea>';
+  html += '<div id="resultBox" class="result-box"></div>';
+  html += '<div class="mt-2"><button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()"><i class="fas fa-paper-plane mr-1"></i> \u63d0\u4ea4\u7b54\u6848</button></div>';
+  return html;
+}
+
+function submitAnswer() {
+  var input = document.getElementById('sqlInput').value.trim();
+  if (!input) { alert('\u8bf7\u5148\u8f93\u5165 SQL \u8bed\u53e5'); return; }
+  var resultBox = document.getElementById('resultBox');
+  var isCorrect = normalizeSql(input) === normalizeSql(q.correct_answer);
+  resultBox.className = 'result-box ' + (isCorrect ? 'correct' : 'wrong');
+  resultBox.innerHTML = isCorrect
+    ? '<strong>\u56de\u7b54\u6b63\u786e</strong>'
+    : '<strong>\u56de\u7b54\u9519\u8bef</strong><br>\u6b63\u786e\u7b54\u6848\uff1a<strong>' + q.correct_answer + '</strong>';
+  resultBox.innerHTML += '<div class="explanation"><i class="fas fa-lightbulb mr-1"></i> ' + (q.explanation || '') + '</div>';
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '\u5df2\u63d0\u4ea4';
+}
+
+document.getElementById('questionArea').innerHTML = renderQuestion(q);
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</body>
+</html>

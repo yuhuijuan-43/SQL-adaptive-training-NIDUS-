@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>了解我们 · SQL 自适应训练</title>
+<style>
+/* ============================================================
+   SQL 自适应训练 — 了解我们（独立页面 · 浅色玻璃拟态）
+   ============================================================ */
+:root {
+  --bg-0: #eef3fc;
+  --bg-1: #e3ecf9;
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(88, 110, 170, 0.14);
+  --glass-border-hover: rgba(88, 110, 170, 0.30);
+  --text-1: #1b2747;
+  --text-2: #48577c;
+  --text-3: #8b96b4;
+  --accent: #4a7dff;
+  --accent-2: #8b5bff;
+  --accent-grad: linear-gradient(135deg, #4a7dff 0%, #8b5bff 100%);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --sans: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  --mono: 'SF Mono', Consolas, 'Courier New', monospace;
+  --shadow: 0 10px 34px rgba(58, 82, 148, 0.13);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans); color: var(--text-1); line-height: 1.6; overflow-x: hidden;
+  background:
+    radial-gradient(1100px 700px at 88% -12%, rgba(140, 120, 255, 0.16), transparent 60%),
+    radial-gradient(900px 620px at -8% 18%, rgba(80, 140, 255, 0.15), transparent 55%),
+    radial-gradient(800px 560px at 50% 115%, rgba(70, 190, 210, 0.12), transparent 55%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%);
+  min-height: 100vh;
+}
+.orb { position: fixed; border-radius: 50%; filter: blur(100px); z-index: 0; pointer-events: none; }
+.orb-1 { width: 520px; height: 520px; background: #b9a6ff; top: -160px; right: -120px; opacity: 0.30; animation: drift 19s ease-in-out infinite; }
+.orb-2 { width: 440px; height: 440px; background: #9cc0ff; top: 42%; left: -200px; opacity: 0.28; animation: drift 24s ease-in-out infinite reverse; }
+.orb-3 { width: 380px; height: 380px; background: #93e2ea; bottom: -140px; right: 20%; opacity: 0.26; animation: drift 27s ease-in-out infinite; }
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(42px, -28px) scale(1.07); }
+  66% { transform: translate(-30px, 24px) scale(0.94); }
+}
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+/* ---- 导航 ---- */
+.navbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px);
+  border-bottom: 1px solid rgba(88, 110, 170, 0.12);
+}
+.nav-inner { max-width: 1180px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; gap: 30px; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; cursor: pointer; user-select: none; }
+.logo-badge {
+  width: 40px; height: 40px; border-radius: 10px; overflow: hidden; flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.7);
+  filter: drop-shadow(0 2px 6px rgba(58, 82, 148, 0.18));
+}
+.logo-badge img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.nav-links { display: flex; gap: 4px; flex: 1; }
+.nav-link {
+  padding: 7px 14px; border-radius: 999px; font-size: 13.5px; color: var(--text-2);
+  cursor: pointer; transition: all 0.2s; border: none; background: none; font-family: inherit;
+}
+.nav-link:hover { color: var(--text-1); background: rgba(88, 110, 170, 0.08); }
+.nav-link.active { color: #fff; background: var(--accent-grad); box-shadow: 0 4px 14px rgba(90, 100, 255, 0.35); }
+.container { max-width: 900px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+/* ---- 页头 ---- */
+.page-head { text-align: center; padding: 64px 0 14px; }
+.page-head .badge {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: var(--accent);
+  background: rgba(255, 255, 255, 0.75); border: 1px solid rgba(88, 110, 170, 0.18);
+  box-shadow: 0 3px 12px rgba(58, 82, 148, 0.08);
+}
+.page-head .badge .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.8s infinite; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(74, 125, 255, 0.4); } 50% { box-shadow: 0 0 0 7px rgba(74, 125, 255, 0); } }
+.page-title { font-size: 34px; font-weight: 800; margin: 18px 0 8px; }
+.page-title .grad { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.page-sub { font-size: 14px; color: var(--text-3); }
+/* ---- 更新列表 ---- */
+.updates { padding: 36px 0 80px; }
+.update-list { display: flex; flex-direction: column; gap: 12px; }
+.update-item { display: flex; gap: 16px; padding: 18px 22px; transition: all 0.25s; }
+.update-item:hover { transform: translateX(4px); border-color: var(--glass-border-hover); }
+.update-item .u-date {
+  flex-shrink: 0; width: 78px; text-align: center; align-self: flex-start;
+  font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--text-2);
+  padding: 7px 0; border-radius: 9px; background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(88, 110, 170, 0.16);
+}
+.update-item .u-body { flex: 1; min-width: 0; }
+.update-item .u-top { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 4px; }
+.update-item .u-title { font-size: 14px; font-weight: 700; }
+.update-item .u-desc { font-size: 12.5px; color: var(--text-2); line-height: 1.7; }
+.utag { padding: 2.5px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; }
+.utag.new { color: #4a7dff; background: rgba(74, 125, 255, 0.12); border: 1px solid rgba(74, 125, 255, 0.3); }
+.utag.fix { color: #0ea678; background: rgba(14, 166, 120, 0.10); border: 1px solid rgba(14, 166, 120, 0.28); }
+.utag.bank { color: #8b5bff; background: rgba(139, 91, 255, 0.10); border: 1px solid rgba(139, 91, 255, 0.28); }
+.utag.opt { color: #0891b2; background: rgba(8, 145, 178, 0.10); border: 1px solid rgba(8, 145, 178, 0.28); }
+.utag.origin { color: #8b5bff; background: rgba(139, 91, 255, 0.14); border: 1px solid rgba(139, 91, 255, 0.4); }
+/* 置顶初心条目 */
+.update-item.origin {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(74, 125, 255, 0.07));
+  border: 1px solid rgba(74, 125, 255, 0.35);
+  box-shadow: 0 8px 30px rgba(74, 125, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+.update-item.origin:hover { border-color: rgba(74, 125, 255, 0.6); }
+.pin-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2.5px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 700;
+  color: #fff; background: var(--accent-grad);
+  box-shadow: 0 3px 10px rgba(90, 100, 255, 0.35);
+}
+.pin-badge::before { content: '▲'; font-size: 8px; }
+/* ---- 条目详情入口 ---- */
+.update-item { cursor: pointer; }
+.u-more {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 8px;
+  font-size: 12px; font-weight: 600; color: var(--accent); font-family: var(--mono);
+}
+.u-more .arr { transition: transform 0.2s; }
+.update-item:hover .u-more .arr { transform: translateX(4px); }
+/* ---- 详情弹窗 ---- */
+.modal-mask {
+  position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center;
+  background: rgba(30, 42, 72, 0.42); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  padding: 20px;
+}
+.modal-mask.show { display: flex; animation: fadeIn 0.22s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  width: 100%; max-width: 700px; max-height: 84vh; overflow-y: auto; padding: 26px 30px;
+  background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(88, 110, 170, 0.2); border-radius: 20px;
+  box-shadow: 0 24px 80px rgba(40, 60, 110, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  animation: fadeUp 0.28s ease;
+}
+.modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+.modal-title { font-size: 18px; font-weight: 800; line-height: 1.4; }
+.modal-close {
+  width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; cursor: pointer;
+  background: rgba(255, 255, 255, 0.85); border: 1px solid rgba(88, 110, 170, 0.2); color: var(--text-2);
+  font-size: 12px; display: grid; place-items: center;
+  box-shadow: 0 2px 10px rgba(58, 82, 148, 0.1); transition: all 0.28s;
+}
+.modal-close:hover {
+  background: var(--accent-grad); color: #fff; border-color: transparent;
+  transform: rotate(90deg); box-shadow: 0 5px 18px rgba(90, 100, 255, 0.45);
+}
+.modal-meta { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 12px; color: var(--text-3); }
+.modal-meta .m-date { font-family: var(--mono); font-weight: 700; color: var(--text-2); }
+.m-section { margin-top: 18px; }
+.m-section h4 {
+  font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: 0.08em;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.m-section h4::before { content: ''; width: 4px; height: 13px; border-radius: 2px; background: var(--accent-grad); }
+.m-overview { font-size: 13px; color: var(--text-2); line-height: 1.8; }
+.m-overview.thinking {
+  padding: 13px 16px; border-radius: 12px; background: rgba(74, 125, 255, 0.05);
+  border-left: 3px solid var(--accent); color: var(--text-2);
+}
+.m-points { list-style: none; }
+.m-points li {
+  position: relative; padding-left: 18px; font-size: 13px; color: var(--text-2);
+  line-height: 1.75; margin-bottom: 9px;
+}
+.m-points li::before {
+  content: '▸'; position: absolute; left: 0; top: 0; color: var(--accent); font-size: 11px;
+}
+.m-points li b { color: var(--text-1); font-weight: 600; }
+.m-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+.m-stat {
+  flex: 1; min-width: 100px; text-align: center; padding: 12px 10px; border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75); border: 1px solid rgba(88, 110, 170, 0.14);
+}
+.m-stat .v { font-size: 20px; font-weight: 800; font-family: var(--mono); background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.m-stat .l { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.modal-foot { display: flex; justify-content: flex-end; margin-top: 20px; }
+.modal-foot .btn-ok {
+  display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 26px;
+  border-radius: 999px; border: none; cursor: pointer; font-family: inherit;
+  font-size: 13.5px; font-weight: 700; color: #fff; background: var(--accent-grad);
+  box-shadow: 0 4px 18px rgba(90, 100, 255, 0.35); transition: all 0.25s;
+}
+.modal-foot .btn-ok:hover { transform: translateY(-1px); box-shadow: 0 7px 28px rgba(90, 100, 255, 0.52); }
+/* ---- 分页 ---- */
+.pager { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 28px; flex-wrap: wrap; }
+.pg-info { font-size: 12px; color: var(--text-3); font-family: var(--mono); margin-right: 4px; }
+.pg-btn {
+  min-width: 36px; height: 36px; padding: 0 14px; border-radius: 10px; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-2);
+  background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(88, 110, 170, 0.18);
+  transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.pg-btn:hover:not(:disabled):not(.on) { color: var(--text-1); border-color: rgba(74, 125, 255, 0.45); background: #fff; }
+.pg-btn.on { color: #fff; background: var(--accent-grad); border-color: transparent; box-shadow: 0 4px 14px rgba(90, 100, 255, 0.35); }
+.pg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.pg-btn .arr { font-family: var(--mono); }
+/* ---- 返回按钮 ---- */
+.back-btn { display: flex; justify-content: center; padding: 8px 0 0; }
+.back-btn .btn {
+  display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 26px;
+  border-radius: 11px; border: none; cursor: pointer; font-family: inherit;
+  font-size: 14px; font-weight: 600; color: var(--text-2); background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(88, 110, 170, 0.2); transition: all 0.2s;
+}
+.back-btn .btn:hover { color: var(--text-1); border-color: rgba(88, 110, 170, 0.4); background: #fff; }
+.back-btn .btn .arr { color: var(--accent); font-family: var(--mono); }
+/* ---- 页脚 ---- */
+.footer {
+  border-top: 1px solid rgba(88, 110, 170, 0.14); padding: 24px 0 30px; text-align: center;
+  font-size: 12px; color: var(--text-3); position: relative; z-index: 1;
+}
+.footer a { color: var(--text-2); text-decoration: none; }
+.footer a:hover { color: var(--accent); }
+/* ---- 滚动条 ---- */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: rgba(88, 110, 170, 0.25); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(88, 110, 170, 0.4); }
+::-webkit-scrollbar-track { background: transparent; }
+/* ---- 动画 ---- */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.fade-up { animation: fadeUp 0.55s ease both; }
+/* ---- 响应式 ---- */
+@media (max-width: 560px) {
+  .container { padding: 0 16px; }
+  .nav-inner { padding: 0 16px; }
+  .page-title { font-size: 27px; }
+  .update-item { flex-direction: column; gap: 10px; }
+  .update-item .u-date { width: auto; text-align: left; display: inline-block; align-self: flex-start; padding: 4px 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 背景光球 -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- ========== 顶部导航 ========== -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="logo" onclick="window.location.href='index_glass.html'">
+      <div class="logo-badge"><img src="nidus_logo.png" alt="NIDUS"></div>
+      <span>SQL 自适应训练</span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-link" onclick="window.location.href='index_glass.html'">首页</button>
+      <button class="nav-link active" onclick="window.location.href='about.html'">了解我们</button>
+      <button class="nav-link" onclick="window.location.href='login_glass.html'">进入平台</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- ========== 页头 ========== -->
+  <header class="page-head">
+    <div class="badge fade-up"><span class="pulse-dot"></span>平台动态 · 持续更新</div>
+    <h1 class="page-title fade-up" style="animation-delay:0.06s">了解<span class="grad">我们</span></h1>
+    <p class="page-sub fade-up" style="animation-delay:0.12s">最新功能上线与平台更新动态，从这里了解我们</p>
+  </header>
+
+  <!-- ========== 更新通知（分页） ========== -->
+  <section class="updates">
+    <div class="update-list" id="updateList"></div>
+    <div class="pager" id="pager"></div>
+
+    <div class="back-btn fade-up">
+      <button class="btn" onclick="window.location.href='index_glass.html'"><span class="arr">←</span>返回首页</button>
+    </div>
+  </section>
+</div>
+
+<!-- ========== 详情弹窗 ========== -->
+<div class="modal-mask" id="detailModal" onclick="if(event.target===this)closeDetail()">
+  <div class="modal" id="detailBody"></div>
+</div>
+
+<!-- ========== 页脚 ========== -->
+<footer class="footer">
+  © 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台 —
+  <a href="login_glass.html">进入做题前端</a>
+</footer>
+
+<script>
+/* ============================================================
+   更新通知数据 + 分页 + 详情弹窗
+   新条目往 UPDATES 头部插入（日期最新在前），字段说明：
+   date/tag/tagText/title/desc = 列表简版
+   overview = 概述；points = 实现要点；thinking = 开发思路分享；stats = 数据速览
+   面向所有用户：用文字讲清「做了什么 + 为什么这么做」
+   ============================================================ */
+/* ============================================================
+   置顶条目：项目初心（时间最早，但始终排在第一页首位）
+   ============================================================ */
+const VISION = {
+  date: '2026-06', tag: 'origin', tagText: '项目初心',
+  title: '我们的设想 · 为什么做这个平台',
+  desc: '我们想做的不是又一个刷题网站，而是一个「懂你」的学习引擎——记住你答对的每一题、答错的每一题，只推送你此刻最该做的那道题。',
+  overview: '立项之初，团队的目标非常朴素：让 SQL 学习告别千篇一律。市面上的题库只有「题」，没有「人」——每个人从第一题刷起，会的人浪费时间，不会的人挫败放弃。我们想做的是像 Duolingo 一样的体验：系统知道你已经会了什么，然后给你刚刚好的挑战。',
+  points: [
+    '<b>千人千面</b>：每个用户的学习路径不同——基础好的直接从多表连接起步，基础弱的先巩固 SELECT，不做统一进度的流水线。',
+    '<b>知识图谱驱动</b>：37 个知识点按依赖关系织成地图，学 JOIN 之前必须先掌握 SELECT，杜绝知识断层。',
+    '<b>算法内核</b>：贝叶斯知识追踪（BKT）维护掌握度画像，Thompson 采样在「巩固已知」与「探索未知」间动态平衡，答错的知识点自动加权强化。',
+    '<b>务实路线</b>：MVP 用 Flask + SQLite 快速验证学习闭环，先跑通「答题 → 画像更新 → 智能推荐」，再谈规模与扩展。'
+  ],
+  thinking: '团队最初的设想很简单：学习不该是题海战术，而是一场「刚刚好」的挑战——太难劝退，太易无聊。我们希望每个用户打开平台时，看到的下一道题就是此刻最适合他的那一道。这条路还很长，但方向我们始终相信：让机器读懂人的学习，把人从重复劳动里解放出来。这个初心不会变，后续的每一次更新都朝着它走。',
+  stats: [['37', '知识点图谱'], ['3', '自适应阶段'], ['0→1', '从立项到上线']]
+};
+
+const UPDATES = [
+  {
+    date: '2026-08-03', tag: 'new', tagText: '新功能',
+    title: '玻璃拟态门户体系上线',
+    desc: '全新门户首页 + 登录注册页上线，全站统一浅色玻璃拟态风格，路径改为「门户 → 登录 → 做题」三级流转。',
+    overview: '参照 DeepSeek / Codex 等大厂前端风格，为平台打造了完整的对外门户：品牌门户首页、了解我们动态页、玻璃拟态登录注册页，并将做题前端同步改版为同一设计语言。',
+    points: [
+      '<b>门户首页</b>：左右分栏布局，左侧品牌文案与数据背书，右侧「进入平台 / 了解我们」双入口卡片；全站统一浅色玻璃拟态（磨砂卡片 + 漂浮光球 + 蓝紫渐变）。',
+      '<b>登录注册页</b>：登录/注册选项卡，集成随机用户名、随机安全密码、密码强度检测等工具；图标全部换用 Lucide 线性 SVG，无卡通 emoji。',
+      '<b>做题页改版</b>：白底界面升级为玻璃拟态，导航、卡片、按钮全量统一；摸底小测功能正式下线，聚焦自适应进阶、自主练习、真题测试、错题集四大模块。',
+      '<b>品牌化</b>：接入 NIDUS 品牌 logo（透明底处理），页脚文案去除技术栈信息。'
+    ],
+    thinking: '产品要有门面：用户第一眼看到的页面决定了第一印象。我们专门花了一轮打磨对外门户——统一的视觉语言让「门户、登录、做题」看起来像一个完整的产品，而不是三个拼凑的页面。同时明确产品边界：摸底小测不是我们的特色，砍掉它，把资源聚焦到自适应引擎这条主线上。',
+    stats: [['3', '级页面体系'], ['4', '个页面改版'], ['0', 'CDN 依赖']]
+  },
+  {
+    date: '2026-08-03', tag: 'new', tagText: '新功能',
+    title: '自定义级联分类筛选器',
+    desc: '题库分类筛选升级为悬停级联面板——鼠标滑过大分类即显示子分类，自由切换不锁定，选中后可一键清除。',
+    overview: '把分类筛选从传统的下拉框升级为「悬停级联」交互：鼠标滑过大分类立即预览其下的子分类，可自由跨分类切换，不再有旧版选中后无法灵活更换的问题。',
+    points: [
+      '<b>交互方式</b>：鼠标悬停即弹出子分类面板，移开片刻后面板自动收起；选中的筛选会以「✕ 标签」形式挂在筛选栏右侧，点击即可一键清除。',
+      '<b>不锁定原则</b>：面板只是「预览层」，从选定到反悔都是一次连续动作——看到哪层到哪层，随时可以换，不再强制先切回「全部」。',
+      '<b>一致性</b>：题型、难度、分类三组筛选统一样式与高度，视觉上是一套控件。'
+    ],
+    thinking: '最初的下拉框是平铺列表，想换分类得先切回「全部」再重选，误操作率高、路径也长。我们的核心思路是把「选完再改」变成「先看后定」——让筛选像逛菜单一样轻松，滑过即预览、离开不锁定，选中后还能一键反悔。筛选不该是负担，而应是探索题库的入口。',
+    stats: [['6 条', '新增样式规则'], ['5 个', '交互状态'], ['200ms', '面板收起延迟']]
+  },
+  {
+    date: '2026-08-02', tag: 'fix', tagText: '修复',
+    title: '层级分类筛选 + 难度筛选修复',
+    desc: '难度筛选改为全量题目统一生效（含静态选择题）；分类筛选升级为知识图谱层级结构，支持逐级下钻。',
+    overview: '两个筛选问题修复：难度筛选此前只作用于部分题目，另一些题完全不响应；分类下拉框则是平铺列表，无法体现知识点间的从属关系。',
+    points: [
+      '<b>难度筛选统一生效</b>：把难度过滤从「后端局部过滤」改为「前端全量统一过滤」，无论题目来自哪个题库，筛选结果一视同仁。',
+      '<b>分类层级化</b>：筛选选项直接复用知识图谱的层级关系——选大分类自动覆盖其全部子知识点，选具体子节点则只匹配该点。',
+      '<b>静态题映射</b>：静态选择题也建立了到知识节点的映射，保证它们和动态题一样参与层级筛选。'
+    ],
+    thinking: '筛选的本质是「帮用户把题库读薄」。平铺的 29 个标签无法传达知识点之间的关系，而知识图谱本身就是现成的层级字典——我们让它直接驱动筛选：选「多表连接」就是连同它的内连接、左连接、自连接一起看。难度筛选的修复则是原则问题：规则要么对所有题生效，要么就别叫规则。',
+    stats: [['29 个', '标签接入层级'], ['58 道', '静态题纳入过滤'], ['2 个', '筛选问题修复']]
+  },
+  {
+    date: '2026-08-02', tag: 'bank', tagText: '题库扩充',
+    title: '牛客 182 题标准答案全部生成',
+    desc: '用大模型逐题生成答案并在真实数据库执行验证、自动重试修正。题库总量增至 507 题，上线 50 道笔试真题。',
+    overview: '牛客采集的 182 道题全部缺少标准答案。我们搭了一条「生成-验证-修复」流水线：大模型逐题写答案 → 放进数据库真实执行 → 结果不对就让模型重试，最终 182/182 全部通过执行验证。',
+    points: [
+      '<b>机器可验证</b>：每道题的答案必须能在数据库里执行成功并产出结果，而不是「看起来合理」——用执行结果代替人工抽检。',
+      '<b>自动修复闭环</b>：首轮生成后分批修复：类型转换误伤列名、MySQL 方言缺少关键字、建表语句分散在多文件等，都是「答了但跑不通」的典型案例。',
+      '<b>分轨入库</b>：入门 / 必知必会 / 热题进入自主练习（增至 457 题）；大厂笔试真题单独成册（50 题），练习与测试分开。'
+    ],
+    thinking: '182 道题没有参考答案，等于有卷子没答案。人工逐题手写量大且容易出错，我们的思路是「让机器做裁判」：大模型负责生成、数据库负责验证，不合格就重来。踩过的坑（改类型把列名也改了、方言差异、路径兼容）本身就是一次很好的实践——题库质量的底线应该是「每条答案可执行、可复现」，而不是「有人看过」。',
+    stats: [['182/182', '答案验证通过'], ['457', '自主练习总量'], ['50', '笔试真题']]
+  },
+  {
+    date: '2026-07-31', tag: 'opt', tagText: '优化',
+    title: '知识图谱重构上线',
+    desc: '图谱升级为 37 节点三层结构（根 → 7 大分类 → 29 子节点），学习路径一目了然，推荐权重重排。',
+    overview: '知识图谱重构为清晰的三层结构：一个根节点、7 大分类（增删改、表定义、函数、连接、约束、子查询、查询）、29 个子知识点。图谱同时驱动解锁规则与推荐权重，学习路径收敛成一张可读的地图。',
+    points: [
+      '<b>权重重排</b>：做对过的题大幅降低推送优先级；没做过的题优先推送；答错过的题 ×1.5 加权强化练习。',
+      '<b>60% 巩固规则</b>：当前知识点的答对率不足 60% 时强制停留练习，达标才推下一个知识点，保证基础不虚。',
+      '<b>解锁链修复</b>：发现旧逻辑下「答对选择题永远解锁不了填空题」的断链问题——改为首次答对进阶选择题即解锁全部填空题并立即推送一道。'
+    ],
+    thinking: '旧图谱和题目关联松散，用户看不清「该学什么、学到哪了」。这次重构的核心是收敛：把学习路径收成一张 37 节点的地图，7 大分类打底、知识点挂在其下；同时把推荐逻辑和地图对齐——按掌握度配权重、按答对率卡进度。过程中暴露的解锁断链是最大收获：自适应系统最怕的是一环扣不上，用户就永远到不了下一环。',
+    stats: [['37', '节点总数'], ['29', '知识标签'], ['60%', '掌握阈值']]
+  },
+  {
+    date: '2026-07-30', tag: 'fix', tagText: '修复',
+    title: 'LeetCode 310 题标准答案更新',
+    desc: '批量更新标准答案，295 题通过真实执行生成预期输出；为 MySQL 方言新增翻译层，移除 15 道不兼容题。',
+    overview: '310 道题有标准答案但没有可运行的预期输出，判题机无法工作。我们让答案在数据库里真实执行生成输出表格，并为此解决了 MySQL 与 SQLite 的方言差异；3 道答案本身有误的题做了人工修正。',
+    points: [
+      '<b>真实执行出预期</b>：判题对比的是「实际跑出来的结果」，而不是手写的参考表——295 题成功生成。',
+      '<b>方言翻译层</b>：MySQL 特有语法（枚举类型、日期格式化、字段类型差异等）在移植时做了逐项适配。',
+      '<b>果断裁剪</b>：15 道涉及正则、函数定义等无法在 SQLite 运行的功能，直接移除——判题准确比题量数字更重要。'
+    ],
+    thinking: '判题机的底线是「你的答案真的能跑出那个结果」。我们把 310 道题的答案全部放进数据库执行了一遍，跑不通就查原因：方言差异写翻译层，答案本身错了就人工修，实在跑不了的 15 道果断移除。题量是可以再补的，但「判错」会直接击穿用户信任——数据质量优先于数量。',
+    stats: [['295', '题验证通过'], ['15', '题果断移除'], ['3', '题人工修正']]
+  },
+    {
+    date: '2026-07-28', tag: 'new', tagText: '新功能',
+    title: '深度模式上线',
+    desc: '选择题答对后自动推送同知识点填空题，举一反三，形成「概念记忆 → 实战验证」的学习闭环。',
+    overview: '深度模式上线：选择题答对后自动推送同一知识点的填空题——概念题是预习，填空题才是实战，趁热打铁。',
+    points: [
+      '<b>深度模式</b>：答对选择题后自动推送同一知识点的填空题——概念题是预习，填空题才是实战，趁热打铁。',
+      '<b>解锁规则</b>：首次答对基础题解锁全部选择题；首次答对进阶题直接解锁全部填空题并立即推送一道；答错则留在当前知识点巩固。'
+    ],
+    thinking: '选择题能检验「认不认识」，填空题才能检验「会不会写」——只刷选择题容易产生「我懂了」的错觉。深度模式的思路是概念题答对立刻上实战题，趁热打铁形成闭环，把「看懂」真正变成「会写」。',
+    stats: [['1', '个核心功能'], ['4', '条解锁规则'], ['×1.5', '答错强化权重']]
+  },,
+  {
+    date: '2026-07-25', tag: 'opt', tagText: '优化',
+    title: '题库导入与标签难度同步',
+    desc: '58 道静态选择题解析入库；全库 371 道题统一难度与知识标签口径，修正 272 题数据问题。',
+    overview: '题库来自多个渠道（采集、表格、手工页面），格式五花八门。这次做了一次系统性对齐：统一 371 道题的难度与知识标签口径，并顺手修复了标签分隔符不一致、编码乱码等数据质量问题。',
+    points: [
+      '<b>静态题入库</b>：58 道基础/进阶选择题（含建表、选项、预期输出）完整解析导入，补上填空之外的题型拼图。',
+      '<b>口径统一</b>：全库 371 道题的难度与知识标签与标准表逐一对齐，筛选和星级显示从此口径一致。',
+      '<b>数据净化</b>：批量修复 272 道题的标签分隔符不一致，并解决编码乱码导致的星级读取失败。'
+    ],
+    thinking: '题库是产品的地基，而多来源汇集的数据最怕口径不一——同一个知识点有的题叫「窗口函数」有的叫「排名函数」，筛选就会漏题。这次对齐的收益不在表面：难度、标签、编码这些看不见的数据口径统一后，筛选、推荐、统计才能建立在可信的基础上。地基修好了，上面才能盖楼。',
+    stats: [['58', '题静态导入'], ['371', '题同步对齐'], ['272', '题数据修复']]
+  }
+];
+
+const PER_PAGE = 4;   // 每页条数，功能更新多了可以调大
+const TOTAL_PAGES = Math.ceil(UPDATES.length / PER_PAGE);
+let page = 1;
+
+function renderUpdates() {
+  const start = (page - 1) * PER_PAGE;
+  const items = UPDATES.slice(start, start + PER_PAGE);
+  // 置顶条目：项目初心，永远在第一页首位（不参与分页）
+  const visionHtml = `
+    <div class="update-item glass origin fade-up" style="animation-delay:0s" onclick="openDetail(-1)">
+      <div class="u-date">${VISION.date}</div>
+      <div class="u-body">
+        <div class="u-top"><span class="pin-badge">置顶</span><span class="utag ${VISION.tag}">${VISION.tagText}</span><span class="u-title">${VISION.title}</span></div>
+        <div class="u-desc">${VISION.desc}</div>
+        <div class="u-more">查看详情 <span class="arr">›</span></div>
+      </div>
+    </div>`;
+  const listHtml = items.map((u, i) => {
+    const idx = start + i;
+    return `
+    <div class="update-item glass fade-up" style="animation-delay:${i * 0.06}s" onclick="openDetail(${idx})">
+      <div class="u-date">${u.date}</div>
+      <div class="u-body">
+        <div class="u-top"><span class="utag ${u.tag}">${u.tagText}</span><span class="u-title">${u.title}</span></div>
+        <div class="u-desc">${u.desc}</div>
+        <div class="u-more">查看详情 <span class="arr">›</span></div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('updateList').innerHTML = visionHtml + listHtml;
+  renderPager();
+}
+
+function renderPager() {
+  const pager = document.getElementById('pager');
+  let html = `<span class="pg-info">共 ${UPDATES.length + 1} 条（含置顶）· 第 ${page}/${TOTAL_PAGES} 页</span>`;
+  html += `<button class="pg-btn" ${page === 1 ? 'disabled' : ''} onclick="gotoPage(${page - 1})"><span class="arr">‹</span>上一页</button>`;
+  for (let i = 1; i <= TOTAL_PAGES; i++) {
+    html += `<button class="pg-btn ${i === page ? 'on' : ''}" onclick="gotoPage(${i})">${i}</button>`;
+  }
+  html += `<button class="pg-btn" ${page === TOTAL_PAGES ? 'disabled' : ''} onclick="gotoPage(${page + 1})">下一页<span class="arr">›</span></button>`;
+  pager.innerHTML = html;
+}
+
+function gotoPage(p) {
+  if (p < 1 || p > TOTAL_PAGES || p === page) return;
+  page = p;
+  renderUpdates();
+  document.querySelector('.updates').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ---- 详情弹窗 ---- */
+function openDetail(idx) {
+  const u = idx === -1 ? VISION : UPDATES[idx];
+  if (!u) return;
+  document.getElementById('detailBody').innerHTML = `
+    <div class="modal-head">
+      <div class="modal-title">${u.title}</div>
+      <button class="modal-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="modal-meta">
+      <span class="utag ${u.tag}">${u.tagText}</span>
+      <span class="m-date">${u.date}</span>
+    </div>
+    <div class="m-section">
+      <h4>本次更新做了什么</h4>
+      <div class="m-overview">${u.overview}</div>
+    </div>
+    <div class="m-section">
+      <h4>实现要点</h4>
+      <ul class="m-points">${u.points.map(p => `<li>${p}</li>`).join('')}</ul>
+    </div>
+    <div class="m-section">
+      <h4>我们的开发思路</h4>
+      <div class="m-overview thinking">${u.thinking}</div>
+    </div>
+    ${u.stats ? `<div class="m-section"><h4>数据速览</h4><div class="m-stats">${u.stats.map(s => `<div class="m-stat"><div class="v">${s[0]}</div><div class="l">${s[1]}</div></div>`).join('')}</div></div>` : ''}
+    <div class="modal-foot"><button class="btn-ok" onclick="closeDetail()">知道了</button></div>`;
+  document.getElementById('detailModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetail() {
+  document.getElementById('detailModal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+renderUpdates();
+</script>
+</body>
+</html>

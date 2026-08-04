@@ -1,0 +1,594 @@
+--- #1 ID=50 [niuke] easy ---
+  标题: [牛客·SQL必知必会] 纠错4
+  当前描述(3字): "纠错4"
+  表结构: DROP TABLE IF EXISTS `Customers`;
+CREATE TABLE IF NOT EXISTS `Customers`(
+cust_name VARCHAR(255) NOT NULL COMMENT '顾客id',
+cust_contact VARCHAR(255) NOT NULL COMMENT '顾客联系方式',
+cust_state VARCHAR(255) N
+  示例数据: INSERT `Customers` VALUES ('cust10','8695192','MI','cust10@cust.com'),('cust1','8695193','MI','cust1@cust.com'),('cust2','8695194','IL','cust2@cust.com');
+
+--- #2 ID=53 [niuke] medium ---
+  标题: [牛客·SQL必知必会] 检索所有列
+  当前描述(5字): "检索所有列"
+  表结构: DROP TABLE IF EXISTS `Customers`;
+CREATE TABLE IF NOT EXISTS `Customers`(
+cust_id VARCHAR(255) NOT NULL COMMENT '客户id',
+cust_name VARCHAR(255) NOT NULL COMMENT '客户姓名'
+);
+  示例数据: INSERT `Customers` VALUES ('a1','andy'),('a2','ben'),('a3','tony'),('a4','tom'),('a5','an'),('a6','lee'),('a7','hex');
+
+--- #3 ID=56 [niuke] easy ---
+  标题: [牛客·SQL必知必会] 按照数量和价格排序
+  当前描述(9字): "按照数量和价格排序"
+  表结构: DROP TABLE IF EXISTS `OrderItems`;
+CREATE TABLE IF NOT EXISTS `OrderItems` (
+`quantity` INT(64) NOT NULL COMMENT '数量',
+`item_price` INT(64) NOT NULL COMMENT '订单价格'
+);
+  示例数据: INSERT INTO `OrderItems` VALUES (1,100),
+(10,1003),
+(2,500);
+
+--- #4 ID=57 [niuke] easy ---
+  标题: [牛客·SQL必知必会] 检查SQL语句
+  当前描述(7字): "检查SQL语句"
+  表结构: DROP TABLE IF EXISTS `Vendors`;
+CREATE TABLE IF NOT EXISTS `Vendors` (
+`vend_name` VARCHAR(255) NOT NULL COMMENT 'vend名称'
+);
+  示例数据: INSERT INTO `Vendors` VALUES ('海底捞'),
+('小龙坎'),
+('大龙燚');
+
+--- #5 ID=58 [niuke] easy ---
+  标题: [牛客·SQL必知必会] 返回固定价格的产品
+  当前描述(9字): "返回固定价格的产品"
+  表结构: DROP TABLE IF EXISTS `Products`;
+CREATE TABLE IF NOT EXISTS `Products` (
+`prod_id` VARCHAR(255) NOT NULL COMMENT '产品 ID',
+`prod_name` VARCHAR(255) NOT NULL COMMENT '产品名称',
+`prod_price` DOUBLE NOT NULL
+  示例数据: INSERT INTO `Products` VALUES ('a0018','sockets',9.49),
+('a0019','iphone13',600),
+('b0019','gucci t-shirts',1000);
+
+--- #6 ID=59 [niuke] easy ---
+  标题: [牛客·SQL必知必会] 返回更高价格的产品
+  当前描述(9字): "返回更高价格的产品"
+  表结构: DROP TABLE IF EXISTS `Products`;
+CREATE TABLE IF NOT EXISTS `Products` (
+`prod_id` VARCHAR(255) NOT NULL COMMENT '产品 ID',
+`prod_name` VARCHAR(255) NOT NULL COMMENT '产品名称',
+`prod_price` DOUBLE NOT NULL
+  示例数据: INSERT INTO `Products` VALUES ('a0011','usb',9.49),
+('a0019','iphone13',600),
+('b0019','gucci t-shirts',1000);
+
+--- #7 ID=61 [niuke] easy ---
+  标题: [牛客·SQL必知必会] 返回更多的产品
+  当前描述(7字): "返回更多的产品"
+  表结构: DROP TABLE IF EXISTS `OrderItems`;
+CREATE TABLE IF NOT EXISTS `OrderItems`(
+order_num VARCHAR(255) NOT NULL COMMENT '商品订单号',
+quantity VARCHAR(255) NOT NULL COMMENT '商品数量'
+);
+  示例数据: INSERT `OrderItems` VALUES ('a1','105'),('a2','1100'),('a2','200'),('a4','1121'),('a5','10'),('a2','19'),('a7','5')
+
+--- #8 ID=62 [niuke] easy ---
+  标题: [牛客·SQL必知必会] 检索供应商名称
+  当前描述(7字): "检索供应商名称"
+  表结构: DROP TABLE IF EXISTS `Vendors`;
+CREATE TABLE IF NOT EXISTS `Vendors` (
+`vend_name` VARCHAR(255) NOT NULL COMMENT 'vend名称',
+`vend_country` VARCHAR(255) NOT NULL COMMENT 'vend国家',
+`vend_state` VARCHAR(2
+  示例数据: INSERT INTO `Vendors` VALUES ('apple','USA','CA'),
+('vivo','CNA','shenzhen'),
+('huawei','CNA','xian');
+
+--- #9 ID=65 [niuke] easy ---
+  标题: [牛客·SQL必知必会] 纠错2
+  当前描述(3字): "纠错2"
+  表结构: DROP TABLE IF EXISTS `Vendors`;
+CREATE TABLE IF NOT EXISTS `Vendors` (
+`vend_name` VARCHAR(255) NOT NULL COMMENT 'vend名称',
+`vend_country` VARCHAR(255) NOT NULL COMMENT 'vend国家',
+`vend_state` VARCHAR(2
+  示例数据: INSERT INTO `Vendors` VALUES ('apple','USA','CA'),
+('beef noodle king','USA','CA'),
+('vivo','CNA','shenzhen'),
+('huawei','CNA','xian');
+
+--- #10 ID=70 [niuke] medium ---
+  标题: [牛客·SQL必知必会] 别名
+  当前描述(2字): "别名"
+  表结构: DROP TABLE IF EXISTS `Vendors`;
+CREATE TABLE IF NOT EXISTS `Vendors` (
+`vend_id` VARCHAR(255) NOT NULL COMMENT '供应商id',
+`vend_name` VARCHAR(255) NOT NULL COMMENT '供应商名称',
+`vend_address` VARCHAR(255) N
+  示例数据: INSERT INTO `Vendors` VALUES ('a001','tencent cloud','address1','shenzhen'),
+('a002','huawei cloud','address2','dongguan'),
+('a003','aliyun cloud','address3','alibaba');
+
+--- #11 ID=71 [niuke] easy ---
+  标题: [牛客·SQL必知必会] 打折
+  当前描述(2字): "打折"
+  表结构: DROP TABLE IF EXISTS `Products`;
+CREATE TABLE IF NOT EXISTS `Products` (
+`prod_id` VARCHAR(255) NOT NULL COMMENT '产品 ID',
+`prod_price` DOUBLE NOT NULL COMMENT '产品价格'
+);
+  示例数据: INSERT INTO `Products` VALUES ('a0011',9.49),
+('a0019',600),
+('b0019',1000);
+
+--- #12 ID=72 [niuke] easy ---
+  标题: [牛客·SQL必知必会] 顾客登录名
+  当前描述(5字): "顾客登录名"
+  表结构: DROP TABLE IF EXISTS `Customers`;
+CREATE TABLE IF NOT EXISTS `Customers`(
+cust_id VARCHAR(255) NOT NULL COMMENT '客户id',
+cust_name VARCHAR(255) NOT NULL COMMENT '客户姓名',
+cust_contact VARCHAR(255) NOT NU
+  示例数据: INSERT `Customers` VALUES ('a1','Andy Li','Andy Li','Oak Park'),('a2','Ben Liu','Ben Liu','Oak Park'),('a3','Tony Dai','Tony Dai','Oak Park'),('a4','Tom Chen','Tom Chen','Oak Park'),('a5','An Li','An 
+
+--- #13 ID=79 [niuke] easy ---
+  标题: [牛客·SQL必知必会] 确定最佳顾客
+  当前描述(6字): "确定最佳顾客"
+  表结构: DROP TABLE IF EXISTS `OrderItems`;
+CREATE TABLE IF NOT EXISTS `OrderItems`(
+order_num VARCHAR(255) NOT NULL COMMENT '商品订单号',
+quantity INT(255) NOT NULL COMMENT '商品数量'
+);
+  示例数据: INSERT `OrderItems` VALUES ('a1',105),('a2',200),('a4',1121),('a5',10),('a7',5);
+
+--- #14 ID=81 [niuke] easy ---
+  标题: [牛客·SQL必知必会] 纠错3
+  当前描述(3字): "纠错3"
+  表结构: DROP TABLE IF EXISTS `OrderItems`;
+CREATE TABLE IF NOT EXISTS `OrderItems`(
+order_num VARCHAR(255) NOT NULL COMMENT '商品订单号'
+);
+  示例数据: INSERT `OrderItems` VALUES ('a002'),('a002'),('a002'),('a004'),('a007');
+
+--- #15 ID=91 [niuke] easy ---
+  标题: [牛客·SQL快速入门] 查询所有列
+  当前描述(5字): "查询所有列"
+  表结构: DROP TABLE IF EXISTS user_profile;
+CREATE TABLE user_profile (
+  id INT NOT NULL,
+  device_id INT NOT NULL,
+  gender VARCHAR(14) NOT NULL,
+  age INT,
+  university VARCHAR(32) NOT NULL,
+  province VARC
+  示例数据: INSERT INTO user_profile VALUES(6, 2122, 'FEMALE', 28, '北京大学', 'Guangzhou');
+INSERT INTO user_profile VALUES(1, 3196, 'FEMALE', 'Guangzhou', 'Chicago', 'Beijing');
+INSERT INTO user_profile VALUES(1, 6
+
+--- #16 ID=92 [niuke] easy ---
+  标题: [牛客·SQL快速入门] 查询多列
+  当前描述(4字): "查询多列"
+  表结构: DROP TABLE IF EXISTS user_profile;
+CREATE TABLE user_profile (
+  id INT NOT NULL,
+  device_id INT NOT NULL,
+  gender VARCHAR(14) NOT NULL,
+  age INT,
+  university VARCHAR(32) NOT NULL,
+  province VARC
+  示例数据: INSERT INTO user_profile VALUES(1, 2151, 'FEMALE', 9, 'Shenzhen', 'BeiJing');
+INSERT INTO user_profile VALUES(1, 3219, 'FEMALE', 'NULL', 'Beijing', 'Hangzhou');
+INSERT INTO user_profile VALUES(13, 654
+
+--- #17 ID=93 [niuke] easy ---
+  标题: [牛客·SQL快速入门] 查询结果去重
+  当前描述(6字): "查询结果去重"
+  表结构: DROP TABLE IF EXISTS user_profile;
+CREATE TABLE user_profile (
+  id INT NOT NULL,
+  device_id INT NOT NULL,
+  gender VARCHAR(14) NOT NULL,
+  age INT,
+  university VARCHAR(32) NOT NULL,
+  province VARC
+  示例数据: INSERT INTO user_profile VALUES(11, 2149, 'male', 7, 'New York', 'Chicago');
+INSERT INTO user_profile VALUES(16, 3210, 'FEMALE', 'New York', 'Chicago', 'Shanghai');
+INSERT INTO user_profile VALUES(18,
+
+--- #18 ID=96 [niuke] easy ---
+  标题: [牛客·SQL快速入门] 查找后排序
+  当前描述(5字): "查找后排序"
+  表结构: DROP TABLE IF EXISTS user_profile;
+CREATE TABLE user_profile (
+  id INT NOT NULL,
+  device_id INT NOT NULL,
+  gender VARCHAR(14) NOT NULL,
+  age INT,
+  university VARCHAR(32) NOT NULL,
+  gpa FLOAT
+);
+  示例数据: INSERT INTO user_profile VALUES(1, 2139, 'FEMALE', 16, 'Beijing', 0.12);
+INSERT INTO user_profile VALUES(1, 3212, 'FEMALE', 21, 'Tokyo', 0.01);
+INSERT INTO user_profile VALUES(14, 6548, 'MALE', 33, 'L
+
+--- #19 ID=97 [niuke] easy ---
+  标题: [牛客·SQL快速入门] 查找后多列排序
+  当前描述(7字): "查找后多列排序"
+  表结构: DROP TABLE IF EXISTS user_profile;
+CREATE TABLE user_profile (
+  id INT NOT NULL,
+  device_id INT NOT NULL,
+  gender VARCHAR(14) NOT NULL,
+  age INT,
+  university VARCHAR(32) NOT NULL,
+  gpa FLOAT
+);
+  示例数据: INSERT INTO user_profile VALUES(1, 2133, 'FEMALE', 39, 'New York', 3.4);
+INSERT INTO user_profile VALUES(5, 3207, 'FEMALE', 23, 'London', 8.79);
+INSERT INTO user_profile VALUES(1, 6540, 'MALE', 19, 'L
+
+--- #20 ID=98 [niuke] easy ---
+  标题: [牛客·SQL快速入门] 查找后降序排列
+  当前描述(7字): "查找后降序排列"
+  表结构: DROP TABLE IF EXISTS user_profile;
+CREATE TABLE user_profile (
+  id INT NOT NULL,
+  device_id INT NOT NULL,
+  gender VARCHAR(14) NOT NULL,
+  age INT,
+  university VARCHAR(32) NOT NULL,
+  gpa FLOAT
+);
+  示例数据: INSERT INTO user_profile VALUES(3, 2132, 'FEMALE', 32, 'London', 5.72);
+INSERT INTO user_profile VALUES(8, 3194, 'FEMALE', 40, 'Shenzhen', 3.80);
+INSERT INTO user_profile VALUES(1, 6526, 'MALE', 13, '
+
+--- #21 ID=107 [niuke] medium ---
+  标题: [牛客·SQL快速入门] 操作符混合运用
+  当前描述(7字): "操作符混合运用"
+  表结构: DROP TABLE IF EXISTS user_profile;
+CREATE TABLE user_profile (
+  id INT NOT NULL,
+  device_id INT NOT NULL,
+  gender VARCHAR(14) NOT NULL,
+  age INT,
+  university VARCHAR(32) NOT NULL,
+  province VARC
+  示例数据: INSERT INTO user_profile VALUES(14, 2154, 'FEMALE', 20, '北京大学', 'Shanghai', 0.01);
+INSERT INTO user_profile VALUES(20, 3226, 'FEMALE', 'Shenzhen', 'Hangzhou', 'Shanghai', 0.01);
+INSERT INTO user_profi
+
+--- #22 ID=109 [niuke] easy ---
+  标题: [牛客·SQL快速入门] 查找GPA最高值
+  当前描述(8字): "查找GPA最高值"
+  表结构: DROP TABLE IF EXISTS user_profile;
+CREATE TABLE user_profile (
+  id INT NOT NULL,
+  device_id INT NOT NULL,
+  gender VARCHAR(14) NOT NULL,
+  age INT,
+  university VARCHAR(32) NOT NULL,
+  gpa FLOAT
+);
+  示例数据: INSERT INTO user_profile VALUES(1, 2246, 'FEMALE', 12, 'Los Angeles', 4.77);
+INSERT INTO user_profile VALUES(16, 2226, 'FEMALE', 'Beijing', 'London', 3.52);
+INSERT INTO user_profile VALUES(10, 2242, '
+
+--- #23 ID=111 [niuke] medium ---
+  标题: [牛客·SQL快速入门] 分组计算练习题
+  当前描述(7字): "分组计算练习题"
+  表结构: ﻿DROP TABLE IF EXISTS user_profile;
+CREATE TABLE user_profile (
+  id INT NOT NULL, device_id INT NOT NULL, gender VARCHAR(14) NOT NULL, age INT,
+  university VARCHAR(32) NOT NULL, gpa FLOAT, active_da
+  示例数据: ﻿INSERT INTO user_profile VALUES(1,2138,'male',21,'北京大学',3.4,7,2,12);
+INSERT INTO user_profile VALUES(7, 3211, 'male', 'Hangzhou', '复旦大学', 6.15, 35, 1, 11);
+INSERT INTO user_profile VALUES(1, 6544, 'M
+
+--- #24 ID=112 [niuke] easy ---
+  标题: [牛客·SQL快速入门] 分组过滤练习题
+  当前描述(7字): "分组过滤练习题"
+  表结构: ﻿DROP TABLE IF EXISTS user_profile;
+CREATE TABLE user_profile (
+  id INT NOT NULL, device_id INT NOT NULL, gender VARCHAR(14) NOT NULL, age INT,
+  university VARCHAR(32) NOT NULL, gpa FLOAT, active_da
+  示例数据: ﻿INSERT INTO user_profile VALUES(1,2138,'male',21,'北京大学',3.4,7,2,12);
+INSERT INTO user_profile VALUES(1, 3210, 'FEMALE', 'London', 'Beijing', 7.14, 27, 12, 23);
+INSERT INTO user_profile VALUES(1, 6540
+
+--- #25 ID=113 [niuke] easy ---
+  标题: [牛客·SQL快速入门] 分组排序练习题
+  当前描述(7字): "分组排序练习题"
+  表结构: ﻿DROP TABLE IF EXISTS user_profile;
+CREATE TABLE user_profile (
+  id INT NOT NULL, device_id INT NOT NULL, gender VARCHAR(14) NOT NULL, age INT,
+  university VARCHAR(32) NOT NULL, gpa FLOAT, active_da
+  示例数据: ﻿INSERT INTO user_profile VALUES(1,2138,'male',21,'北京大学',3.4,7,2,12);
+INSERT INTO user_profile VALUES(13, 3234, 'FEMALE', 'Hangzhou', 'Los Angeles', 8.74, 23, 1, 15);
+INSERT INTO user_profile VALUES(1
+
+--- #26 ID=123 [niuke] medium ---
+  标题: [牛客·SQL快速入门] 统计每种性别的人数
+  当前描述(9字): "统计每种性别的人数"
+  表结构: ﻿DROP TABLE IF EXISTS user_submit;
+CREATE TABLE user_submit (
+  id INT NOT NULL, device_id INT NOT NULL, profile VARCHAR(100) NOT NULL, blog_url VARCHAR(100) NOT NULL
+);
+  示例数据: ﻿INSERT INTO user_submit VALUES(1,2138,'180cm,75kg,27,male','http:/url/bisdgboy777');
+INSERT INTO user_submit VALUES(19, 3195, '165cm', '45kg', 20, 'female', 'http:/url/dkittycc');
+INSERT INTO user_su
+
+--- #27 ID=125 [niuke] medium ---
+  标题: [牛客·SQL快速入门] 截取出年龄
+  当前描述(5字): "截取出年龄"
+  表结构: ﻿DROP TABLE IF EXISTS user_submit;
+CREATE TABLE user_submit (
+  id INT NOT NULL, device_id INT NOT NULL, profile VARCHAR(100) NOT NULL, blog_url VARCHAR(100) NOT NULL
+);
+  示例数据: ﻿INSERT INTO user_submit VALUES(1,2138,'180cm,75kg,27,male','http:/url/bisdgboy777');
+INSERT INTO user_submit VALUES(1, 3217, '165cm', '45kg', 36, 'MALE', 'http:/url/dkittycc');
+INSERT INTO user_submi
+
+--- #28 ID=130 [niuke] medium ---
+  标题: [牛客·SQL快速入门] 电话号码格式校验
+  当前描述(8字): "电话号码格式校验"
+  表结构: ﻿DROP TABLE IF EXISTS contacts;
+CREATE TABLE contacts (
+  id INT NOT NULL, name VARCHAR(50) NOT NULL, phone_number VARCHAR(20) NOT NULL
+);
+  示例数据: ﻿INSERT INTO contacts VALUES
+(1, 'Alice', '1234567890'),
+(2, 'Bob', '0123456789'),
+(3, 'Charlie', '123-456-7890'),
+(4, 'David', '123-4567-890'),
+(5, 'Eve', '9876543210');
+
+--- #29 ID=131 [niuke] medium ---
+  标题: [牛客·SQL快速入门] 计算每日累计利润
+  当前描述(8字): "计算每日累计利润"
+  表结构: ﻿DROP TABLE IF EXISTS daily_profits;
+CREATE TABLE daily_profits (
+  profit_id INT NOT NULL, profit_date DATE NOT NULL, profit DECIMAL(10,2) NOT NULL
+);
+  示例数据: ﻿INSERT INTO daily_profits VALUES
+(1, '2024-01-01', 100.00),
+(2, '2024-01-02', 150.00),
+(3, '2024-01-03', 200.00),
+(4, '2024-01-04', 250.00),
+(5, '2024-01-05', 300.00);
+
+--- #30 ID=132 [niuke] medium ---
+  标题: [牛客·SQL快速入门] 基本数学函数
+  当前描述(6字): "基本数学函数"
+  表结构: ﻿DROP TABLE IF EXISTS numbers;
+CREATE TABLE numbers (
+  id INT NOT NULL, value DECIMAL(10,2) NOT NULL
+);
+  示例数据: ﻿INSERT INTO numbers VALUES
+(1, 3.14),
+(2, -2.71),
+(3, 1.41),
+(4, -5.67),
+(5, 0.99);
+
+--- #31 ID=158 [niuke] easy ---
+  标题: [牛客·SQL热题] 批量插入数据
+  当前描述(6字): "批量插入数据"
+  表结构: drop table if exists actor;
+CREATE TABLE actor (
+actor_id  smallint(5)  NOT NULL PRIMARY KEY,
+first_name  varchar(45) NOT NULL,
+last_name  varchar(45) NOT NULL,
+last_update  DATETIME NOT NULL)
+  示例数据: -- TODO
+
+--- #32 ID=176 [niuke] medium ---
+  标题: [牛客·SQL热题] 平均工资
+  当前描述(4字): "平均工资"
+  表结构: drop table if exists  `salaries` ;
+CREATE TABLE `salaries` (
+`emp_no` int(11) NOT NULL,
+`salary` float(11,3) NOT NULL,
+`from_date` date NOT NULL,
+`to_date` date NOT NULL,
+PRIMARY KEY (`emp_no`,`from_d
+  示例数据: INSERT INTO salaries VALUES(9984, 85107, '2001-06-22', '2002-06-22');
+INSERT INTO salaries VALUES(9995, 88975, '2002-06-22', '9999-01-01');
+INSERT INTO salaries VALUES(10005, 72525, '2001-08-02', '999
+
+--- #33 ID=183 [niuke] easy ---
+  标题: [牛客·SQL进阶挑战] 插入记录（一）
+  当前描述(7字): "插入记录（一）"
+  表结构: drop table if EXISTS exam_record;
+CREATE TABLE IF NOT EXISTS exam_record (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+uid int NOT NULL COMMENT '用户ID',
+exam_id int NOT NULL COMMENT '试卷ID',
+start
+
+--- #34 ID=184 [niuke] easy ---
+  标题: [牛客·SQL进阶挑战] 插入记录（二）
+  当前描述(7字): "插入记录（二）"
+  表结构: drop table if EXISTS exam_record;
+CREATE TABLE IF NOT EXISTS exam_record (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+uid int NOT NULL COMMENT '用户ID',
+exam_id int NOT NULL COMMENT '试卷ID',
+start
+  示例数据: INSERT INTO exam_record(uid,exam_id,start_time,submit_time,score) VALUES
+(1001, 9001, '2020-01-01 09:00:01', null, null),
+(1001, 9002, '2020-01-02 09:01:01', '2020-01-02 09:21:01', 70),
+(1001, 9002, '
+
+--- #35 ID=185 [niuke] easy ---
+  标题: [牛客·SQL进阶挑战] 插入记录（三）
+  当前描述(7字): "插入记录（三）"
+  表结构: drop table if EXISTS examination_info;
+CREATE TABLE IF NOT EXISTS examination_info (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+exam_id int UNIQUE NOT NULL COMMENT '试卷ID',
+tag varchar(32) COMME
+  示例数据: INSERT INTO examination_info(exam_id,tag,difficulty,duration,release_time) VALUES
+(9001, 'SQL', 'hard', 60, '2020-01-01 10:00:00'),
+(9002, '算法', 'easy', 60, '2020-01-01 10:00:00'),
+(9003, 'SQL', 'medi
+
+--- #36 ID=186 [niuke] easy ---
+  标题: [牛客·SQL进阶挑战] 更新记录（一）
+  当前描述(7字): "更新记录（一）"
+  表结构: drop table if EXISTS examination_info;
+CREATE TABLE IF NOT EXISTS examination_info (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+exam_id int UNIQUE NOT NULL COMMENT '试卷ID',
+tag varchar(32) COMME
+  示例数据: INSERT INTO examination_info(exam_id,tag,difficulty,duration,release_time) VALUES
+(9001, 'SQL', 'hard', 60, '2020-01-01 10:00:00'),
+(9002, 'python', 'easy', 60, '2020-01-01 10:00:00'),
+(9003, 'Python'
+
+--- #37 ID=187 [niuke] medium ---
+  标题: [牛客·SQL进阶挑战] 更新记录（二）
+  当前描述(7字): "更新记录（二）"
+  表结构: drop table if EXISTS exam_record;
+CREATE TABLE IF NOT EXISTS exam_record (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+uid int NOT NULL COMMENT '用户ID',
+exam_id int NOT NULL COMMENT '试卷ID',
+start
+  示例数据: INSERT INTO exam_record(uid,exam_id,start_time,submit_time,score) VALUES
+(1001, 9001, '2020-01-02 09:01:01', '2020-01-02 09:21:01', 80),
+(1001, 9002, '2021-09-01 09:01:01', '2021-09-01 09:21:01', 90),
+
+--- #38 ID=188 [niuke] easy ---
+  标题: [牛客·SQL进阶挑战] 删除记录（一）
+  当前描述(7字): "删除记录（一）"
+  表结构: drop table if EXISTS exam_record;
+CREATE TABLE IF NOT EXISTS exam_record (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+uid int NOT NULL COMMENT '用户ID',
+exam_id int NOT NULL COMMENT '试卷ID',
+start
+  示例数据: INSERT INTO exam_record(uid, exam_id, start_time, submit_time, score) VALUES
+(1001, 9001, '2020-01-01 22:11:12', '2020-01-01 23:16:12', 50),
+(1001, 9002, '2020-01-02 09:01:01', '2020-01-02 09:06:00', 
+
+--- #39 ID=189 [niuke] easy ---
+  标题: [牛客·SQL进阶挑战] 删除记录（二）
+  当前描述(7字): "删除记录（二）"
+  表结构: drop table if EXISTS exam_record;
+CREATE TABLE IF NOT EXISTS exam_record (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+uid int NOT NULL COMMENT '用户ID',
+exam_id int NOT NULL COMMENT '试卷ID',
+start
+  示例数据: INSERT INTO exam_record(uid, exam_id, start_time, submit_time, score) VALUES
+(1001, 9001, '2020-01-01 22:11:12', '2020-01-01 23:16:12', 50),
+(1001, 9002, '2020-01-02 09:01:01', '2020-01-02 09:06:00', 
+
+--- #40 ID=190 [niuke] medium ---
+  标题: [牛客·SQL进阶挑战] 删除记录（三）
+  当前描述(7字): "删除记录（三）"
+  表结构: drop table if EXISTS nowcoder_exam_record;
+CREATE TABLE IF NOT EXISTS nowcoder_exam_record (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+uid int NOT NULL COMMENT '用户ID',
+exam_id int NOT NULL COM
+  示例数据: INSERT INTO nowcoder_exam_record(uid, exam_id, start_time, submit_time, score) VALUES
+(1001, 9001, '2020-01-01 22:11:12', '2020-01-01 23:16:12', 50),
+(1001, 9002, '2020-01-02 09:01:01', '2020-01-02 09
+
+--- #41 ID=191 [niuke] easy ---
+  标题: [牛客·SQL进阶挑战] 创建一张新表
+  当前描述(6字): "创建一张新表"
+  表结构: DROP TABLE IF EXISTS user_info_vip;
+CREATE TABLE user_info_vip (
+  id int NOT NULL AUTO_INCREMENT COMMENT "自增ID",
+  uid int NOT NULL COMMENT "用户ID",
+  nick_name varchar(64) COMMENT "昵称",
+  achievement
+  示例数据: -- TODO
+
+--- #42 ID=192 [niuke] easy ---
+  标题: [牛客·SQL进阶挑战] 修改表
+  当前描述(3字): "修改表"
+  表结构: drop table if exists user_info;
+CREATE TABLE IF NOT EXISTS user_info (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+uid int UNIQUE NOT NULL COMMENT '用户ID',
+`nick_name` varchar(64) COMMENT '昵称',
+a
+  示例数据: id|int|None|NO|PRI|None|auto_increment|select,insert,update,references|自增ID
+uid|int|None|NO|UNI|None||select,insert,update,references|用户ID
+nick_name|varchar(64)|utf8_general_ci|YES||None||select,inser
+
+--- #43 ID=193 [niuke] easy ---
+  标题: [牛客·SQL进阶挑战] 删除表
+  当前描述(3字): "删除表"
+  表结构: drop table if EXISTS exam_record;
+CREATE TABLE IF NOT EXISTS exam_record (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+uid int NOT NULL COMMENT '用户ID',
+exam_id int NOT NULL COMMENT '试卷ID',
+start
+
+--- #44 ID=194 [niuke] easy ---
+  标题: [牛客·SQL进阶挑战] 创建索引
+  当前描述(4字): "创建索引"
+  表结构: drop table if exists examination_info;
+CREATE TABLE IF NOT EXISTS examination_info (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+exam_id int UNIQUE NOT NULL COMMENT '试卷ID',
+tag varchar(32) COMME
+
+--- #45 ID=195 [niuke] easy ---
+  标题: [牛客·SQL进阶挑战] 删除索引
+  当前描述(4字): "删除索引"
+  表结构: drop table if exists examination_info;
+CREATE TABLE IF NOT EXISTS examination_info (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+exam_id int COMMENT '试卷ID',
+tag varchar(32) COMMENT '类别标签',
+diffi
+
+--- #46 ID=197 [niuke] easy ---
+  标题: [牛客·SQL进阶挑战] 统计作答次数
+  当前描述(6字): "统计作答次数"
+  表结构: drop table if exists exam_record;
+CREATE TABLE exam_record (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+uid int NOT NULL COMMENT '用户ID',
+exam_id int NOT NULL COMMENT '试卷ID',
+start_time datetime
+  示例数据: INSERT INTO exam_record(uid,exam_id,start_time,submit_time,score) VALUES
+(1001, 9001, '2020-01-02 09:01:01', '2020-01-02 09:21:01', 80),
+(1001, 9001, '2021-05-02 10:01:01', '2021-05-02 10:30:01', 81),
+
+--- #47 ID=209 [niuke] medium ---
+  标题: [牛客·SQL进阶挑战] 每类试卷得分前3名
+  当前描述(9字): "每类试卷得分前3名"
+  表结构: drop table if exists examination_info,exam_record;
+CREATE TABLE examination_info (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+exam_id int UNIQUE NOT NULL COMMENT '试卷ID',
+tag varchar(32) COMMENT
+  示例数据: INSERT INTO examination_info(exam_id,tag,difficulty,duration,release_time) VALUES
+(9001, 'SQL', 'hard', 60, '2021-09-01 06:00:00'),
+(9002, 'SQL', 'hard', 60, '2021-09-01 06:00:00'),
+(9003, '算法', 'medi
+
+--- #48 ID=226 [niuke] easy ---
+  标题: [牛客·SQL进阶挑战] 修复串列了的记录
+  当前描述(8字): "修复串列了的记录"
+  表结构: drop table if exists examination_info,exam_record;
+CREATE TABLE examination_info (
+id int PRIMARY KEY AUTO_INCREMENT COMMENT '自增ID',
+exam_id int UNIQUE NOT NULL COMMENT '试卷ID',
+tag varchar(32) COMMENT
+  示例数据: INSERT INTO examination_info(exam_id,tag,difficulty,duration,release_time) VALUES
+(9001, '算法', 'hard', 60, '2020-01-01 10:00:00'),
+(9002, '算法', 'hard', 80, '2020-01-01 10:00:00'),
+(9003, 'SQL', 'mediu
+

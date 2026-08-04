@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL知识图谱 - 可视化</title>
+<script src="echarts.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+#app { width: 100vw; height: 100vh; display: flex; flex-direction: column; }
+#header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: #fff; padding: 16px 30px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+#header h1 { font-size: 22px; font-weight: 600; }
+#header .sub { font-size: 13px; color: rgba(255,255,255,.6); margin-top: 4px; }
+#header .stats { display: flex; gap: 20px; }
+#header .stats span { font-size: 13px; color: rgba(255,255,255,.7); }
+#header .stats strong { color: #e94560; }
+#chart { flex: 1; }
+#tooltip-info { display: none; position: fixed; background: rgba(0,0,0,.85); color: #fff; padding: 12px 16px; border-radius: 8px; font-size: 13px; max-width: 360px; z-index: 999; pointer-events: none; line-height: 1.6; }
+#tooltip-info a { color: #64b5f6; }
+#tooltip-info .title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+#legend { position: fixed; bottom: 20px; left: 20px; background: rgba(255,255,255,.92); border-radius: 10px; padding: 10px 14px; box-shadow: 0 2px 12px rgba(0,0,0,.12); font-size: 12px; max-height: 300px; overflow-y: auto; z-index: 100; }
+#legend .l-item { display: flex; align-items: center; gap: 6px; padding: 2px 0; cursor: pointer; }
+#legend .l-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+#legend .l-name { color: #333; }
+#legend .l-count { color: #999; margin-left: auto; }
+#controls { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 8px; z-index: 100; }
+#controls button { background: rgba(255,255,255,.92); border: none; border-radius: 8px; padding: 8px 14px; font-size: 12px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.1); transition: all .2s; }
+#controls button:hover { background: #e94560; color: #fff; }
+#loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #f0f2f5; z-index: 9999; font-size: 18px; color: #666; }
+#loading .spinner { width: 40px; height: 40px; border: 3px solid #e0e0e0; border-top-color: #e94560; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="loading"><div style="text-align:center"><div class="spinner"></div><div style="margin-top:12px">加载中...</div></div></div>
+<div id="tooltip-info"></div>
+<a href="/" style="position:fixed;top:12px;right:20px;z-index:9999;background:rgba(255,255,255,.9);color:#1a1a2e;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.15);">← 返回主页</a>
+<div id="app">
+  <div id="header">
+    <div>
+      <h1>SQL 知识图谱</h1>
+      <div class="sub" id="header-sub">点击分类节点展开/收起子分类 | 爬取自 modb.pro/graph/240</div>
+    </div>
+    <div class="stats">
+<span>节点 <strong id="stat-nodes">-</strong></span>
+          <span>关系 <strong id="stat-edges">-</strong></span>
+          <span>分类 <strong id="stat-content">-</strong></span>
+    </div>
+  </div>
+  <div id="chart"></div>
+</div>
+<div id="legend"></div>
+<div id="controls">
+  <button onclick="toggleCollapse()">展开全部</button>
+  <button onclick="resetView()">重置视图</button>
+</div>
+<script>const EMBEDDED_GRAPH = {"root":{"id":"root","name":"SQL知识图谱","brief":"SQL结构化查询语言，用于管理关系数据库管理系统（RDBMS），或在关系流数据管理系统（RDSMS）中进行流处理。","views":8359,"contentNum":85},"nodes":[{"id":"root","name":"SQL知识图谱","level":0},{"id":"top-255","name":"DML","level":1},{"id":"cat-2748","name":"SELECT","level":2,"contents":[{"title":"Oracle 审核所有SELECT和DML","url":"https://www.modb.pro/db/92429"},{"title":"各种坏块对表SELECT/DML操作影响","url":"https://www.modb.pro/mes/2195"},{"title":"SQL SELECT 语句","url":"https://www.modb.pro/doc/4025"},{"title":"SELECT语句用法","url":"https://www.modb.pro/doc/133580"}],"parent":"DML"},{"id":"cat-2749","name":"INSERT","level":2,"contents":[{"title":"INSERT 实战","url":"https://www.modb.pro/doc/117042"},{"title":"INSERT 语句用法","url":"https://www.modb.pro/doc/132334"}],"parent":"DML"},{"id":"cat-2750","name":"UPDATE","level":2,"contents":[],"parent":"DML"},{"id":"cat-2751","name":"DELETE","level":2,"contents":[{"title":"DELETE 学习","url":"https://www.modb.pro/doc/122845"},{"title":"DELETE 用法","url":"https://www.modb.pro/doc/132731"}],"parent":"DML"},{"id":"top-257","name":"DDL","level":1},{"id":"cat-2774","name":"CREATE","level":2,"contents":[{"title":"CREATE... 和ALTER...语句","url":"https://www.modb.pro/db/100061"}],"parent":"DDL"},{"id":"cat-2781","name":"ALTER","level":2,"contents":[{"title":"ALTER在线变更时间测试","url":"https://www.modb.pro/doc/135096"}],"parent":"DDL"},{"id":"cat-2776","name":"DROP","level":2,"contents":[{"title":"DROP 表恢复","url":"https://www.modb.pro/doc/52994"}],"parent":"DDL"},{"id":"cat-2777","name":"TRUNCATE","level":2,"contents":[{"title":"TRUNCATE Table","url":"https://www.modb.pro/db/1711535067553144832"},{"title":"Truncate异常恢复","url":"https://www.modb.pro/db/181475"}],"parent":"DDL"},{"id":"cat-2778","name":"RENAME","level":2,"contents":[],"parent":"DDL"},{"id":"cat-2779","name":"COMMENT","level":2,"contents":[],"parent":"DDL"},{"id":"top-256","name":"函数","level":1},{"id":"cat-2760","name":"字符串函数","level":2,"contents":[{"title":"字符串函数概述","url":"https://www.modb.pro/db/13100"},{"title":"操作字符串的函数","url":"https://www.modb.pro/db/13361"},{"title":"查询中使用字符串函数","url":"https://www.modb.pro/db/576301"}],"parent":"函数"},{"id":"cat-2764","name":"数字函数","level":2,"contents":[{"title":"Oracle字符及数字函数测试","url":"https://www.modb.pro/mes/3186"}],"parent":"函数"},{"id":"cat-2766","name":"聚合函数","level":2,"contents":[{"title":"聚合函数概述","url":"https://www.modb.pro/db/448488"},{"title":"SQL 聚合函数","url":"https://www.modb.pro/db/71621"}],"parent":"函数"},{"id":"cat-2769","name":"转换函数","level":2,"contents":[{"title":"转换函数和条件表达式.","url":"https://www.modb.pro/doc/113274"}],"parent":"函数"},{"id":"cat-2771","name":"窗口函数","level":2,"contents":[{"title":"窗口函数速查表","url":"https://www.modb.pro/doc/113256"}],"parent":"函数"},{"id":"top-264","name":"表连接","level":1},{"id":"cat-2786","name":"内连接","level":2,"contents":[{"title":"内连接查询","url":"https://www.modb.pro/db/84427"}],"parent":"表连接"},{"id":"cat-2787","name":"外连接","level":2,"contents":[{"title":"外连接查询","url":"https://www.modb.pro/db/84434"},{"title":"外连接的用法","url":"https://www.modb.pro/db/1931325684903849984"},{"title":"外连接优化","url":"https://www.modb.pro/mes/2975"}],"parent":"表连接"},{"id":"cat-2788","name":"自连接","level":2,"contents":[{"title":"自连接的用法","url":"https://www.modb.pro/db/1928647816432332800"},{"title":"如何理解SQL中的自连接？","url":"https://www.modb.pro/db/25122"}],"parent":"表连接"},{"id":"cat-2789","name":"交叉连接","level":2,"contents":[{"title":"SQL 交叉连接查询","url":"https://www.modb.pro/db/84428"}],"parent":"表连接"},{"id":"top-265","name":"约束","level":1},{"id":"cat-275","name":"主键","level":2,"contents":[{"title":"数据库表的主键是什么？有哪些特点？","url":"https://www.modb.pro/db/448084"},{"title":"淘宝的数据库，主键是如何设计的？","url":"https://www.modb.pro/db/64251"},{"title":"分库分表情况下全局唯一主键的一种简单实现","url":"https://www.modb.pro/db/45311"},{"title":"数据库主键ID生成方案比较","url":"https://www.modb.pro/db/73262"},{"title":"SQL中的主键约束是什么？","url":"https://www.modb.pro/db/84469"},{"title":"为什么在数据库创建表时要设置主键","url":"https://www.modb.pro/db/135923"}],"parent":"约束"},{"id":"cat-276","name":"外键","level":2,"contents":[{"title":"设置外键","url":"https://www.modb.pro/db/653840"}],"parent":"约束"},{"id":"top-266","name":"子查询","level":1},{"id":"cat-2791","name":"标量子查询","level":2,"contents":[{"title":"SQL标量子查询的优化案例分析","url":"https://www.modb.pro/db/81022"},{"title":"标量子查询SQL改写","url":"https://www.modb.pro/db/621688"},{"title":"标量子查询SQL优化","url":"https://www.modb.pro/db/46309"},{"title":"SQL标量子查询的优化案例分析","url":"https://www.modb.pro/db/81025"}],"parent":"子查询"},{"id":"cat-2792","name":"列子查询","level":2,"contents":[{"title":"单列子查询","url":"https://www.modb.pro/db/76848"},{"title":"多列子查询","url":"http://modb.pro/db/76844"}],"parent":"子查询"},{"id":"cat-2793","name":"表子查询","level":2,"contents":[],"parent":"子查询"},{"id":"cat-2794","name":"IN 子查询","level":2,"contents":[],"parent":"子查询"},{"id":"top-273","name":"SELECT","level":1},{"id":"cat-2795","name":"基本 SELECT：字段、别名、常量","level":2,"contents":[{"title":"基本 SELECT 语句","url":"https://www.modb.pro/doc/113298"},{"title":"SELECT 基本语法","url":"https://www.modb.pro/db/26443"}],"parent":"SELECT"},{"id":"cat-2796","name":"WHERE 条件筛选","level":2,"contents":[{"title":"动态where条件查询","url":"https://www.modb.pro/db/86300"},{"title":"where条件的提取","url":"http://modb.pro/db/181922"}],"parent":"SELECT"},{"id":"cat-2797","name":"聚合函数与 GROUP BY","level":2,"contents":[{"title":"聚合函数和GROUP BY子句","url":"https://www.modb.pro/db/1891673112656228352"}],"parent":"SELECT"},{"id":"cat-2798","name":"HAVING 子句","level":2,"contents":[{"title":"HAVING子句详解","url":"https://www.modb.pro/doc/121245"},{"title":"HAVING 子句的力量","url":"https://www.modb.pro/db/1930056589155774464"}],"parent":"SELECT"}],"edges":[{"source":"root","target":"top-255"},{"source":"top-255","target":"cat-2748"},{"source":"top-255","target":"cat-2749"},{"source":"top-255","target":"cat-2750"},{"source":"top-255","target":"cat-2751"},{"source":"root","target":"top-257"},{"source":"top-257","target":"cat-2774"},{"source":"top-257","target":"cat-2781"},{"source":"top-257","target":"cat-2776"},{"source":"top-257","target":"cat-2777"},{"source":"top-257","target":"cat-2778"},{"source":"top-257","target":"cat-2779"},{"source":"root","target":"top-256"},{"source":"top-256","target":"cat-2760"},{"source":"top-256","target":"cat-2764"},{"source":"top-256","target":"cat-2766"},{"source":"top-256","target":"cat-2769"},{"source":"top-256","target":"cat-2771"},{"source":"root","target":"top-264"},{"source":"top-264","target":"cat-2786"},{"source":"top-264","target":"cat-2787"},{"source":"top-264","target":"cat-2788"},{"source":"top-264","target":"cat-2789"},{"source":"root","target":"top-265"},{"source":"top-265","target":"cat-275"},{"source":"top-265","target":"cat-276"},{"source":"root","target":"top-266"},{"source":"top-266","target":"cat-2791"},{"source":"top-266","target":"cat-2792"},{"source":"top-266","target":"cat-2793"},{"source":"top-266","target":"cat-2794"},{"source":"root","target":"top-273"},{"source":"top-273","target":"cat-2795"},{"source":"top-273","target":"cat-2796"},{"source":"top-273","target":"cat-2797"},{"source":"top-273","target":"cat-2798"}],"categories":[{"id":255,"name":"DML","children":[{"id":2748,"name":"SELECT","contents":[{"title":"Oracle 审核所有SELECT和DML","url":"https://www.modb.pro/db/92429"},{"title":"各种坏块对表SELECT/DML操作影响","url":"https://www.modb.pro/mes/2195"},{"title":"SQL SELECT 语句","url":"https://www.modb.pro/doc/4025"},{"title":"SELECT语句用法","url":"https://www.modb.pro/doc/133580"}]},{"id":2749,"name":"INSERT","contents":[{"title":"INSERT 实战","url":"https://www.modb.pro/doc/117042"},{"title":"INSERT 语句用法","url":"https://www.modb.pro/doc/132334"}]},{"id":2750,"name":"UPDATE","contents":[]},{"id":2751,"name":"DELETE","contents":[{"title":"DELETE 学习","url":"https://www.modb.pro/doc/122845"},{"title":"DELETE 用法","url":"https://www.modb.pro/doc/132731"}]}]},{"id":257,"name":"DDL","children":[{"id":2774,"name":"CREATE","contents":[{"title":"CREATE... 和ALTER...语句","url":"https://www.modb.pro/db/100061"}]},{"id":2781,"name":"ALTER","contents":[{"title":"ALTER在线变更时间测试","url":"https://www.modb.pro/doc/135096"}]},{"id":2776,"name":"DROP","contents":[{"title":"DROP 表恢复","url":"https://www.modb.pro/doc/52994"}]},{"id":2777,"name":"TRUNCATE","contents":[{"title":"TRUNCATE Table","url":"https://www.modb.pro/db/1711535067553144832"},{"title":"Truncate异常恢复","url":"https://www.modb.pro/db/181475"}]},{"id":2778,"name":"RENAME","contents":[]},{"id":2779,"name":"COMMENT","contents":[]}]},{"id":256,"name":"函数","children":[{"id":2760,"name":"字符串函数","contents":[{"title":"字符串函数概述","url":"https://www.modb.pro/db/13100"},{"title":"操作字符串的函数","url":"https://www.modb.pro/db/13361"},{"title":"查询中使用字符串函数","url":"https://www.modb.pro/db/576301"}]},{"id":2764,"name":"数字函数","contents":[{"title":"Oracle字符及数字函数测试","url":"https://www.modb.pro/mes/3186"}]},{"id":2766,"name":"聚合函数","contents":[{"title":"聚合函数概述","url":"https://www.modb.pro/db/448488"},{"title":"SQL 聚合函数","url":"https://www.modb.pro/db/71621"}]},{"id":2769,"name":"转换函数","contents":[{"title":"转换函数和条件表达式.","url":"https://www.modb.pro/doc/113274"}]},{"id":2771,"name":"窗口函数","contents":[{"title":"窗口函数速查表","url":"https://www.modb.pro/doc/113256"}]}]},{"id":264,"name":"表连接","children":[{"id":2786,"name":"内连接","contents":[{"title":"内连接查询","url":"https://www.modb.pro/db/84427"}]},{"id":2787,"name":"外连接","contents":[{"title":"外连接查询","url":"https://www.modb.pro/db/84434"},{"title":"外连接的用法","url":"https://www.modb.pro/db/1931325684903849984"},{"title":"外连接优化","url":"https://www.modb.pro/mes/2975"}]},{"id":2788,"name":"自连接","contents":[{"title":"自连接的用法","url":"https://www.modb.pro/db/1928647816432332800"},{"title":"如何理解SQL中的自连接？","url":"https://www.modb.pro/db/25122"}]},{"id":2789,"name":"交叉连接","contents":[{"title":"SQL 交叉连接查询","url":"https://www.modb.pro/db/84428"}]}]},{"id":265,"name":"约束","children":[{"id":275,"name":"主键","contents":[{"title":"数据库表的主键是什么？有哪些特点？","url":"https://www.modb.pro/db/448084"},{"title":"淘宝的数据库，主键是如何设计的？","url":"https://www.modb.pro/db/64251"},{"title":"分库分表情况下全局唯一主键的一种简单实现","url":"https://www.modb.pro/db/45311"},{"title":"数据库主键ID生成方案比较","url":"https://www.modb.pro/db/73262"},{"title":"SQL中的主键约束是什么？","url":"https://www.modb.pro/db/84469"},{"title":"为什么在数据库创建表时要设置主键","url":"https://www.modb.pro/db/135923"}]},{"id":276,"name":"外键","contents":[{"title":"设置外键","url":"https://www.modb.pro/db/653840"}]}]},{"id":266,"name":"子查询","children":[{"id":2791,"name":"标量子查询","contents":[{"title":"SQL标量子查询的优化案例分析","url":"https://www.modb.pro/db/81022"},{"title":"标量子查询SQL改写","url":"https://www.modb.pro/db/621688"},{"title":"标量子查询SQL优化","url":"https://www.modb.pro/db/46309"},{"title":"SQL标量子查询的优化案例分析","url":"https://www.modb.pro/db/81025"}]},{"id":2792,"name":"列子查询","contents":[{"title":"单列子查询","url":"https://www.modb.pro/db/76848"},{"title":"多列子查询","url":"http://modb.pro/db/76844"}]},{"id":2793,"name":"表子查询","contents":[]},{"id":2794,"name":"IN 子查询","contents":[]}]},{"id":273,"name":"SELECT","children":[{"id":2795,"name":"基本 SELECT：字段、别名、常量","contents":[{"title":"基本 SELECT 语句","url":"https://www.modb.pro/doc/113298"},{"title":"SELECT 基本语法","url":"https://www.modb.pro/db/26443"}]},{"id":2796,"name":"WHERE 条件筛选","contents":[{"title":"动态where条件查询","url":"https://www.modb.pro/db/86300"},{"title":"where条件的提取","url":"http://modb.pro/db/181922"}]},{"id":2797,"name":"聚合函数与 GROUP BY","contents":[{"title":"聚合函数和GROUP BY子句","url":"https://www.modb.pro/db/1891673112656228352"}]},{"id":2798,"name":"HAVING 子句","contents":[{"title":"HAVING子句详解","url":"https://www.modb.pro/doc/121245"},{"title":"HAVING 子句的力量","url":"https://www.modb.pro/db/1930056589155774464"}]}]}]};</script>
+<script>
+const COLORS = [
+  '#e94560','#0f3460','#1a8a5c','#f39c12','#8e44ad','#16a085',
+  '#2980b9','#d35400','#27ae60','#c0392b','#2c3e50','#f1c40f'
+]
+
+let chart = null
+let graphData = null
+let expanded = {}
+
+function loadGraph() {
+  Promise.resolve(EMBEDDED_GRAPH).then(data => {
+    graphData = data
+        document.getElementById('stat-nodes').textContent = data.nodes.length
+        document.getElementById('stat-edges').textContent = data.edges.length
+        document.getElementById('stat-content').textContent = data.nodes.filter(n => n.level === 2).length
+    renderChart()
+  }).catch(e => {
+    document.getElementById('loading').innerHTML = '<div style="color:#e94560">加载失败: ' + e.message + '</div>'
+  })
+}
+
+function buildEChartsData(data, showAll) {
+  const catIndex = {}
+  const topIdByName = {}
+  data.nodes.filter(n => n.level === 1).forEach((n, i) => { catIndex[n.id] = i; topIdByName[n.name] = n.id })
+
+  const visible = new Set()
+  visible.add('root')
+  data.nodes.filter(n => n.level === 1).forEach(n => visible.add(n.id))
+
+  data.nodes.forEach(n => {
+    if (n.level === 2) {
+      const parent = data.edges.find(e => e.target === n.id)?.source
+      if (parent && (expanded[parent] || showAll)) visible.add(n.id)
+    }
+  })
+  data.nodes.forEach(n => {
+    if (n.level === 3) {
+      const parent = data.edges.find(e => e.target === n.id)?.source
+      if (parent && expanded[parent] && visible.has(parent)) visible.add(n.id)
+    }
+  })
+
+  const echartsNodes = data.nodes
+    .filter(n => visible.has(n.id))
+    .map(n => {
+      const catId = n.level === 1 ? n.id : (topIdByName[n.parent] ?? null)
+      const ci = catId && catIndex[catId] != null ? catIndex[catId] : 0
+      const size = n.level === 0 ? 60 : n.level === 1 ? 40 : n.level === 2 ? 22 : 8
+      const item = {
+        id: n.id,
+        name: n.level === 1 ? (expanded[n.id] ? `${n.name} ▾` : `${n.name} ▸`) : (n.level <= 2 ? n.name : ''),
+        value: n.name,
+        category: ci,
+        symbolSize: size,
+        label: { show: n.level <= 2, fontSize: n.level === 0 ? 16 : 11, fontWeight: n.level <= 1 ? 'bold' : 'normal' },
+        itemStyle: { color: n.level === 0 ? '#e94560' : COLORS[ci % COLORS.length] },
+        _raw: n,
+      }
+      if (n.level === 3) {
+        item.symbol = 'circle'
+        item.label = { show: false }
+      }
+      return item
+    })
+
+  const echartsEdges = data.edges
+    .filter(e => visible.has(e.source) && visible.has(e.target))
+    .map(e => ({
+      source: e.source,
+      target: e.target,
+      lineStyle: { width: 0.5, opacity: 0.3, curveness: 0.2 },
+    }))
+
+  const categories = data.nodes.filter(n => n.level === 1).map((n, i) => ({
+    name: n.name,
+    itemStyle: { color: COLORS[i % COLORS.length] },
+  }))
+
+  return { nodes: echartsNodes, edges: echartsEdges, categories }
+}
+
+function buildOption(showAll) {
+  const { nodes, edges, categories } = buildEChartsData(graphData, showAll)
+
+  return {
+    title: { show: false },
+    tooltip: {
+      trigger: 'item',
+      formatter: (params) => {
+        const raw = params.data?._raw
+        if (!raw) return params.name
+        let html = `<b>${raw.name}</b>`
+        if (raw.level === 0) {
+          html += `<br/>${graphData.root.brief}`
+          html += `<br/>浏览量: ${graphData.root.views}`
+        }
+        if (raw.level === 1) {
+          const count = graphData.nodes.filter(n => n.level === 2 && n.parent === raw.name).length
+          html += `<br/>子分类: ${count}`
+          html += `<br/><span style="color:#64b5f6">点击展开/收起子分类</span>`
+        }
+        if (raw.level === 2) {
+          html += `<br/>父分类: ${raw.parent || '-'}`
+        }
+        if (raw.level === 3) {
+          html += `<br/>所属: ${raw.parent || '-'}`
+          if (raw.url) html += `<br/><a href="${raw.url}" target="_blank">打开原文 →</a>`
+        }
+        return html
+      },
+    },
+    series: [{
+      type: 'graph',
+      layout: 'force',
+      animation: true,
+      roam: true,
+      draggable: true,
+      data: nodes,
+      edges: edges,
+      categories: categories,
+      focusNodeAdjacency: true,
+      edgeSymbol: ['none', 'none'],
+      force: {
+        repulsion: 600,
+        edgeLength: [80, 250],
+        layoutAnimation: false,
+        gravity: 0.1,
+        friction: 0.1,
+      },
+      lineStyle: { color: 'source', opacity: 0.2, width: 0.5 },
+      label: { position: 'top', color: '#333' },
+      emphasis: {
+        focus: 'adjacency',
+        lineStyle: { width: 2, opacity: 0.8 },
+      },
+    }],
+  }
+}
+
+function renderChart() {
+  const dom = document.getElementById('chart')
+  chart = echarts.init(dom)
+  window.addEventListener('resize', () => chart.resize())
+
+  chart.setOption(buildOption(false))
+  chart.on('click', (params) => {
+    const raw = params.data?._raw
+    if (!raw) return
+    if (raw.level === 1) {
+      expanded[raw.id] = !expanded[raw.id]
+      chart.setOption(buildOption(false), true)
+    } else if (raw.level === 3 && raw.url) {
+      window.open(raw.url, '_blank')
+    }
+  })
+
+  // Build legend
+  const legend = document.getElementById('legend')
+  legend.innerHTML = '<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:#333">图谱分类</div>'
+  graphData.nodes.filter(n => n.level === 1).forEach((n, i) => {
+    const count = graphData.nodes.filter(x => x.level === 2 && x.parent === n.name).length
+    const div = document.createElement('div')
+    div.className = 'l-item'
+    div.innerHTML = `<span class="l-dot" style="background:${COLORS[i % COLORS.length]}"></span><span class="l-name">${n.name}</span><span class="l-count">${count} 子分类</span>`
+    div.onclick = () => {
+      expanded[n.id] = !expanded[n.id]
+      chart.setOption(buildOption(false), true)
+    }
+    legend.appendChild(div)
+  })
+
+  document.getElementById('loading').style.display = 'none'
+}
+
+function toggleExpand(nodeId) {
+  if (expanded.hasOwnProperty(nodeId) === false) expanded[nodeId] = false
+  expanded[nodeId] = !expanded[nodeId]
+  chart.setOption(buildOption(false), true)
+}
+
+function toggleCollapse() {
+  const level1 = graphData.nodes.filter(n => n.level === 1)
+  const allExpanded = level1.every(n => expanded[n.id])
+  level1.forEach(n => { expanded[n.id] = !allExpanded })
+  chart.setOption(buildOption(allExpanded), true)
+}
+
+function resetView() {
+  expanded = {}
+  chart.setOption(buildOption(false), true)
+  chart.dispatchAction({ type: 'restore' })
+}
+
+loadGraph()
+</script>
+</body>
+</html>

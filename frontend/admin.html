@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQL 自适应训练 · 管理后台</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+  :root { --bg: #f5f6f8; --card: #ffffff; --text: #2c3e50; --text2: #7a8599; --border: #e4e7ed; --accent: #5a7d9a; --accent-hover: #4a6a82; --tag-bg: #eef1f5; --success: #6b9e7a; --error: #c97a7a; }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; color: var(--text); margin: 0; padding: 0; line-height: 1.5; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem; }
+  .dark-bg { background: var(--text); color: #eef1f5; padding: 0.75rem 1rem; border-radius: 0.375rem; }
+  .dark-bg a { color: var(--accent); }
+  .stat-num { font-weight: 700; font-size: 1.4rem; line-height: 1; }
+  .stat-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text2); }
+  table { width:100%; border-collapse:collapse; }
+  table thead th { text-align:left; font-size:0.6rem; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--text2); background:var(--tag-bg); padding:8px 10px; border-bottom:1px solid var(--border); }
+  table tbody td { padding:8px 10px; border-bottom:1px solid var(--border); font-size:0.75rem; }
+  table tbody tr:hover td { background:var(--tag-bg); }
+  .chart-label { font-size:0.55rem; fill:var(--text2); }
+  .accent { color: var(--accent); }
+  .num-oswald { font-weight:600; }
+  .text-xs { font-size:0.65rem; }
+  .text-sm { font-size:0.75rem; }
+  .text-center { text-align:center; }
+  .tracking-wider { letter-spacing:0.04em; }
+  .tracking-widest { letter-spacing:0.06em; }
+  .mb-0 { margin-bottom:0; }
+  .mb-1 { margin-bottom:0.25rem; }
+  .mb-2 { margin-bottom:0.5rem; }
+  .mt-1 { margin-top:0.25rem; }
+  .mt-2 { margin-top:0.5rem; }
+  .mt-3 { margin-top:0.75rem; }
+  .p-3 { padding:0.75rem; }
+  .p-4 { padding:1rem; }
+  .py-4 { padding-top:1rem; padding-bottom:1rem; }
+  .gap-2 { gap:0.5rem; }
+  .gap-3 { gap:0.75rem; }
+  .flex { display:flex; }
+  .grid { display:grid; }
+  .grid-cols-1 { grid-template-columns:repeat(1,1fr); }
+  .grid-cols-2 { grid-template-columns:repeat(2,1fr); }
+  .justify-between { justify-content:space-between; }
+  .items-center { align-items:center; }
+  .items-start { align-items:flex-start; }
+  .opacity-50 { opacity:0.5; }
+  .opacity-60 { opacity:0.6; }
+  .mr-1 { margin-right:0.25rem; }
+  hr { border: 0; border-top: 2px solid var(--border); margin: 0.75rem 0; }
+</style>
+</head>
+<body class="p-4">
+<div class="max-w-[960px] mx-auto">
+
+  <!-- HEADER -->
+  <div class="card" style="padding:0.75rem 1rem;">
+    <div class="flex justify-between items-center">
+      <div><span style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;">SQL</span><span style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;color:var(--accent);"> 管理后台</span><span style="font-size:0.6rem;color:var(--text2);margin-left:0.5rem;">ADMIN · DASHBOARD</span></div>
+      <span style="font-size:0.65rem;color:var(--text2);" id="refreshTime">-</span>
+    </div>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="grid grid-cols-2 gap-2 mt-3" id="statCards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.5rem">
+    <div class="card p-3 text-center"><div class="stat-num accent" id="statUsers">-</div><div class="stat-label">注册用户</div></div>
+    <div class="card p-3 text-center"><div class="stat-num" id="statAnswers">-</div><div class="stat-label">总答题数</div></div>
+    <div class="card p-3 text-center"><div class="stat-num" style="color:var(--success)" id="statCorrect">-</div><div class="stat-label">正确数</div></div>
+    <div class="card p-3 text-center"><div class="stat-num" style="color:var(--accent)" id="statAccuracy">-</div><div class="stat-label">正确率</div></div>
+  </div>
+
+  <!-- CHARTS ROW -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+
+    <!-- Donut chart: correct vs wrong -->
+    <div class="card p-3">
+      <div class="num-oswald text-xs tracking-wider opacity-60 mb-1">正确 / 错误 比例</div>
+      <svg id="donutChart" viewBox="0 0 240 160" style="width:100%;height:auto"></svg>
+    </div>
+
+    <!-- Bar chart: difficulty distribution -->
+    <div class="card p-3">
+      <div class="num-oswald text-xs tracking-wider opacity-60 mb-1">难度分布</div>
+      <svg id="diffChart" viewBox="0 0 240 160" style="width:100%;height:auto"></svg>
+    </div>
+
+    <!-- Bar chart: user performance -->
+    <div class="card p-3 md:col-span-2">
+      <div class="num-oswald text-xs tracking-wider opacity-60 mb-1">用户答题排行</div>
+      <svg id="userChart" viewBox="0 0 460 140" style="width:100%;height:auto"></svg>
+    </div>
+
+  </div>
+
+  <!-- USER TABLE -->
+  <div class="card p-3 mt-3">
+    <div class="num-oswald text-xs tracking-wider opacity-60 mb-2">用户明细</div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>用户名</th><th>答题数</th><th>正确数</th><th>正确率</th><th>最后活跃</th></tr></thead>
+        <tbody id="userTableBody"><tr><td colspan="5" class="text-center opacity-50 py-4">加载中...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_BASE = 'http://10.86.168.226:5000/api';
+
+function drawDonut(correct, wrong) {
+  var total = correct + wrong;
+  if (total === 0) { document.getElementById('donutChart').innerHTML = '<text x="120" y="80" text-anchor="middle" fill="#87867f" font-size="12">暂无数据</text>'; return; }
+  var pct = correct / total;
+  var r = 50, cx = 80, cy = 80;
+  var end = pct * 360;
+  var rad = function(d) { return d * Math.PI / 180; };
+  var desc = function(a1, a2) {
+    var x1 = cx + r * Math.sin(rad(a1)), y1 = cy - r * Math.cos(rad(a1));
+    var x2 = cx + r * Math.sin(rad(a2)), y2 = cy - r * Math.cos(rad(a2));
+    var large = (a2 - a1) > 180 ? 1 : 0;
+    return 'M ' + cx + ' ' + cy + ' L ' + x1 + ' ' + y1 + ' A ' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ' ' + y2 + ' Z';
+  };
+  var html = '';
+  if (end > 0) html += '<path d="' + desc(0, end) + '" fill="#788c5d" opacity="0.85"/>';
+  if (end < 360) html += '<path d="' + desc(end, 360) + '" fill="#dcd6ce" opacity="0.6"/>';
+  html += '<text x="80" y="75" text-anchor="middle" fill="#2c241b" font-family="Oswald" font-size="22" font-weight="700">' + Math.round(pct * 100) + '%</text>';
+  html += '<text x="80" y="90" text-anchor="middle" fill="#87867f" font-size="9">正确率</text>';
+  html += '<text x="155" y="65" fill="#788c5d" font-family="Oswald" font-size="13" font-weight="700">' + correct + '</text>';
+  html += '<text x="155" y="78" fill="#87867f" font-size="8">正确</text>';
+  html += '<text x="155" y="95" fill="#b04a4a" font-family="Oswald" font-size="13" font-weight="700">' + wrong + '</text>';
+  html += '<text x="155" y="108" fill="#87867f" font-size="8">错误</text>';
+  document.getElementById('donutChart').innerHTML = html;
+}
+
+function drawDiffBars(easy, medium, hard) {
+  var max = Math.max(easy, medium, hard, 1);
+  var html = '';
+  var bars = [
+    { label: '简单', val: easy, color: '#788c5d', x: 10 },
+    { label: '中等', val: medium, color: '#c17c4a', x: 85 },
+    { label: '困难', val: hard, color: '#b04a4a', x: 160 }
+  ];
+  for (var i = 0; i < bars.length; i++) {
+    var b = bars[i];
+    var h = Math.max(3, (b.val / max) * 90);
+    html += '<rect x="' + (b.x + 12) + '" y="' + (120 - h) + '" width="30" height="' + h + '" fill="' + b.color + '" rx="3" opacity="0.8"/>';
+    html += '<text x="' + (b.x + 27) + '" y="115" text-anchor="middle" fill="#2c241b" font-family="Oswald" font-size="14" font-weight="700">' + b.val + '</text>';
+    html += '<text x="' + (b.x + 27) + '" y="130" text-anchor="middle" fill="#87867f" font-size="8">' + b.label + '</text>';
+  }
+  document.getElementById('diffChart').innerHTML = html;
+}
+
+function drawUserBars(users) {
+  var html = '';
+  if (users.length === 0) { document.getElementById('userChart').innerHTML = '<text x="230" y="70" text-anchor="middle" fill="#87867f" font-size="12">暂无用户数据</text>'; return; }
+  var max = 1;
+  for (var i = 0; i < users.length; i++) { if (users[i].answered > max) max = users[i].answered; }
+  var barW = Math.min(50, 380 / users.length - 10);
+  var gap = Math.min(20, 380 / users.length);
+  var startX = 40;
+  for (var i = 0; i < users.length; i++) {
+    var u = users[i];
+    var h = Math.max(3, (u.answered / max) * 90);
+    var x = startX + i * (barW + gap);
+    var accColor = u.accuracy >= 70 ? '#788c5d' : (u.accuracy >= 40 ? '#c17c4a' : '#b04a4a');
+    html += '<rect x="' + x + '" y="' + (115 - h) + '" width="' + barW + '" height="' + h + '" fill="' + accColor + '" rx="3" opacity="0.8"/>';
+    html += '<text x="' + (x + barW / 2) + '" y="110" text-anchor="middle" fill="#2c241b" font-family="Oswald" font-size="11" font-weight="700">' + u.answered + '</text>';
+    var name = u.username.length > 6 ? u.username.substring(0, 6) + '..' : u.username;
+    html += '<text x="' + (x + barW / 2) + '" y="125" text-anchor="middle" fill="#87867f" font-size="7">' + name + '</text>';
+    html += '<text x="' + (x + barW / 2) + '" y="135" text-anchor="middle" fill="' + accColor + '" font-size="7">' + (u.answered > 0 ? u.accuracy + '%' : '-') + '</text>';
+  }
+  document.getElementById('userChart').innerHTML = html;
+}
+
+async function loadAdmin() {
+  document.getElementById('refreshTime').textContent = new Date().toLocaleTimeString();
+  try {
+    var stats = await (await fetch(API_BASE + '/admin/stats')).json();
+    document.getElementById('statUsers').textContent = stats.total_users;
+    document.getElementById('statAnswers').textContent = stats.total_answers;
+    document.getElementById('statCorrect').textContent = stats.total_correct;
+    document.getElementById('statAccuracy').textContent = stats.accuracy + '%';
+    drawDonut(stats.total_correct, stats.total_answers - stats.total_correct);
+    drawDiffBars(stats.by_difficulty.easy || 0, stats.by_difficulty.medium || 0, stats.by_difficulty.hard || 0);
+
+    var users = await (await fetch(API_BASE + '/admin/users')).json();
+    drawUserBars(users);
+    var html = '';
+    for (var i = 0; i < users.length; i++) {
+      var u = users[i];
+      var lastActive = u.last_active ? new Date(u.last_active + ' UTC').toLocaleString() : '从未作答';
+      var accClass = u.accuracy >= 60 ? '' : (u.accuracy > 0 ? 'style="color:var(--accent)"' : 'style="color:var(--error)"');
+      html += '<tr><td><strong>' + u.username + '</strong></td>';
+      html += '<td class="num-oswald">' + u.answered + '</td>';
+      html += '<td style="color:var(--text)">' + u.correct + '</td>';
+      html += '<td class="num-oswald" ' + accClass + '>' + (u.answered > 0 ? u.accuracy + '%' : '-') + '</td>';
+      html += '<td style="font-size:0.65rem;color:#87867f">' + lastActive + '</td></tr>';
+    }
+    if (users.length === 0) html = '<tr><td colspan="5" class="text-center opacity-50 py-4">暂无用户数据</td></tr>';
+    document.getElementById('userTableBody').innerHTML = html;
+  } catch(e) {
+    document.getElementById('userTableBody').innerHTML = '<tr><td colspan="5" class="text-center" style="color:#b04a4a">加载失败，请确保后端已启动</td></tr>';
+  }
+}
+
+loadAdmin();
+setInterval(loadAdmin, 10000);
+</script>
+</body>
+</html>

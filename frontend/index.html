@@ -1,0 +1,3289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL 自适应练习</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" rel="stylesheet">
+<style>
+  :root { --bg: #eef3fc; --card: rgba(255,255,255,0.72); --text: #1b2747; --text2: #48577c; --border: rgba(88,110,170,0.16); --accent: #4a7dff; --accent-hover: #6a90ff; --tag-bg: rgba(88,110,170,0.08); --code-bg: rgba(255,255,255,0.75); --success: #0ea678; --error: #e04a55; --accent-grad: linear-gradient(135deg, #4a7dff 0%, #8b5bff 100%); }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background:
+    radial-gradient(1100px 700px at 88% -12%, rgba(140,120,255,0.16), transparent 60%),
+    radial-gradient(900px 620px at -8% 18%, rgba(80,140,255,0.15), transparent 55%),
+    radial-gradient(800px 560px at 50% 115%, rgba(70,190,210,0.12), transparent 55%),
+    linear-gradient(180deg, #eef3fc 0%, #e3ecf9 100%);
+    font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; color: var(--text); margin: 0; padding: 0; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+  /* 背景光球（玻璃拟态氛围） */
+  .orb { position: fixed; border-radius: 50%; filter: blur(100px); z-index: 0; pointer-events: none; }
+  .orb-1 { width: 460px; height: 460px; background: #b9a6ff; top: -140px; right: -100px; opacity: 0.30; animation: orbDrift 19s ease-in-out infinite; }
+  .orb-2 { width: 400px; height: 400px; background: #9cc0ff; top: 40%; left: -180px; opacity: 0.26; animation: orbDrift 24s ease-in-out infinite reverse; }
+  .orb-3 { width: 340px; height: 340px; background: #93e2ea; bottom: -120px; right: 20%; opacity: 0.22; animation: orbDrift 27s ease-in-out infinite; }
+  @keyframes orbDrift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(42px, -28px) scale(1.07); }
+    66% { transform: translate(-30px, 24px) scale(0.94); }
+  }
+  .main-wrap { flex: 1 0 auto; position: relative; z-index: 1; }
+  .page-footer { flex-shrink: 0; background: rgba(27, 39, 71, 0.85); color: #eef1f5; padding: 0.5rem 1rem; text-align: center; font-size: 0.65rem; opacity: 0.45; letter-spacing: 0.05em; position: relative; z-index: 1; }
+  .card { background: var(--card); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--border); border-radius: 0.9rem; padding: 1rem; box-shadow: 0 8px 28px rgba(58,82,148,0.12), inset 0 1px 0 rgba(255,255,255,0.65); }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--text2); font-size: 0.65rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 0.25rem; }
+  .tag-easy { background: #EBF2FA; color: #1E5BA8; }
+  .tag-medium { background: #f0eddf; color: #8a7a4a; }
+  .tag-hard { background: #f0e4e4; color: #b06060; }
+  .schema-box { background: var(--code-bg); color: var(--text); padding: 0.75rem 1rem; border-radius: 0.375rem; font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.75rem; line-height: 1.6; margin: 0.75rem 0; white-space: pre-wrap; overflow-x: auto; border: 1px solid var(--border); }
+  .code-input { width: 100%; min-width: 200px; min-height: 72px; padding: 0.6rem 0.75rem; font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.8rem; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 0.375rem; outline: none; resize: both; overflow: auto; transition: border-color 0.15s; }
+  .code-input:focus { border-color: var(--accent); }
+  .CodeMirror { min-height: 72px; border: 1px solid var(--border); border-radius: 0.375rem; font-family: 'SF Mono','Consolas',monospace; font-size: 0.8rem; resize: both; background: var(--code-bg); }
+  .CodeMirror-focused { border-color: var(--accent) !important; }
+  .CodeMirror-scroll { min-height: 72px; }
+  /* ============================================================
+     SQL 高亮 — 普通模式
+     Token: keyword(蓝) / function(橙) / string(灰+斜体) / number(紫) / comment(灰+斜体) / variable(青+下划线)
+     色盲安全：蓝-橙-灰-紫 + 形状双编码（加粗/斜体/下划线）
+     ============================================================ */
+  .cm-s-default .cm-keyword   { color: #5a7d9a; font-weight: 700; }
+  .cm-s-default .cm-builtin   { color: #5a7d9a; font-weight: 600; }
+  .cm-s-default .cm-string    { color: #666666; font-style: italic; background: rgba(128,128,128,0.05); }
+  .cm-s-default .cm-number    { color: #8B4BA8; }
+  .cm-s-default .cm-comment   { color: #939393; font-style: italic; }
+  .cm-s-default .cm-variable  { color: #1A7A7A; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
+  .cm-s-default .cm-variable-2 { color: #1A7A7A; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
+  .cm-s-default .cm-operator  { color: #3A3A3A; }
+  .cm-s-default .cm-atom      { color: #8B4BA8; }
+  .cm-sql-error { color: #C53030 !important; font-weight: 700; text-decoration: underline; text-decoration-color: #C53030; text-underline-offset: 2px; }
+  .option-btn { display: block; width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; background: var(--card); cursor: pointer; text-align: left; font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.75rem; color: var(--text); transition: all 0.12s; }
+  .option-btn:hover { border-color: var(--accent); background: #f8fafc; }
+  .option-btn.selected { border-color: var(--accent); background: #edf2f7; }
+  .option-btn.correct { border-color: var(--success); background: #EBF2FA; }
+  .option-btn.correct-answer { border-color: var(--success); background: #eaf4ee; font-weight: 700; }
+  .option-btn.wrong { border-color: var(--error); background: #f5ebeb; }
+  .result-box { margin-top: 0.75rem; padding: 0.75rem; border-radius: 0.375rem; font-size: 0.8rem; }
+  .result-box.correct { background: #EBF2FA; border: 1px solid #C4D8F0; color: #1E5BA8; }
+  .result-box.wrong { background: #f5ebeb; border: 1px solid #e4c8c8; color: #8a4040; }
+  .result-box .explanation { margin-top: 0.4rem; color: var(--text2); font-size: 0.75rem; }
+  .progress-track { height: 3px; background: var(--border); margin: 0.75rem 0; overflow: hidden; border-radius: 2px; }
+  .progress-track .fill { height: 100%; background: var(--accent); transition: width 0.4s; }
+  .filter-bar select { height: 34px; padding: 0 0.5rem; font-family: inherit; font-size: 0.75rem; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 0.375rem; outline: none; }
+  .filter-bar select:focus { border-color: var(--accent); }
+  .filter-bar input { height: 34px; padding: 0 0.75rem; font-family: inherit; font-size: 0.8rem; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 0.375rem; outline: none; }
+  .filter-bar input:focus { border-color: var(--accent); }
+  /* 级联分类 */
+  .cat-parent-btn { display:inline-flex;align-items:center;height:34px;padding:0 0.55rem;font-size:0.75rem;font-weight:600;color:var(--text2);cursor:pointer;border:1px solid transparent;border-radius:0.25rem;transition:all 0.12s;white-space:nowrap;user-select:none; }
+  .cat-parent-btn:hover { color:var(--accent);background:var(--tag-bg);border-color:var(--border); }
+  .cat-parent-btn.active { color:var(--accent);background:#edf2f7; }
+  .cat-sub-item { padding:0.35rem 1rem;font-size:0.72rem;color:var(--text);cursor:pointer;white-space:nowrap;transition:background 0.1s; }
+  .cat-sub-item:hover { background:var(--tag-bg);color:var(--accent); }
+  .cat-sub-all { font-weight:600;color:var(--accent);border-bottom:1px solid var(--border);margin-bottom:2px;padding-bottom:6px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 1rem; font-family: inherit; font-size: 0.75rem; font-weight: 600; border-radius: 0.375rem; border: 1px solid transparent; cursor: pointer; transition: all 0.12s; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-accent { background: var(--accent-grad); color: #fff; box-shadow: 0 4px 18px rgba(90,100,255,0.35); }
+  .btn-accent:hover:not(:disabled) { background: var(--accent-grad); box-shadow: 0 7px 26px rgba(90,100,255,0.5); transform: translateY(-1px); }
+  .btn-primary { background: var(--accent-grad); color: #fff; box-shadow: 0 4px 18px rgba(90,100,255,0.35); }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-grad); box-shadow: 0 7px 26px rgba(90,100,255,0.5); transform: translateY(-1px); }
+  .btn-secondary { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn-secondary:hover:not(:disabled) { background: var(--tag-bg); }
+  .question-item { cursor: pointer; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.375rem; margin-bottom: 0.5rem; transition: border-color 0.12s; }
+  .question-item:hover { border-color: var(--accent); }
+  .question-item h3 { font-size: 0.85rem; margin: 0 0 0.2rem 0; font-weight: 600; }
+  .question-item p { font-size: 0.7rem; color: var(--text2); margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #questionDetail { display: none; }
+  #questionDetail.visible { display: block; }
+  .back-link { font-size: 0.7rem; color: var(--accent); cursor: pointer; margin-bottom: 0.75rem; display: inline-block; }
+  .back-link:hover { text-decoration: underline; }
+  .page { display: none; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn 0.25s ease; }
+  .nav-btn { padding: 0.5rem 1.1rem; font-family: inherit; font-size: 0.75rem; font-weight: 600; color: var(--text2); cursor: pointer; border: none; background: none; transition: all 0.18s; border-radius: 999px; }
+  .nav-btn:hover { color: var(--text); background: var(--tag-bg); }
+  .nav-btn.active { color: #fff; background: var(--accent-grad); box-shadow: 0 4px 14px rgba(90,100,255,0.35); }
+  .graph-node { display:inline-flex; align-items:center; gap:3px; padding:3px 7px; border-radius:4px; font-size:0.6rem; font-weight:600; border:1px solid var(--border); background:var(--card); color:var(--text2); transition:all 0.15s; font-family:'SF Mono','Consolas',monospace; }
+  .graph-node i { font-size: 0.55rem; }
+  .opt-explain { font-size: 0.7rem; padding: 0.4rem 0.6rem; border-radius: 0.375rem; margin-bottom: 2px; display: flex; align-items: flex-start; gap: 6px; }
+  .opt-explain .mark { flex-shrink: 0; font-weight: 700; font-size: 0.85rem; }
+  .graph-node.mastered { border-color:var(--success); background:#EBF2FA; color:#1E5BA8; }
+  .graph-node.current { border-color:var(--accent); background:#edf2f7; color:var(--accent); }
+  .graph-node.locked { opacity:0.4; }
+  .data-table { margin:0 0 0.5rem 0; border-collapse:collapse; font-size:0.7rem; font-family:'SF Mono','Consolas',monospace; }
+  .data-table th { background:var(--text); color:#fff; padding:0.3rem 0.5rem; text-align:left; font-weight:600; }
+  .data-table td { padding:0.25rem 0.5rem; border-bottom:1px solid var(--border); color:var(--text); }
+  .data-table tr:nth-child(even) td { background:var(--tag-bg); }
+  .expected-output-text { background:var(--tag-bg); padding:0.5rem; border-radius:4px; font-size:0.7rem; line-height:1.4; overflow-x:auto; white-space:pre; font-family:'SF Mono','Consolas',monospace; }
+  .table-label { font-size:0.65rem; font-weight:600; color:var(--text2); margin:0.5rem 0 0.25rem 0; text-transform:uppercase; letter-spacing:0.04em; }
+  .exp-label { font-size:0.65rem; font-weight:600; color:var(--text); margin:0.75rem 0 0.25rem 0; text-transform:uppercase; letter-spacing:0.04em; }
+  /* 表格横排布局 */
+  .tables-row { display:flex; gap:1rem; margin:0.75rem 0; }
+  .tables-row .table-col { flex:1; min-width:0; overflow-x:auto; }
+  .tables-row .table-col:only-child { flex:none; width:100%; }
+  @media (max-width:640px) { .tables-row { flex-direction:column; } }
+  .highlight-box { border-left: 3px solid var(--accent); background: var(--tag-bg); padding: 0.75rem 1rem; border-radius: 0 0.375rem 0.375rem 0; font-size:0.8rem; }
+  .highlight-box strong { color: var(--accent); }
+  .dark-bg { background: var(--text); color: #eef1f5; padding: 0.75rem 1rem; border-radius: 0.375rem; font-size:0.7rem; }
+  .dark-bg a { color: var(--accent); }
+  hr { border: 0; border-top: 2px solid var(--border); margin: 0.75rem 0; }
+  .question-desc { white-space:pre-wrap; font-size:0.85rem; line-height:1.7; margin-bottom:0.75rem; padding:0.75rem 1rem; background:var(--tag-bg); border-left:3px solid var(--accent); border-radius:0 0.375rem 0.375rem 0; color:var(--text); font-weight:500; }
+  .sql-toggle { display:inline-flex; align-items:center; gap:4px; font-size:0.65rem; color:var(--accent); cursor:pointer; font-weight:600; font-family:'SF Mono','Consolas',monospace; user-select:none; padding:2px 8px; border:1px solid var(--border); border-radius:0.25rem; background:var(--card); margin-bottom:0.5rem; }
+  .sql-toggle:hover { background:var(--tag-bg); }
+  .sql-panel { display:none; margin-bottom:0.75rem; }
+  .sql-panel.open { display:block; }
+  .sql-code { background:var(--text); color:#d4dce8; padding:0.75rem 1rem; border-radius:0.375rem; font-family:'SF Mono','Consolas',monospace; font-size:0.7rem; line-height:1.6; white-space:pre-wrap; overflow-x:auto; }
+  .title-serif { font-weight:600; font-size:1rem; }
+  .num-oswald { font-weight:600; }
+  .accent { color: var(--accent); }
+  .text-xs { font-size:0.65rem; }
+  .text-sm { font-size:0.75rem; }
+  .text-lg { font-size:1rem; }
+  .text-xl { font-size:1.25rem; }
+  .text-2xl { font-size:1.5rem; }
+  .opacity-50 { opacity:0.5; }
+  .opacity-60 { opacity:0.6; }
+  .tracking-wider { letter-spacing:0.04em; }
+  .tracking-widest { letter-spacing:0.06em; }
+  .mb-1 { margin-bottom:0.25rem; }
+  .mb-2 { margin-bottom:0.5rem; }
+  .mb-3 { margin-bottom:0.75rem; }
+  .mt-1 { margin-top:0.25rem; }
+  .mt-2 { margin-top:0.5rem; }
+  .mt-3 { margin-top:0.75rem; }
+  .my-2 { margin-top:0.5rem; margin-bottom:0.5rem; }
+  .my-3 { margin-top:0.75rem; margin-bottom:0.75rem; }
+  .py-4 { padding-top:1rem; padding-bottom:1rem; }
+  .py-6 { padding-top:1.5rem; padding-bottom:1.5rem; }
+  .px-4 { padding-left:1rem; padding-right:1rem; }
+  .p-2 { padding:0.5rem; }
+  .p-3 { padding:0.75rem; }
+  .p-4 { padding:1rem; }
+  .p-5 { padding:1.25rem; }
+  .p-6 { padding:1.5rem; }
+  .p-8 { padding:2rem; }
+  .flex { display:flex; }
+  .gap-1 { gap:0.25rem; }
+  .gap-2 { gap:0.5rem; }
+  .gap-3 { gap:0.75rem; }
+  .gap-6 { gap:1.5rem; }
+  .justify-between { justify-content:space-between; }
+  .justify-center { justify-content:center; }
+  .items-center { align-items:center; }
+  .items-start { align-items:flex-start; }
+  .flex-col { flex-direction:column; }
+  .flex-1 { flex:1; }
+  .flex-wrap { flex-wrap:wrap; }
+  .text-center { text-align:center; }
+  .space-y-2 > * + * { margin-top:0.5rem; }
+  .space-y-3 > * + * { margin-top:0.75rem; }
+  .space-y-4 > * + * { margin-top:1rem; }
+  .w-full { width:100%; }
+  .leading-relaxed { line-height:1.6; }
+  .rounded { border-radius:0.375rem; }
+  .hidden { display:none; }
+  .mr-1 { margin-right:0.25rem; }
+  .ml-1 { margin-left:0.25rem; }
+  .ml-auto { margin-left:auto; }
+  /* ===== 色觉辅助模式 — 超高对比度 + 形状编码 (不依赖加粗) ===== */
+  body.cb-mode {
+    --bg: #FFFFFF; --card: #FFFFFF; --text: #000000; --text2: #333333;
+    --border: #000000; --accent: #0044CC; --accent-hover: #003399;
+    --tag-bg: #CCCCCC; --code-bg: #F5F5F5;
+    --success: #1E5BA8; --error: #BF0000;
+    filter: contrast(1.05);
+  }
+  body.cb-mode .card { border-width: 2px; }
+  body.cb-mode .schema-box { background: #EEEEEE; border: 1px solid #000; }
+  /* 难度标签 — 入门=蓝色 */
+  body.cb-mode .tag-easy {
+    background: #1E5BA8; color: #FFFFFF; border: 1px solid #000;
+    text-decoration: underline; text-decoration-color: #FFD700; text-underline-offset: 2px;
+  }
+  body.cb-mode .tag-medium {
+    background: #CC6600; color: #FFFFFF; border: 1px solid #000;
+    text-decoration: underline; text-decoration-color: #FFD700; text-underline-offset: 2px;
+  }
+  body.cb-mode .tag-hard {
+    background: #BF0000; color: #FFFFFF; border: 1px solid #000;
+    text-decoration: underline; text-decoration-color: #FFD700; text-underline-offset: 2px;
+  }
+  /* 答题结果 — 正确=蓝底白字+左边框 */
+  body.cb-mode .result-box.correct {
+    background: #1E5BA8; color: #FFFFFF; border-left: 5px solid #000;
+  }
+  body.cb-mode .result-box.wrong {
+    background: #BF0000; color: #FFFFFF; border-left: 5px solid #000;
+  }
+  /* 选项按钮 — 正确=蓝底白字+金色内框 */
+  body.cb-mode .option-btn.correct {
+    background: #1E5BA8; color: #FFFFFF; border: 2px solid #000;
+    box-shadow: inset 0 0 0 2px #FFD700;
+  }
+  body.cb-mode .option-btn.wrong {
+    background: #BF0000; color: #FFFFFF; border: 2px solid #000;
+    box-shadow: inset 0 0 0 2px #FFD700;
+  }
+  body.cb-mode .option-btn.selected {
+    background: #0044CC; color: #FFFFFF; border: 2px solid #000;
+  }
+  body.cb-mode .option-btn:hover { border-color: #000; border-width: 2px; }
+  /* 导航 */
+  body.cb-mode .nav-btn.active { background: #0044CC; color: #FFFFFF; border: 2px solid #000; }
+  body.cb-mode .nav-btn { color: #333; }
+  body.cb-mode .btn-primary { background: #0044CC; color: #FFF; border: 2px solid #000; }
+  /* SQL 高亮 — 色盲辅助模式：对比度降低20%，形状编码保留 */
+  body.cb-mode .cm-s-default .cm-keyword   { color: #1A5DB5; font-weight: 700; }
+  body.cb-mode .cm-s-default .cm-builtin   { color: #B85A18; font-weight: 700; text-decoration: underline; text-decoration-style: solid; text-underline-offset: 2px; }
+  body.cb-mode .cm-s-default .cm-string    { color: #4A4A4A; font-style: italic; background: rgba(150,150,150,0.14); }
+  body.cb-mode .cm-s-default .cm-number    { color: #7D38A0; font-weight: 700; }
+  body.cb-mode .cm-s-default .cm-comment   { color: #808080; font-style: italic; }
+  body.cb-mode .cm-s-default .cm-variable  { color: #1A6E6E; font-weight: 600; text-decoration: underline; text-decoration-style: dashed; text-underline-offset: 3px; }
+  body.cb-mode .cm-s-default .cm-variable-2 { color: #1A6E6E; font-weight: 600; text-decoration: underline; text-decoration-style: dashed; text-underline-offset: 3px; }
+  body.cb-mode .cm-s-default .cm-operator  { color: #2A2A2A; }
+  body.cb-mode .cm-s-default .cm-atom      { color: #7D38A0; font-weight: 700; }
+  body.cb-mode .cm-sql-error { color: #FFFFFF !important; background: #C53030 !important; border: 1px solid #666; padding: 0 2px; font-weight: 700; }
+  /* 眼睛图标 */
+  #cbToggle:hover { opacity: 1 !important; }
+  #cbToggle.cb-active { opacity: 1 !important; color: #0044CC !important; }
+</style>
+</head>
+<body class="p-4">
+
+<!-- 背景光球（玻璃拟态氛围） -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="max-w-[960px] mx-auto main-wrap">
+
+  <!-- HEADER -->
+  <div class="card" style="padding:0.75rem 1rem;">
+    <div class="flex justify-between items-center">
+      <div><span style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;">SQL</span><span style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;color:var(--accent);"> 自适应训练</span><span style="font-size:0.6rem;color:var(--text2);margin-left:0.5rem;">ADAPTIVE PRACTICE</span></div>
+      <span style="display:flex;align-items:center;gap:8px;">
+        <span id="cbToggle" title="色觉辅助模式" style="cursor:pointer;font-size:1rem;color:var(--text2);opacity:0.5;transition:opacity 0.15s;display:none;" onclick="toggleColorblind()"><i class="fas fa-eye"></i></span>
+        <span style="font-size:0.65rem;color:var(--text2);" id="headerUserInfo">V1.0</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- 登录入口 (居中) -->
+  <div id="loginCenterArea" style="display:none;text-align:center;margin:0.75rem 0 0.25rem;"></div>
+
+  <!-- NAV -->
+  <div class="flex gap-1 mt-4 mb-3">
+    <button class="nav-btn active" data-page="journey" onclick="showPage('journey')"><i class="fas fa-route mr-1"></i> 自适应进阶</button>
+    <button class="nav-btn" data-page="practice" onclick="currentPool='practice';showPage('practice')"><i class="fas fa-code mr-1"></i> 自主练习</button>
+    <button class="nav-btn" data-page="practice" onclick="currentPool='exam';showPage('practice')"><i class="fas fa-file-alt mr-1"></i> 真题测试</button>
+    <button class="nav-btn" data-page="wrongset" onclick="showPage('wrongset')"><i class="fas fa-exclamation-triangle mr-1"></i> 错题集</button>
+  </div>
+
+  <!-- ============ 自适应进阶 Journey ============ -->
+  <div id="page-journey" class="page">
+    <div id="journeyStart" class="card p-4 md:p-5">
+      <div class="highlight-box">
+        <p class="text-sm leading-relaxed"><strong>自适应进阶模式</strong> 基于知识图谱动态追踪你的掌握程度。答对自动进阶到更高阶知识点，答错溯源至薄弱前置知识点精准巩固。</p>
+      </div>
+      <div class="flex gap-2 mt-3 text-xs text-[#2c241b] opacity-60">
+        <span><i class="fas fa-check-circle accent mr-1"></i> 从 SELECT 基础出发</span>
+        <span><i class="fas fa-arrow-right accent mr-1"></i> 图谱递进</span>
+        <span><i class="fas fa-bolt accent mr-1"></i> 因错施教</span>
+      </div>
+      <div class="mt-3">
+        <button class="btn btn-accent" onclick="startJourney()"><i class="fas fa-play mr-1"></i> 开始进阶之旅</button>
+      </div>
+    </div>
+
+    <div id="journeyQuiz" style="display:none">
+      <div class="card p-4 md:p-5">
+        <div class="flex justify-between items-center mb-2">
+          <div>
+          <span class="num-oswald text-sm accent" id="journeyNodeLabel">SELECT 基础查询</span>
+          <span class="tag ml-2" id="journeyActionTag" style="display:none"></span>
+          <label class="text-xs ml-auto" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
+            <span class="opacity-60">深度掌握</span>
+            <input type="checkbox" id="deepModeToggle" checked onchange="toggleDeepMode()" style="accent-color:#c17c4a;width:14px;height:14px">
+          </label>
+          </div>
+          <span class="text-xs text-[#2c241b] opacity-50"><i class="fas fa-chart-simple mr-1"></i> <span id="journeyStats">0/0</span></span>
+        </div>
+        <div class="progress-track mb-1"><div class="fill" id="journeyProgress" style="width:0%"></div></div>
+        <div id="journeyQuestion" class="fade-in"></div>
+        <div class="text-center mt-3">
+          <button class="btn btn-accent" id="journeyNextBtn" onclick="nextJourney()" style="display:none"><i class="fas fa-arrow-right mr-1"></i> 继续进阶</button>
+        </div>
+      </div>
+      <div class="card p-3 md:p-4" id="journeyGraphPanel">
+        <div class="flex justify-between items-center mb-0" style="cursor:pointer;user-select:none" onclick="toggleJourneyMap()">
+          <span class="num-oswald text-xs tracking-wider opacity-60">KNOWLEDGE MAP</span>
+          <span><span id="unlockedCount">0</span>/27 <span id="journeyMapToggle"><i class="fas fa-chevron-down"></i></span></span>
+        </div>
+        <div id="journeyGraph" style="display:none;flex-wrap:wrap;gap:4px;margin-top:8px"></div>
+      </div>
+      <div class="card p-3 md:p-4" id="journeyVizPanel" style="margin-top:8px">
+        <div class="flex justify-between items-center mb-0" style="cursor:pointer;user-select:none" onclick="toggleJourneyViz()">
+          <span class="num-oswald text-xs tracking-wider opacity-60">📊 知识图谱可视化</span>
+          <span id="journeyVizToggle"><i class="fas fa-chevron-down"></i></span>
+        </div>
+        <div id="journeyVizFrame" style="display:none;margin-top:8px">
+          <iframe src="/knowledge-map" style="width:100%;height:420px;border:1px solid var(--border);border-radius:0.5rem;" title="SQL知识图谱"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <div id="journeyResult" class="card p-4 md:p-5" style="display:none"></div>
+  </div>
+
+  <!-- ============ 自主练习 / 真题测试 ============ -->
+  <div id="page-practice" class="page">
+    <div class="card p-4 md:p-5">
+      <div class="flex justify-between items-center mb-3">
+        <span class="tag" id="poolLabel" style="font-size:0.7rem;font-weight:700;">自主练习</span>
+        <span class="text-xs opacity-50" id="poolCount"></span>
+      </div>
+      <div class="filter-bar flex gap-2 mb-3 flex-wrap" style="align-items:center">
+        <input type="text" id="filterSearch" placeholder="🔍 搜索题目..." oninput="onFilterChange()" style="flex:1;min-width:140px;padding:0.4rem 0.75rem;border:1px solid var(--border);border-radius:0.375rem;font-size:0.8rem;outline:none;background:var(--card);color:var(--text);">
+        <select id="filterType" onchange="onFilterChange()" style="height:34px;padding:0 0.65rem;border:1px solid var(--border);border-radius:0.375rem;font-size:0.75rem;background:var(--card);color:var(--text);min-width:90px;">
+          <option value="">全部题型</option>
+          <option value="mcq">选择题</option>
+          <option value="fillin">填空题</option>
+        </select>
+        <!-- 自定义级联分类筛选 -->
+        <div class="cat-cascade" id="catCascade" style="position:relative;display:inline-flex;align-items:center;gap:0;height:34px;">
+          <span id="catLabel" style="font-size:0.75rem;color:var(--text2);margin-right:4px;white-space:nowrap;">分类</span>
+          <div id="catParents" style="display:flex;gap:0;height:100%;"></div>
+          <div id="catSubPanel" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--card);border:1px solid var(--border);border-radius:0.375rem;padding:0.375rem 0;z-index:100;min-width:150px;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
+        </div>
+        <select id="filterDifficulty" onchange="onFilterChange()" style="height:34px;padding:0 0.65rem;border:1px solid var(--border);border-radius:0.375rem;font-size:0.75rem;background:var(--card);color:var(--text);min-width:90px;">
+          <option value="">全部难度</option>
+          <option value="easy">简单</option>
+          <option value="medium">中等</option>
+          <option value="hard">困难</option>
+        </select>
+        <span id="catActiveTag" style="display:none;font-size:0.65rem;padding:2px 8px;background:var(--tag-bg);border-radius:0.25rem;color:var(--accent);cursor:pointer" onclick="clearCatFilter()" title="点击清除分类筛选"></span>
+      </div>
+
+      <div id="practiceList" class="space-y-2"></div>
+
+      <div id="questionDetail" class="fade-in">
+        <a class="back-link" onclick="backToPracticeList()"><i class="fas fa-arrow-left mr-1"></i> 返回题目列表</a>
+        <div id="practiceQuestion"></div>
+      </div>
+
+      <div id="deriveSection" style="display:none" class="fade-in">
+        <a class="back-link" onclick="exitDerivedPractice()"><i class="fas fa-arrow-left mr-1"></i> 返回题目列表</a>
+        <div id="deriveArea"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 错题集 ============ -->
+  <div id="page-wrongset" class="page">
+    <div class="card p-4 md:p-5">
+      <div class="highlight-box">
+        <p class="text-sm leading-relaxed">记录你在自适应进阶和练习中答错的题目，方便集中复习巩固。</p>
+      </div>
+      <!-- 近期综合数据 (collapsible) -->
+      <div id="wrongSummary" class="mt-3" style="cursor:pointer;user-select:none" onclick="toggleSummary()">
+        <div class="flex justify-between items-center p-2 rounded" style="background:var(--tag-bg)">
+          <span class="num-oswald text-xs tracking-wider">近期综合数据</span>
+          <span id="summaryToggle"><i class="fas fa-chevron-down"></i></span>
+        </div>
+        <div id="summaryBody" class="mt-2 flex justify-center gap-6" style="display:none"></div>
+      </div>
+      <!-- 错题列表 -->
+      <div id="wrongList" class="mt-3 space-y-2"></div>
+    </div>
+  </div>
+
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script>
+// 使用相对路径，同时支持本机、局域网和 ngrok 公网访问
+const API_BASE = '/api';
+
+// ===== 性能指示器 =====
+var _perfEl = null;
+var _perfTimer = 0;
+function _showPerf(ms, path) {
+  if (!_perfEl) {
+    _perfEl = document.createElement('div');
+    _perfEl.id = '__perf_indicator';
+    _perfEl.style.cssText = 'position:fixed;bottom:8px;right:12px;z-index:9999;font-family:"SF Mono",Consolas,monospace;font-size:0.6rem;color:var(--text2);background:var(--card);border:1px solid var(--border);border-radius:0.375rem;padding:3px 8px;opacity:0.7;pointer-events:none;transition:opacity 0.3s;';
+    document.body.appendChild(_perfEl);
+  }
+  var color = ms < 80 ? 'var(--success)' : ms < 300 ? 'var(--text2)' : 'var(--error)';
+  _perfEl.innerHTML = '<span style="color:' + color + ';font-weight:600">' + ms + 'ms</span> <span style="opacity:0.6">' + path + '</span>';
+  _perfEl.style.opacity = '0.85';
+  clearTimeout(_perfTimer);
+  _perfTimer = setTimeout(function() { if (_perfEl) _perfEl.style.opacity = '0.35'; }, 2000);
+}
+
+// ===== CodeMirror SQL 语法高亮引擎 =====
+const SQL_KEYWORDS = [
+  'SELECT','FROM','WHERE','AND','OR','NOT','IN','EXISTS','BETWEEN','LIKE','IS','NULL',
+  'JOIN','LEFT','RIGHT','INNER','OUTER','FULL','CROSS','ON','AS','USING',
+  'INSERT','INTO','VALUES','UPDATE','SET','DELETE','DROP','CREATE','TABLE','ALTER','ADD',
+  'COLUMN','INDEX','PRIMARY','KEY','FOREIGN','REFERENCES','CONSTRAINT','DEFAULT','CHECK',
+  'UNIQUE','CASCADE','TRIGGER','VIEW','WITH','RECURSIVE','UNION','ALL','INTERSECT','EXCEPT',
+  'GROUP','BY','HAVING','ORDER','ASC','DESC','LIMIT','OFFSET','DISTINCT','CASE','WHEN',
+  'THEN','ELSE','END','COUNT','SUM','AVG','MAX','MIN','COALESCE','IFNULL','NULLIF',
+  'CAST','CONVERT','ROUND','FLOOR','CEIL','ABS','LENGTH','SUBSTRING','REPLACE','CONCAT',
+  'UPPER','LOWER','TRIM','DATE','YEAR','MONTH','DAY','HOUR','NOW','CURRENT_DATE',
+  'OVER','PARTITION','ROW_NUMBER','RANK','DENSE_RANK','LAG','LEAD','FIRST_VALUE','LAST_VALUE',
+  'IF','ELSE','WHILE','BEGIN','END','DECLARE','EXEC','EXECUTE','GO','USE',
+  'INNER JOIN','LEFT JOIN','RIGHT JOIN','FULL JOIN','CROSS JOIN','GROUP BY','ORDER BY',
+  'CREATE TABLE','CREATE INDEX','CREATE VIEW','DROP TABLE','DROP INDEX','DROP VIEW',
+  'INSERT INTO','DELETE FROM','UPDATE SET','PRIMARY KEY','FOREIGN KEY','NOT NULL',
+  'DEFAULT VALUES','IF NOT EXISTS','IF EXISTS','CASCADE DELETE','SET NULL',
+];
+const SQL_FUNCTIONS = [
+  'COUNT','SUM','AVG','MAX','MIN','COALESCE','IFNULL','NULLIF','CAST','CONVERT',
+  'ROUND','FLOOR','CEIL','CEILING','ABS','POWER','SQRT','MOD','SIGN',
+  'LENGTH','CHAR_LENGTH','SUBSTRING','SUBSTR','LEFT_STR','RIGHT_STR','REPLACE','CONCAT','CONCAT_WS',
+  'UPPER','LOWER','TRIM','LTRIM','RTRIM','REVERSE','REPLICATE','SPACE','LPAD','RPAD',
+  'NOW','CURRENT_DATE','CURRENT_TIMESTAMP','GETDATE','DATE','YEAR','MONTH','DAY','HOUR','MINUTE','SECOND',
+  'DATEADD','DATEDIFF','DATE_FORMAT','DATEPART','STR_TO_DATE','TO_DATE',
+  'ROW_NUMBER','RANK','DENSE_RANK','NTILE','LAG','LEAD','FIRST_VALUE','LAST_VALUE',
+  'ISNULL','IS NULL','IS NOT NULL','IIF','CHOOSE',
+];
+
+function initCodeMirror(ta) {
+  if (!ta || ta.classList.contains('cm-initialized')) return;
+  if (typeof CodeMirror === 'undefined') return; // CDN 不可用时降级
+  try {
+    ta.classList.add('cm-initialized');
+    ta.style.display = 'none';
+    var wrapper = document.createElement('div');
+    ta.parentNode.insertBefore(wrapper, ta);
+    wrapper.appendChild(ta);
+
+    var cm = CodeMirror.fromTextArea(ta, {
+      mode: 'text/x-sql',
+      theme: 'default',
+      lineNumbers: false,
+      matchBrackets: true,
+      autoCloseBrackets: false,
+      viewportMargin: Infinity,
+      extraKeys: { 'Ctrl-Space': 'autocomplete' },
+      hintOptions: { tables: {} }
+    });
+
+    cm.setSize('100%', Math.max(72, ta.offsetHeight || 72));
+    cm.on('change', function() { validateSQL(cm); });
+    cm.on('cursorActivity', function() { validateSQL(cm); });
+    ta._cm = cm;
+
+    // Initial validation
+    setTimeout(function() { validateSQL(cm); }, 200);
+    return cm;
+  } catch(e) {
+    console.error('CodeMirror init failed:', e);
+    ta.classList.remove('cm-initialized');
+    ta.style.display = ''; // 恢复原始 textarea
+    return null;
+  }
+}
+
+function initAllCodeMirrors() {
+  var textareas = document.querySelectorAll('textarea.code-input:not(.cm-initialized)');
+  textareas.forEach(function(ta) { initCodeMirror(ta); });
+}
+
+// 监听动态添加的 textarea
+var cmObserver = new MutationObserver(function(mutations) {
+  mutations.forEach(function(m) {
+    m.addedNodes.forEach(function(node) {
+      if (node.nodeType === 1) {
+        if (node.classList && node.classList.contains('code-input') && !node.classList.contains('cm-initialized')) {
+          initCodeMirror(node);
+        }
+        if (node.querySelectorAll) {
+          node.querySelectorAll('textarea.code-input:not(.cm-initialized)').forEach(function(ta) { initCodeMirror(ta); });
+        }
+      }
+    });
+  });
+});
+cmObserver.observe(document.body, { childList: true, subtree: true });
+
+function validateSQL(cm) {
+  var text = cm.getValue();
+  var marks = cm.getAllMarks();
+  marks.forEach(function(m) { if (m.className === 'cm-sql-error') m.clear(); });
+
+  if (!text.trim()) return;
+
+  var lines = text.split('\n');
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    if (/^\s*--/.test(line) || /^\s*$/.test(line)) continue;
+
+    // 错误1: 未闭合单引号 — 从开头引号标到行尾
+    var qPos = line.indexOf("'");
+    if (qPos >= 0) {
+      var afterFirst = line.substring(qPos + 1);
+      if (afterFirst.indexOf("'") < 0) {
+        cm.markText(
+          { line: i, ch: qPos },
+          { line: i, ch: line.length },
+          { className: 'cm-sql-error', title: '单引号未闭合，字符串值需用一对引号包裹' }
+        );
+      }
+    }
+
+    // 错误2: 字符串值未加引号 — 只标红问题单词
+    var valRegex = /=\s*([a-zA-Z_][a-zA-Z0-9_]*)(?=\s|;|$)/g;
+    var m;
+    while ((m = valRegex.exec(line)) !== null) {
+      var val = m[1];
+      if (val && !SQL_KEYWORDS.includes(val.toUpperCase()) && isNaN(val) &&
+          val !== 'NULL' && val !== 'TRUE' && val !== 'FALSE') {
+        var start = m.index + m[0].indexOf(val);
+        cm.markText(
+          { line: i, ch: start },
+          { line: i, ch: start + val.length },
+          { className: 'cm-sql-error', title: "字符串值需加引号: '" + val + "' → '" + val + "'" }
+        );
+      }
+    }
+
+    // 错误3: 字符串值缺单引号 (中文字符)
+    var cnRegex = /=\s*([一-鿿㐀-䶿][一-鿿㐀-䶿\w]*)/g;
+    var cn;
+    while ((cn = cnRegex.exec(line)) !== null) {
+      var cnVal = cn[1];
+      // 排除引号内的内容
+      var before = line.substring(0, cn.index);
+      var singleBefore = (before.match(/'/g) || []).length;
+      if (singleBefore % 2 === 0) {
+        var start = cn.index + cn[0].indexOf(cnVal);
+        cm.markText(
+          { line: i, ch: start },
+          { line: i, ch: start + cnVal.length },
+          { className: 'cm-sql-error', title: "中文字符串需加引号: '" + cnVal + "'" }
+        );
+      }
+    }
+  }
+
+  // 错误4: 括号不匹配 — 只标不匹配的括号
+  var totalOpen = (text.match(/\(/g) || []).length;
+  var totalClose = (text.match(/\)/g) || []).length;
+  if (totalOpen !== totalClose) {
+    var lastLine = lines.length - 1;
+    var lastLineText = lines[lastLine];
+    // 在最后一行找多余的括号
+    var lastOpen = lastLineText.lastIndexOf('(');
+    var lastClose = lastLineText.lastIndexOf(')');
+    var ch = Math.max(lastOpen, lastClose);
+    if (ch >= 0) {
+      cm.markText(
+        { line: lastLine, ch: ch },
+        { line: lastLine, ch: ch + 1 },
+        { className: 'cm-sql-error', title: '括号不匹配: ' + totalOpen + ' ( vs ' + totalClose + ' )' }
+      );
+    }
+  }
+}
+
+// 同步所有 CodeMirror 实例到原始 textarea (提交前调用)
+function saveAllCM() {
+  try {
+    document.querySelectorAll('textarea.code-input.cm-initialized').forEach(function(ta) {
+      try { if (ta._cm && ta._cm.save) ta._cm.save(); } catch(e) {}
+    });
+  } catch(e) {}
+}
+
+// 在每次渲染题目后调用
+setTimeout(function() {
+  try { initAllCodeMirrors(); } catch(e) {}
+}, 500);
+
+// Check login state
+var sqlUser = null;
+try { var raw = sessionStorage.getItem('sql_user'); if (raw) sqlUser = JSON.parse(raw); } catch(e) {}
+var sessionId = (sqlUser && sqlUser.session_id) ? sqlUser.session_id : 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+
+// Validate stored session (clear if user no longer exists in DB)
+if (sqlUser && sqlUser.session_id) {
+  fetch(API_BASE + '/progress/' + sqlUser.session_id)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { sessionStorage.removeItem('sql_user'); sqlUser = null; updateUserUI(); }
+    })
+    .catch(function() {});
+}
+
+function updateUserUI() {
+  var headerEl = document.getElementById('headerUserInfo');
+  var loginCenter = document.getElementById('loginCenterArea');
+  var cbToggle = document.getElementById('cbToggle');
+  if (sqlUser) {
+    if (headerEl) headerEl.innerHTML = '<i class="fas fa-user mr-1"></i>' + sqlUser.name + ' · V1.0 <a href="/login" style="color:var(--text2);font-size:0.65rem;margin-left:6px;text-decoration:none;" title="切换用户"><i class="fas fa-exchange-alt"></i></a>';
+    if (loginCenter) loginCenter.style.display = 'none';
+  } else {
+    if (headerEl) headerEl.innerHTML = 'V1.0';
+    if (loginCenter) {
+      loginCenter.style.display = 'block';
+      loginCenter.innerHTML = '<a href="/login" style="display:inline-flex;align-items:center;gap:6px;color:#fff;background:var(--accent);padding:6px 24px;border-radius:0.5rem;font-size:0.85rem;font-weight:600;text-decoration:none;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'var(--accent-hover)\'" onmouseout="this.style.background=\'var(--accent)\'"><i class="fas fa-sign-in-alt"></i> 登录 / 注册</a>';
+    }
+  }
+  if (cbToggle) cbToggle.style.display = 'inline';
+}
+let practiceQuestions = [];
+let currentPracticeQ = null;
+let currentDerivedQ = null;
+let currentPrototypeQ = null;
+let journeyQuestionStart = 0;
+let currentPool = 'practice';  // 'practice' (自主练习) or 'exam' (真题测试)
+let _catSelectBuilt = false;  // 分类下拉框是否已构建
+// 29 basic + 29 advanced = 58 total
+const STATIC_QUESTIONS = [
+  {
+    "category": "DML",
+    "title": "SELECT（DML）",
+    "difficulty": "easy",
+    "description": "从数据库表中检索数据，应使用哪个 SQL 语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "DELETE"
+      },
+      {
+        "key": "B",
+        "text": "SELECT"
+      },
+      {
+        "key": "C",
+        "text": "UPDATE"
+      },
+      {
+        "key": "D",
+        "text": "INSERT"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "DML",
+    "title": "INSERT",
+    "difficulty": "easy",
+    "description": "向表中插入一条新记录，应使用哪个 SQL 语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "UPDATE"
+      },
+      {
+        "key": "B",
+        "text": "INSERT INTO"
+      },
+      {
+        "key": "C",
+        "text": "DELETE"
+      },
+      {
+        "key": "D",
+        "text": "SELECT"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "DML",
+    "title": "UPDATE",
+    "difficulty": "easy",
+    "description": "修改表中已有记录的数据，应使用哪个 SQL 语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT"
+      },
+      {
+        "key": "B",
+        "text": "INSERT"
+      },
+      {
+        "key": "C",
+        "text": "UPDATE"
+      },
+      {
+        "key": "D",
+        "text": "DELETE"
+      }
+    ],
+    "answer": "C",
+    "explanation": ""
+  },
+  {
+    "category": "DML",
+    "title": "DELETE",
+    "difficulty": "easy",
+    "description": "删除表中的指定行记录，应使用哪个 SQL 语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "DELETE FROM"
+      },
+      {
+        "key": "B",
+        "text": "TRUNCATE"
+      },
+      {
+        "key": "C",
+        "text": "DROP"
+      },
+      {
+        "key": "D",
+        "text": "UPDATE"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "DDL",
+    "title": "CREATE",
+    "difficulty": "easy",
+    "description": "在数据库中创建一张新表，应使用哪个 SQL 语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "ALTER TABLE"
+      },
+      {
+        "key": "B",
+        "text": "CREATE TABLE"
+      },
+      {
+        "key": "C",
+        "text": "DROP TABLE"
+      },
+      {
+        "key": "D",
+        "text": "INSERT INTO"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "DDL",
+    "title": "ALTER",
+    "difficulty": "easy",
+    "description": "为已存在的表添加一个新列，应使用哪个 SQL 语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "ALTER TABLE ... ADD"
+      },
+      {
+        "key": "B",
+        "text": "UPDATE TABLE ... ADD"
+      },
+      {
+        "key": "C",
+        "text": "CREATE COLUMN"
+      },
+      {
+        "key": "D",
+        "text": "INSERT COLUMN"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "DDL",
+    "title": "DROP",
+    "difficulty": "easy",
+    "description": "永久删除整张表及其结构，应使用哪个 SQL 语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "TRUNCATE TABLE"
+      },
+      {
+        "key": "B",
+        "text": "DELETE TABLE"
+      },
+      {
+        "key": "C",
+        "text": "DROP TABLE"
+      },
+      {
+        "key": "D",
+        "text": "REMOVE TABLE"
+      }
+    ],
+    "answer": "C",
+    "explanation": ""
+  },
+  {
+    "category": "DDL",
+    "title": "TRUNCATE",
+    "difficulty": "easy",
+    "description": "清空表中所有数据、但保留表结构，应使用哪个 SQL 语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "DELETE FROM"
+      },
+      {
+        "key": "B",
+        "text": "TRUNCATE TABLE"
+      },
+      {
+        "key": "C",
+        "text": "DROP TABLE"
+      },
+      {
+        "key": "D",
+        "text": "ALTER TABLE"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "DDL",
+    "title": "RENAME",
+    "difficulty": "easy",
+    "description": "重命名一张数据库表的表名，应使用哪个关键字？",
+    "options": [
+      {
+        "key": "A",
+        "text": "RENAME"
+      },
+      {
+        "key": "B",
+        "text": "UPDATE"
+      },
+      {
+        "key": "C",
+        "text": "MODIFY"
+      },
+      {
+        "key": "D",
+        "text": "CHANGE"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "DDL",
+    "title": "COMMENT",
+    "difficulty": "easy",
+    "description": "为表或列添加注释说明信息，应使用哪个关键字？",
+    "options": [
+      {
+        "key": "A",
+        "text": "COMMENT"
+      },
+      {
+        "key": "B",
+        "text": "NOTE"
+      },
+      {
+        "key": "C",
+        "text": "LABEL"
+      },
+      {
+        "key": "D",
+        "text": "REMARK"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "函数",
+    "title": "字符串函数",
+    "difficulty": "easy",
+    "description": "计算一个字符串的字符长度，应使用下列哪个函数？",
+    "options": [
+      {
+        "key": "A",
+        "text": "LENGTH()"
+      },
+      {
+        "key": "B",
+        "text": "SUM()"
+      },
+      {
+        "key": "C",
+        "text": "COUNT()"
+      },
+      {
+        "key": "D",
+        "text": "ABS()"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "函数",
+    "title": "数字函数",
+    "difficulty": "easy",
+    "description": "求一个数值的绝对值，应使用下列哪个函数？",
+    "options": [
+      {
+        "key": "A",
+        "text": "ROUND()"
+      },
+      {
+        "key": "B",
+        "text": "ABS()"
+      },
+      {
+        "key": "C",
+        "text": "CEIL()"
+      },
+      {
+        "key": "D",
+        "text": "MOD()"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "函数",
+    "title": "聚合函数",
+    "difficulty": "easy",
+    "description": "统计一张表中符合条件的记录行数，应使用下列哪个聚合函数？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SUM()"
+      },
+      {
+        "key": "B",
+        "text": "AVG()"
+      },
+      {
+        "key": "C",
+        "text": "COUNT()"
+      },
+      {
+        "key": "D",
+        "text": "MAX()"
+      }
+    ],
+    "answer": "C",
+    "explanation": ""
+  },
+  {
+    "category": "函数",
+    "title": "转换函数",
+    "difficulty": "easy",
+    "description": "将一种数据类型转换为另一种数据类型（如数值转字符串），应使用下列哪个函数？",
+    "options": [
+      {
+        "key": "A",
+        "text": "CAST()"
+      },
+      {
+        "key": "B",
+        "text": "LENGTH()"
+      },
+      {
+        "key": "C",
+        "text": "NOW()"
+      },
+      {
+        "key": "D",
+        "text": "ABS()"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "函数",
+    "title": "窗口函数",
+    "difficulty": "easy",
+    "description": "对每一行在其所属分组内计算排名、同时保留所有原始行，应使用下列哪种写法？",
+    "options": [
+      {
+        "key": "A",
+        "text": "ROW_NUMBER() OVER (PARTITION BY ...)"
+      },
+      {
+        "key": "B",
+        "text": "GROUP BY"
+      },
+      {
+        "key": "C",
+        "text": "DISTINCT"
+      },
+      {
+        "key": "D",
+        "text": "HAVING"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "表连接",
+    "title": "内连接",
+    "difficulty": "easy",
+    "description": "只返回两张表中能相互匹配到的行，应使用哪种连接方式？",
+    "options": [
+      {
+        "key": "A",
+        "text": "LEFT JOIN"
+      },
+      {
+        "key": "B",
+        "text": "INNER JOIN"
+      },
+      {
+        "key": "C",
+        "text": "RIGHT JOIN"
+      },
+      {
+        "key": "D",
+        "text": "FULL OUTER JOIN"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "表连接",
+    "title": "外连接",
+    "difficulty": "easy",
+    "description": "返回左表的全部行，即使右表中没有匹配也以 NULL 补齐，应使用哪种连接方式？",
+    "options": [
+      {
+        "key": "A",
+        "text": "INNER JOIN"
+      },
+      {
+        "key": "B",
+        "text": "LEFT OUTER JOIN"
+      },
+      {
+        "key": "C",
+        "text": "CROSS JOIN"
+      },
+      {
+        "key": "D",
+        "text": "SELF JOIN"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "表连接",
+    "title": "自连接",
+    "difficulty": "easy",
+    "description": "在员工表中查找\"比经理工资更高\"的员工，需要将员工表与什么进行连接？",
+    "options": [
+      {
+        "key": "A",
+        "text": "员工表自身（同一张表）"
+      },
+      {
+        "key": "B",
+        "text": "部门表"
+      },
+      {
+        "key": "C",
+        "text": "临时视图"
+      },
+      {
+        "key": "D",
+        "text": "无法实现"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "表连接",
+    "title": "交叉连接",
+    "difficulty": "easy",
+    "description": "返回两张表所有行的笛卡尔积（每行与对方所有行组合），应使用哪种连接方式？",
+    "options": [
+      {
+        "key": "A",
+        "text": "CROSS JOIN"
+      },
+      {
+        "key": "B",
+        "text": "INNER JOIN"
+      },
+      {
+        "key": "C",
+        "text": "LEFT JOIN"
+      },
+      {
+        "key": "D",
+        "text": "FULL JOIN"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "约束",
+    "title": "主键",
+    "difficulty": "easy",
+    "description": "关于主键（PRIMARY KEY）的说法，下列哪个是正确的？",
+    "options": [
+      {
+        "key": "A",
+        "text": "唯一且非空，用于唯一标识一行"
+      },
+      {
+        "key": "B",
+        "text": "允许重复"
+      },
+      {
+        "key": "C",
+        "text": "允许为 NULL"
+      },
+      {
+        "key": "D",
+        "text": "只能定义在整数字段上"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "约束",
+    "title": "外键",
+    "difficulty": "easy",
+    "description": "外键（FOREIGN KEY）的主要作用是什么？",
+    "options": [
+      {
+        "key": "A",
+        "text": "建立与另一张表主键之间的引用关系"
+      },
+      {
+        "key": "B",
+        "text": "对行进行排序"
+      },
+      {
+        "key": "C",
+        "text": "提升查询性能"
+      },
+      {
+        "key": "D",
+        "text": "对字段取绝对值"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "子查询",
+    "title": "标量子查询",
+    "difficulty": "easy",
+    "description": "返回单个值（一个字段、一行）的子查询，称为哪种子查询？",
+    "options": [
+      {
+        "key": "A",
+        "text": "标量子查询"
+      },
+      {
+        "key": "B",
+        "text": "列子查询"
+      },
+      {
+        "key": "C",
+        "text": "表子查询"
+      },
+      {
+        "key": "D",
+        "text": "行子查询"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "子查询",
+    "title": "列子查询",
+    "difficulty": "easy",
+    "description": "返回一列多行的子查询，常与 IN 配合使用，称为哪种子查询？",
+    "options": [
+      {
+        "key": "A",
+        "text": "标量子查询"
+      },
+      {
+        "key": "B",
+        "text": "列子查询"
+      },
+      {
+        "key": "C",
+        "text": "表子查询"
+      },
+      {
+        "key": "D",
+        "text": "相关子查询"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "子查询",
+    "title": "表子查询",
+    "difficulty": "easy",
+    "description": "返回多行多列、可放在 FROM 子句中当作临时表使用的子查询，称为哪种子查询？",
+    "options": [
+      {
+        "key": "A",
+        "text": "表子查询"
+      },
+      {
+        "key": "B",
+        "text": "标量子查询"
+      },
+      {
+        "key": "C",
+        "text": "列子查询"
+      },
+      {
+        "key": "D",
+        "text": "行子查询"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "子查询",
+    "title": "IN 子查询",
+    "difficulty": "easy",
+    "description": "判断某字段的值是否落在子查询返回的结果集中，应使用哪个关键字？",
+    "options": [
+      {
+        "key": "A",
+        "text": "IN"
+      },
+      {
+        "key": "B",
+        "text": "BETWEEN"
+      },
+      {
+        "key": "C",
+        "text": "LIKE"
+      },
+      {
+        "key": "D",
+        "text": "IS"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "SELECT",
+    "title": "基本 SELECT：字段、别名、常量",
+    "difficulty": "easy",
+    "description": "在 SELECT 中为查询结果列起一个别名，应使用哪个关键字？",
+    "options": [
+      {
+        "key": "A",
+        "text": "AS"
+      },
+      {
+        "key": "B",
+        "text": "IN"
+      },
+      {
+        "key": "C",
+        "text": "BY"
+      },
+      {
+        "key": "D",
+        "text": "OF"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "SELECT",
+    "title": "WHERE 条件筛选",
+    "difficulty": "easy",
+    "description": "只查询 salary 大于 10000 的员工记录，应使用哪个子句进行行级筛选？",
+    "options": [
+      {
+        "key": "A",
+        "text": "WHERE salary &gt; 10000"
+      },
+      {
+        "key": "B",
+        "text": "HAVING salary &gt; 10000"
+      },
+      {
+        "key": "C",
+        "text": "ORDER BY salary"
+      },
+      {
+        "key": "D",
+        "text": "GROUP BY salary"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "SELECT",
+    "title": "聚合函数与 GROUP BY",
+    "difficulty": "easy",
+    "description": "按部门分组并统计每个部门的员工人数，应使用下列哪种写法？",
+    "options": [
+      {
+        "key": "A",
+        "text": "GROUP BY 部门 + COUNT()"
+      },
+      {
+        "key": "B",
+        "text": "WHERE 部门 + COUNT()"
+      },
+      {
+        "key": "C",
+        "text": "ORDER BY 部门 + COUNT()"
+      },
+      {
+        "key": "D",
+        "text": "DISTINCT 部门 + COUNT()"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "SELECT",
+    "title": "HAVING 子句",
+    "difficulty": "easy",
+    "description": "对 GROUP BY 分组后的聚合结果进行筛选（如只保留人数超过 5 的部门），应使用哪个子句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "WHERE"
+      },
+      {
+        "key": "B",
+        "text": "HAVING"
+      },
+      {
+        "key": "C",
+        "text": "ORDER BY"
+      },
+      {
+        "key": "D",
+        "text": "LIMIT"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "DML",
+    "title": "SELECT",
+    "difficulty": "easy",
+    "description": "查询所有不重复的部门名称，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT department FROM employee"
+      },
+      {
+        "key": "B",
+        "text": "SELECT DISTINCT department FROM employee"
+      },
+      {
+        "key": "C",
+        "text": "SELECT UNIQUE department FROM employee"
+      },
+      {
+        "key": "D",
+        "text": "SELECT department FROM employee WHERE department IS DISTINCT"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "DML",
+    "title": "INSERT",
+    "difficulty": "easy",
+    "description": "一次插入多行数据，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "INSERT INTO product VALUES (2,'B'),(3,'C')"
+      },
+      {
+        "key": "B",
+        "text": "INSERT INTO product VALUES (2,'B') VALUES (3,'C')"
+      },
+      {
+        "key": "C",
+        "text": "INSERT INTO product SELECT (2,'B') UNION (3,'C')"
+      },
+      {
+        "key": "D",
+        "text": "INSERT ALL INTO product VALUES (2,'B') INTO product VALUES (3,'C')"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "DML",
+    "title": "UPDATE",
+    "difficulty": "easy",
+    "description": "将 employee 表所有工资加 10%，NULL 保持 NULL，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "UPDATE employee SET salary = 5500 WHERE id = 1"
+      },
+      {
+        "key": "B",
+        "text": "UPDATE employee SET salary = salary * 1.1 WHERE salary IS NOT NULL"
+      },
+      {
+        "key": "C",
+        "text": "UPDATE employee SET salary = salary * 1.1 WHERE salary &gt; 0"
+      },
+      {
+        "key": "D",
+        "text": "UPDATE employee SET salary = salary * 1.1"
+      }
+    ],
+    "answer": "D",
+    "explanation": ""
+  },
+  {
+    "category": "DML",
+    "title": "DELETE",
+    "difficulty": "easy",
+    "description": "删除重复的邮箱记录，只保留每个邮箱中 id 最小的那条，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "DELETE FROM person WHERE id &gt; 1"
+      },
+      {
+        "key": "B",
+        "text": "DELETE p1 FROM person p1 JOIN person p2 ON p1.email = p2.email AND p1.id &gt; p2.id"
+      },
+      {
+        "key": "C",
+        "text": "DELETE FROM person WHERE email IN (SELECT email FROM person GROUP BY email HAVING COUNT(*) &gt; 1)"
+      },
+      {
+        "key": "D",
+        "text": "TRUNCATE person"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "DDL",
+    "title": "CREATE",
+    "difficulty": "easy",
+    "description": "复制 table1 的结构和数据到 table2（不复制索引、约束、默认值），应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "CREATE TABLE table2 LIKE table1; INSERT INTO table2 SELECT * FROM table1"
+      },
+      {
+        "key": "B",
+        "text": "CREATE TABLE table2 AS SELECT * FROM table1"
+      },
+      {
+        "key": "C",
+        "text": "CREATE TABLE table2 AS SELECT * FROM table1 WITH DATA"
+      },
+      {
+        "key": "D",
+        "text": "CREATE TABLE table2 COPY table1"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "DDL",
+    "title": "ALTER",
+    "difficulty": "easy",
+    "description": "为已有表增加一列 age，默认值 0，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "ALTER TABLE employee ADD COLUMN age INT DEFAULT 0"
+      },
+      {
+        "key": "B",
+        "text": "ALTER TABLE employee ADD age INT, SET DEFAULT 0"
+      },
+      {
+        "key": "C",
+        "text": "ALTER TABLE employee ADD age INT, MODIFY age INT DEFAULT 0"
+      },
+      {
+        "key": "D",
+        "text": "ALTER TABLE employee ADD age INT, ALTER COLUMN age SET DEFAULT 0"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "DDL",
+    "title": "DROP",
+    "difficulty": "easy",
+    "description": "删除表 demo_table 且表不存在时也不报错，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "DROP TABLE IF EXISTS demo_table"
+      },
+      {
+        "key": "B",
+        "text": "DROP TABLE demo_table"
+      },
+      {
+        "key": "C",
+        "text": "DROP TABLE demo_table IF EXISTS"
+      },
+      {
+        "key": "D",
+        "text": "DROP TABLE demo_table WITH IGNORE"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "DDL",
+    "title": "TRUNCATE",
+    "difficulty": "easy",
+    "description": "清空表所有数据但保留表结构，且重置自增计数器，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "DELETE FROM log"
+      },
+      {
+        "key": "B",
+        "text": "TRUNCATE TABLE log"
+      },
+      {
+        "key": "C",
+        "text": "DROP TABLE log; CREATE TABLE log (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(32))"
+      },
+      {
+        "key": "D",
+        "text": "ALTER TABLE log DELETE ROWS"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "DDL",
+    "title": "RENAME",
+    "difficulty": "easy",
+    "description": "将表 old_name 重命名为 new_name，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "ALTER TABLE old_name RENAME COLUMN TO new_name"
+      },
+      {
+        "key": "B",
+        "text": "ALTER TABLE old_name MODIFY NAME new_name"
+      },
+      {
+        "key": "C",
+        "text": "RENAME TABLE old_name TO new_name"
+      },
+      {
+        "key": "D",
+        "text": "UPDATE TABLE old_name SET name = new_name"
+      }
+    ],
+    "answer": "C",
+    "explanation": ""
+  },
+  {
+    "category": "DDL",
+    "title": "COMMENT",
+    "difficulty": "easy",
+    "description": "为表 employee 的列 name 添加注释\"员工姓名\"，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "ALTER TABLE employee MODIFY name VARCHAR(32) COMMENT '员工姓名'"
+      },
+      {
+        "key": "B",
+        "text": "COMMENT ON COLUMN employee.name IS '员工姓名'"
+      },
+      {
+        "key": "C",
+        "text": "ALTER TABLE employee ADD COMMENT '员工姓名' ON name"
+      },
+      {
+        "key": "D",
+        "text": "COMMENT employee.name = '员工姓名'"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "函数",
+    "title": "字符串函数",
+    "difficulty": "easy",
+    "description": "返回 message 表中 msg 字符串列的字节长度和字符长度，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT LENGTH(msg), CHAR_LENGTH(msg) FROM message"
+      },
+      {
+        "key": "B",
+        "text": "SELECT LENGTH(msg), LENGTH(msg) FROM message"
+      },
+      {
+        "key": "C",
+        "text": "SELECT CHAR_LENGTH(msg), LENGTH(msg) FROM message"
+      },
+      {
+        "key": "D",
+        "text": "SELECT BYTE_LENGTH(msg), CHAR_LENGTH(msg) FROM message"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "函数",
+    "title": "数字函数",
+    "difficulty": "easy",
+    "description": "返回 price 表中 -2.5 的绝对值、舍入到整数、向下取整，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT ABS(value), ROUND(value), TRUNCATE(value,0) FROM price"
+      },
+      {
+        "key": "B",
+        "text": "SELECT ABS(value), ROUND(value), FLOOR(value) FROM price"
+      },
+      {
+        "key": "C",
+        "text": "SELECT ABS(value), CEIL(value), FLOOR(value) FROM price"
+      },
+      {
+        "key": "D",
+        "text": "SELECT ABS(value), ROUND(value), CEIL(value) FROM price"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "函数",
+    "title": "聚合函数",
+    "difficulty": "easy",
+    "description": "统计总行数和 val 非空行数，结果分别为 5 和 3，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT COUNT(*) FROM sample; SELECT COUNT(*) FROM sample WHERE val IS NOT NULL"
+      },
+      {
+        "key": "B",
+        "text": "SELECT COUNT(*), COUNT(val) FROM sample"
+      },
+      {
+        "key": "C",
+        "text": "SELECT COUNT(*), COUNT(1) FROM sample"
+      },
+      {
+        "key": "D",
+        "text": "SELECT COUNT(*), COUNT(*) - COUNT(val) FROM sample"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "函数",
+    "title": "转换函数",
+    "difficulty": "easy",
+    "description": "将 event 表中 event_date 字符串列显式转换为 DATE 类型，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT CAST(event_date AS DATE) FROM event"
+      },
+      {
+        "key": "B",
+        "text": "SELECT CONVERT(event_date, DATE) FROM event"
+      },
+      {
+        "key": "C",
+        "text": "SELECT DATE(event_date) FROM event"
+      },
+      {
+        "key": "D",
+        "text": "SELECT event_date::DATE FROM event"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "函数",
+    "title": "窗口函数",
+    "difficulty": "easy",
+    "description": "按分数从高到低排名，并列时排名相同且下一名次不跳号，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT id, ROW_NUMBER() OVER (ORDER BY score DESC) AS rnk FROM score"
+      },
+      {
+        "key": "B",
+        "text": "SELECT id, DENSE_RANK() OVER (ORDER BY score DESC) AS rnk FROM score"
+      },
+      {
+        "key": "C",
+        "text": "SELECT id, RANK() OVER (ORDER BY score DESC) AS rnk FROM score"
+      },
+      {
+        "key": "D",
+        "text": "SELECT id, NTILE(2) OVER (ORDER BY score DESC) AS rnk FROM score"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "表连接",
+    "title": "内连接",
+    "difficulty": "easy",
+    "description": "查询每个员工及其部门名称，只返回有部门的员工，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT e.name, d.name FROM employee e LEFT JOIN department d ON e.department_id = d.id"
+      },
+      {
+        "key": "B",
+        "text": "SELECT e.name, d.name FROM employee e INNER JOIN department d ON e.department_id = d.id"
+      },
+      {
+        "key": "C",
+        "text": "SELECT e.name, d.name FROM employee e RIGHT JOIN department d ON e.department_id = d.id"
+      },
+      {
+        "key": "D",
+        "text": "SELECT e.name, d.name FROM employee e CROSS JOIN department d WHERE e.department_id = d.id"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "表连接",
+    "title": "外连接",
+    "difficulty": "easy",
+    "description": "查询所有员工及其部门名称，无部门的员工也保留，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT e.name, d.name FROM employee e LEFT JOIN department d ON e.department_id = d.id"
+      },
+      {
+        "key": "B",
+        "text": "SELECT e.name, d.name FROM employee e INNER JOIN department d ON e.department_id = d.id"
+      },
+      {
+        "key": "C",
+        "text": "SELECT e.name, d.name FROM employee e RIGHT JOIN department d ON e.department_id = d.id"
+      },
+      {
+        "key": "D",
+        "text": "SELECT e.name, d.name FROM employee e, department d WHERE e.department_id = d.id"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "表连接",
+    "title": "自连接",
+    "difficulty": "easy",
+    "description": "查找比经理工资更高的员工姓名，使用自连接方式，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT e.name FROM employee e WHERE e.salary &gt; (SELECT salary FROM employee WHERE id = e.manager_id)"
+      },
+      {
+        "key": "B",
+        "text": "SELECT e.name FROM employee e JOIN employee m ON e.manager_id = m.id AND e.salary &gt; m.salary"
+      },
+      {
+        "key": "C",
+        "text": "SELECT e.name FROM employee e JOIN employee m ON e.id = m.manager_id AND e.salary &gt; m.salary"
+      },
+      {
+        "key": "D",
+        "text": "SELECT e.name FROM employee e, employee m WHERE e.manager_id = m.id"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "表连接",
+    "title": "交叉连接",
+    "difficulty": "easy",
+    "description": "生成 table_a 表与 table_b 表所有行的笛卡尔积，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT * FROM table_a CROSS JOIN table_b"
+      },
+      {
+        "key": "B",
+        "text": "SELECT * FROM table_a INNER JOIN table_b ON 1=1"
+      },
+      {
+        "key": "C",
+        "text": "SELECT * FROM table_a LEFT JOIN table_b ON 1=0"
+      },
+      {
+        "key": "D",
+        "text": "SELECT * FROM table_a, table_b"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "约束",
+    "title": "主键",
+    "difficulty": "easy",
+    "description": "创建表 member，id 列为主键且自增，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "CREATE TABLE member (id INT, name VARCHAR(32), PRIMARY KEY (id))"
+      },
+      {
+        "key": "B",
+        "text": "CREATE TABLE member (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(32))"
+      },
+      {
+        "key": "C",
+        "text": "CREATE TABLE member (id INT PRIMARY KEY, name VARCHAR(32))"
+      },
+      {
+        "key": "D",
+        "text": "CREATE TABLE member (id INT AUTO_INCREMENT, name VARCHAR(32), PRIMARY KEY (id, name))"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "约束",
+    "title": "外键",
+    "difficulty": "easy",
+    "description": "创建子表，pid 引用父表 id，父表删除时子表相关行自动删除，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "CREATE TABLE child (id INT, pid INT, FOREIGN KEY (pid) REFERENCES parent(id))"
+      },
+      {
+        "key": "B",
+        "text": "CREATE TABLE child (id INT, pid INT, FOREIGN KEY (pid) REFERENCES parent(id) ON DELETE SET NULL)"
+      },
+      {
+        "key": "C",
+        "text": "CREATE TABLE child (id INT, pid INT, FOREIGN KEY (pid) REFERENCES parent(id) ON DELETE RESTRICT)"
+      },
+      {
+        "key": "D",
+        "text": "CREATE TABLE child (id INT, pid INT, FOREIGN KEY (pid) REFERENCES parent(id) ON DELETE CASCADE)"
+      }
+    ],
+    "answer": "D",
+    "explanation": ""
+  },
+  {
+    "category": "子查询",
+    "title": "标量子查询",
+    "difficulty": "easy",
+    "description": "查询每个员工及其所属部门名，使用标量子查询，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT e.name, (SELECT name FROM department) AS department_name FROM employee e"
+      },
+      {
+        "key": "B",
+        "text": "SELECT e.name, (SELECT name FROM department WHERE id = e.department_id) AS department_name FROM employee e"
+      },
+      {
+        "key": "C",
+        "text": "SELECT e.name, (SELECT name FROM department WHERE id = e.department_id) AS FROM employee e"
+      },
+      {
+        "key": "D",
+        "text": "SELECT e.name, (SELECT id FROM department WHERE id = e.department_id) AS department_name FROM employee e"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "子查询",
+    "title": "列子查询",
+    "difficulty": "easy",
+    "description": "查询 table1 中 val 不在 table2 中存在的行，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT * FROM table1 WHERE val NOT IN (SELECT val FROM table2)"
+      },
+      {
+        "key": "B",
+        "text": "SELECT * FROM table1 WHERE NOT EXISTS (SELECT 1 FROM table2 WHERE table2.val = table1.val)"
+      },
+      {
+        "key": "C",
+        "text": "SELECT * FROM table1 WHERE val IN (SELECT val FROM table2)"
+      },
+      {
+        "key": "D",
+        "text": "SELECT * FROM table1 WHERE val NOT IN (SELECT DISTINCT val FROM table2)"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "子查询",
+    "title": "表子查询",
+    "difficulty": "easy",
+    "description": "先用 CTE 过滤出工资超过 5000 的员工，再从中查询各部门人数，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "WITH high AS (SELECT * FROM employee WHERE salary &gt; 5000) SELECT department, COUNT(*) FROM high GROUP BY department"
+      },
+      {
+        "key": "B",
+        "text": "SELECT department, COUNT(*) FROM employee WHERE salary &gt; 5000 GROUP BY department"
+      },
+      {
+        "key": "C",
+        "text": "SELECT department, COUNT(*) FROM employee GROUP BY department HAVING salary &gt; 5000"
+      },
+      {
+        "key": "D",
+        "text": "WITH high AS (SELECT * FROM employee WHERE salary &gt; 5000) SELECT department, COUNT(*) FROM high"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "子查询",
+    "title": "IN 子查询",
+    "difficulty": "easy",
+    "description": "查询 table1 中 val 在 table2 中存在的行（即使 table2 含 NULL 也不受影响），应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT * FROM table1 WHERE val IN (SELECT val FROM table2)"
+      },
+      {
+        "key": "B",
+        "text": "SELECT * FROM table1 WHERE val NOT IN (SELECT val FROM table2)"
+      },
+      {
+        "key": "C",
+        "text": "SELECT * FROM table1 WHERE val NOT EXISTS (SELECT val FROM table2)"
+      },
+      {
+        "key": "D",
+        "text": "SELECT * FROM table1 WHERE val IN (SELECT val FROM table2 WHERE val IS NULL)"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  },
+  {
+    "category": "SELECT",
+    "title": "基本 SELECT",
+    "difficulty": "easy",
+    "description": "查询员工姓名和年薪（月薪 * 12），列名显示为 annual_salary，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT name, salary * 12 AS annual_salary, annual_salary + 1000 FROM employee"
+      },
+      {
+        "key": "B",
+        "text": "SELECT name, salary * 12 AS annual_salary FROM employee"
+      },
+      {
+        "key": "C",
+        "text": "SELECT name, salary * 12 AS 'annual_salary' FROM employee"
+      },
+      {
+        "key": "D",
+        "text": "SELECT name, salary * 12 annual salary FROM employee"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "SELECT",
+    "title": "WHERE 条件筛选",
+    "difficulty": "easy",
+    "description": "查询工资大于 5000 的员工，且包含工资为 NULL 的员工（即未知工资也返回），应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT * FROM employee WHERE salary &gt; 5000"
+      },
+      {
+        "key": "B",
+        "text": "SELECT * FROM employee WHERE salary &gt; 5000 OR salary IS NULL"
+      },
+      {
+        "key": "C",
+        "text": "SELECT * FROM employee WHERE salary &gt; 5000 OR salary = NULL"
+      },
+      {
+        "key": "D",
+        "text": "SELECT * FROM employee WHERE salary &gt; 5000 UNION SELECT * FROM employee WHERE salary IS NULL"
+      }
+    ],
+    "answer": "B",
+    "explanation": ""
+  },
+  {
+    "category": "SELECT",
+    "title": "聚合函数与 GROUP BY",
+    "difficulty": "easy",
+    "description": "按部门统计每个部门的平均工资，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT department, salary, AVG(salary) FROM employee GROUP BY department"
+      },
+      {
+        "key": "B",
+        "text": "SELECT department, AVG(salary) FROM employee"
+      },
+      {
+        "key": "C",
+        "text": "SELECT department, AVG(salary) FROM employee GROUP BY department"
+      },
+      {
+        "key": "D",
+        "text": "SELECT department, AVG(salary) FROM employee GROUP BY department, salary"
+      }
+    ],
+    "answer": "C",
+    "explanation": ""
+  },
+  {
+    "category": "SELECT",
+    "title": "HAVING 子句",
+    "difficulty": "easy",
+    "description": "按部门统计人数，只返回人数超过 1 的部门，应使用哪条语句？",
+    "options": [
+      {
+        "key": "A",
+        "text": "SELECT department, COUNT(*) FROM employee GROUP BY department HAVING COUNT(*) &gt; 1"
+      },
+      {
+        "key": "B",
+        "text": "SELECT department, COUNT(*) FROM employee WHERE COUNT(*) &gt; 1 GROUP BY department"
+      },
+      {
+        "key": "C",
+        "text": "SELECT department, COUNT(*) FROM employee GROUP BY department WHERE COUNT(*) &gt; 1"
+      },
+      {
+        "key": "D",
+        "text": "SELECT department, COUNT(*) FROM employee HAVING COUNT(*) &gt; 1 GROUP BY department"
+      }
+    ],
+    "answer": "A",
+    "explanation": ""
+  }
+];
+
+// ====== 知识图谱层级分类 ======
+// 层级树：key = 父节点ID, value = [子节点ID列表]
+const KG_HIERARCHY = {
+  'select_basic': ['alias','distinct','where_basic','order_by','aggregate_basic','join_inner','subquery_basic'],
+  'where_basic':   ['where_andor','where_like','where_null','where_in','where_between'],
+  'order_by':      ['limit_offset'],
+  'aggregate_basic': ['group_by'],
+  'group_by':      ['having','avg','count_distinct','case_when'],
+  'join_inner':    ['join_left','join_self'],
+  'join_left':     ['join_multi','join_full'],
+  'subquery_basic':['subquery_exists','subquery_all','subquery_select'],
+  'subquery_select': ['cte']
+};
+// 节点 → 中文显示名
+const KG_LABELS = {
+  'select_basic':'SELECT 基础', 'alias':'别名 AS', 'distinct':'DISTINCT 去重',
+  'where_basic':'WHERE 条件', 'where_andor':'AND/OR 多条件', 'where_like':'LIKE 模糊',
+  'where_null':'NULL 判断', 'where_in':'IN 运算符', 'where_between':'BETWEEN 范围',
+  'order_by':'ORDER BY 排序', 'limit_offset':'LIMIT/OFFSET 分页',
+  'aggregate_basic':'聚合函数基础', 'group_by':'GROUP BY 分组', 'having':'HAVING 过滤',
+  'avg':'AVG 平均值', 'count_distinct':'COUNT DISTINCT', 'case_when':'CASE WHEN',
+  'join_inner':'INNER JOIN 内连接', 'join_left':'LEFT JOIN 左连接', 'join_self':'自连接',
+  'join_multi':'多表 JOIN', 'join_full':'FULL OUTER JOIN',
+  'subquery_basic':'子查询基础', 'subquery_exists':'EXISTS 子查询',
+  'subquery_all':'ALL/ANY 子查询', 'subquery_select':'SELECT 中子查询', 'cte':'CTE (WITH)',
+  'window':'窗口函数', 'dml':'DML (增删改)', 'date':'日期处理', 'string':'字符串处理',
+  'union':'UNION 合并'
+};
+// 大分类分组（第一个下拉框的选项）
+const KG_GROUPS = [
+  { label:'SELECT 基础', root:'select_basic', expand:true },
+  { label:'条件筛选',   root:'where_basic', expand:true },
+  { label:'排序与聚合', root:'aggregate_basic', expand:true, extraRoot:'order_by' },
+  { label:'多表连接',   root:'join_inner', expand:true },
+  { label:'子查询与CTE',root:'subquery_basic', expand:true },
+];
+// 无层级的叶节点（直接在第一框中作为独立选项）
+const KG_LEAF = ['window','dml','date','string','union'];
+// 预计算所有包含"全部子类"的根节点展开集合
+const KG_ROOT_EXPAND = {};
+function kgExpand(nodeId, collected) {
+  collected = collected || new Set();
+  collected.add(nodeId);
+  var children = KG_HIERARCHY[nodeId];
+  if (children) { for (var i=0;i<children.length;i++) kgExpand(children[i], collected); }
+  return collected;
+}
+KG_GROUPS.forEach(function(g){
+  var ids = new Set();
+  kgExpand(g.root, ids);
+  if (g.extraRoot) kgExpand(g.extraRoot, ids);
+  KG_ROOT_EXPAND[g.root] = Array.from(ids);
+});
+KG_LEAF.forEach(function(k){ KG_ROOT_EXPAND[k] = [k]; });
+
+// 静态选择题分类 → 知识图谱节点ID 映射
+const STATIC_CAT_MAP = {
+  'DML':  ['dml_select','dml_insert','dml_update','dml_delete'],
+  'DDL':  ['ddl_create','ddl_alter','ddl_drop','ddl_truncate','ddl_rename','ddl_comment'],
+  '函数':  ['string_func','numeric_func','aggregate_func','cast_func','window_func'],
+  '表连接': ['join_inner','join_outer','join_self','join_cross'],
+  '约束':  ['constraint_primary_key','constraint_foreign_key'],
+  '子查询': ['subquery_scalar','subquery_column','subquery_table','subquery_in'],
+  'SELECT':['select_basic','where_basic','group_by','having']
+};
+// ===== 自定义级联分类筛选 =====
+var _catSelectedParent = null;  // 当前选中的父节点ID
+var _catSelectedNode = null;    // 当前选中的子节点ID（null=全部子类）
+var _catHideTimer = null;
+
+function buildCategorySelect() {
+  var parents = document.getElementById('catParents');
+  // 大分类按钮
+  for (var g = 0; g < KG_GROUPS.length; g++) {
+    var grp = KG_GROUPS[g];
+    var btn = document.createElement('div');
+    btn.className = 'cat-parent-btn';
+    btn.textContent = grp.label;
+    btn.setAttribute('data-root', grp.root);
+    btn.setAttribute('data-expand', grp.expand ? '1' : '0');
+    if (grp.extraRoot) btn.setAttribute('data-extra', grp.extraRoot);
+    btn.addEventListener('mouseenter', onCatParentHover);
+    parents.appendChild(btn);
+  }
+  // 分隔
+  var sep = document.createElement('div');
+  sep.style.cssText = 'width:1px;height:18px;background:var(--border);margin:0 2px;align-self:center;';
+  parents.appendChild(sep);
+  // 独立叶节点
+  for (var l = 0; l < KG_LEAF.length; l++) {
+    var leaf = KG_LEAF[l];
+    if (!KG_LABELS[leaf]) continue;
+    var btn = document.createElement('div');
+    btn.className = 'cat-parent-btn';
+    btn.textContent = KG_LABELS[leaf];
+    btn.setAttribute('data-leaf', leaf);
+    btn.addEventListener('click', function(e){
+      _catSelectedParent = null;
+      _catSelectedNode = this.getAttribute('data-leaf');
+      highlightCatSelection();
+      onFilterChange();
+    });
+    parents.appendChild(btn);
+  }
+  // 子面板鼠标事件：保持显示
+  var panel = document.getElementById('catSubPanel');
+  panel.addEventListener('mouseenter', function(){ clearTimeout(_catHideTimer); });
+  panel.addEventListener('mouseleave', function(){ _catHideTimer = setTimeout(hideSubPanel, 150); });
+}
+
+function onCatParentHover(e) {
+  clearTimeout(_catHideTimer);
+  var root = this.getAttribute('data-root');
+  var extra = this.getAttribute('data-extra');
+  var expand = this.getAttribute('data-expand') === '1';
+  if (!expand) { hideSubPanel(); return; }
+
+  var panel = document.getElementById('catSubPanel');
+  panel.innerHTML = '';
+  // "全部"选项
+  var allItem = document.createElement('div');
+  allItem.className = 'cat-sub-item cat-sub-all';
+  allItem.textContent = '全部' + this.textContent;
+  allItem.addEventListener('click', function(){
+    _catSelectedParent = root;
+    _catSelectedNode = null;
+    highlightCatSelection();
+    hideSubPanel();
+    onFilterChange();
+  });
+  panel.appendChild(allItem);
+
+  // 子节点
+  buildSubItems(panel, root, 1);
+  if (extra) buildSubItems(panel, extra, 1);
+
+  // 定位面板
+  var rect = this.getBoundingClientRect();
+  var cascade = document.getElementById('catCascade');
+  var cascadeRect = cascade.getBoundingClientRect();
+  panel.style.left = (rect.left - cascadeRect.left) + 'px';
+  panel.style.top = (cascadeRect.height + 4) + 'px';
+  panel.style.display = 'block';
+}
+function buildSubItems(panel, nodeId, depth) {
+  if (KG_LABELS[nodeId]) {
+    var item = document.createElement('div');
+    item.className = 'cat-sub-item';
+    item.style.paddingLeft = (8 + depth * 14) + 'px';
+    item.textContent = KG_LABELS[nodeId];
+    item.addEventListener('click', function(){
+      _catSelectedParent = null;
+      _catSelectedNode = nodeId;
+      // 向上查找确认所属的父分类
+      for (var key in KG_ROOT_EXPAND) {
+        if (KG_ROOT_EXPAND[key] && KG_ROOT_EXPAND[key].indexOf(nodeId) !== -1) {
+          _catSelectedParent = key;
+          break;
+        }
+      }
+      highlightCatSelection();
+      hideSubPanel();
+      onFilterChange();
+    });
+    panel.appendChild(item);
+  }
+  var children = KG_HIERARCHY[nodeId];
+  if (children) {
+    for (var i = 0; i < children.length; i++) {
+      buildSubItems(panel, children[i], depth + 1);
+    }
+  }
+}
+function hideSubPanel() {
+  document.getElementById('catSubPanel').style.display = 'none';
+}
+function highlightCatSelection() {
+  var btns = document.querySelectorAll('#catParents .cat-parent-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.remove('active');
+  }
+  var tag = document.getElementById('catActiveTag');
+  if (_catSelectedNode) {
+    tag.style.display = 'inline-block';
+    tag.textContent = '✕ ' + (KG_LABELS[_catSelectedNode] || _catSelectedNode);
+  } else if (_catSelectedParent) {
+    tag.style.display = 'inline-block';
+    var label = '';
+    for (var g = 0; g < KG_GROUPS.length; g++) {
+      if (KG_GROUPS[g].root === _catSelectedParent) { label = KG_GROUPS[g].label; break; }
+    }
+    tag.textContent = '✕ ' + (label || _catSelectedParent) + '（全部）';
+  } else {
+    tag.style.display = 'none';
+  }
+}
+function clearCatFilter() {
+  _catSelectedParent = null;
+  _catSelectedNode = null;
+  highlightCatSelection();
+  onFilterChange();
+}
+function resolveCategoryFilter() {
+  if (_catSelectedNode) {
+    return [_catSelectedNode];
+  }
+  if (_catSelectedParent) {
+    return KG_ROOT_EXPAND[_catSelectedParent] || [_catSelectedParent];
+  }
+  return null;
+}
+
+// 鼠标离开级联区域时延迟隐藏
+(function(){
+  var cascade = document.getElementById('catCascade');
+  cascade.addEventListener('mouseleave', function(){
+    _catHideTimer = setTimeout(hideSubPanel, 200);
+  });
+  cascade.addEventListener('mouseenter', function(){
+    clearTimeout(_catHideTimer);
+  });
+})();
+
+// ====== Schema/Data/Expected Output Table Renders ======
+function parseSchemaToMap(schemaStr) {
+  var map = {};
+  if (!schemaStr) return map;
+  var stmts = schemaStr.split(';');
+  for (var s = 0; s < stmts.length; s++) {
+    var m = stmts[s].match(/(?:CREATE\s+TABLE\s+)?(\w+)\s*\((.*)\)/i);
+    if (!m) continue;
+    var tbl = m[1], raw = m[2], depth = 0, cur = '', cols = [];
+    for (var i = 0; i < raw.length; i++) {
+      var ch = raw[i];
+      if (ch === '(') { depth++; cur += ch; }
+      else if (ch === ')') { depth--; cur += ch; }
+      else if (ch === ',' && depth === 0) { var p = cur.trim().split(/\s+/); if (p[0]) cols.push(p[0]); cur = ''; }
+      else { cur += ch; }
+    }
+    if (cur.trim()) { var p = cur.trim().split(/\s+/); if (p[0]) cols.push(p[0]); }
+    map[tbl] = cols;
+  }
+  return map;
+}
+
+function renderDataTable(dataStr, schemaStr) {
+  if (!dataStr) return '';
+  var schemaMap = parseSchemaToMap(schemaStr);
+  var tableRows = {};
+  var stmts = dataStr.split(';');
+  for (var s = 0; s < stmts.length; s++) {
+    var stmt = stmts[s].trim();
+    if (!stmt) continue;
+    var m = stmt.match(/INSERT\s+INTO\s+(\w+)\s*(\([^)]*\))?\s*VALUES\s*([\s\S]*)/i);
+    if (!m) continue;
+    var tbl = m[1], vp = m[3] || m[2], depth = 0, cur = '', groups = [];
+    for (var i = 0; i < vp.length; i++) {
+      var ch = vp[i];
+      if (ch === '(' && depth === 0) { cur = ''; depth = 1; }
+      else if (ch === '(' && depth > 0) { cur += ch; depth++; }
+      else if (ch === ')' && depth > 1) { cur += ch; depth--; }
+      else if (ch === ')' && depth === 1) { depth = 0; groups.push(cur); cur = ''; }
+      else if (depth > 0) { cur += ch; }
+    }
+    if (!tableRows[tbl]) tableRows[tbl] = [];
+    for (var g = 0; g < groups.length; g++) {
+      var vals = [], vcur = '', inQ = false, qch = null;
+      for (var i = 0; i < groups[g].length; i++) {
+        var ch = groups[g][i];
+        if (inQ) { if (ch === qch) inQ = false; else vcur += ch; }
+        else if (ch === "'" || ch === '"') { inQ = true; qch = ch; }
+        else if (ch === ',') { vals.push(vcur.trim()); vcur = ''; }
+        else { vcur += ch; }
+      }
+      if (vcur.trim()) vals.push(vcur.trim());
+      if (vals.length) tableRows[tbl].push(vals);
+    }
+  }
+  var html = '';
+  var tblNames = Object.keys(tableRows);
+  for (var t = 0; t < tblNames.length; t++) {
+    var tbl = tblNames[t];
+    var rows = tableRows[tbl];
+    if (!rows.length) continue;
+    var hdrs = (schemaMap[tbl] && schemaMap[tbl].length) ? schemaMap[tbl] : rows[0].map(function(_, i) { return 'col' + (i+1); });
+    html += '<div class="table-label">' + tbl + '</div><table class="data-table"><thead><tr>';
+    for (var h = 0; h < hdrs.length; h++) html += '<th>' + hdrs[h] + '</th>';
+    html += '</tr></thead><tbody>';
+    var maxRows = 15;
+    var showAll = rows.length <= maxRows;
+    for (var r = 0; r < Math.min(rows.length, maxRows); r++) {
+      html += '<tr>';
+      for (var c = 0; c < rows[r].length; c++) html += '<td>' + rows[r][c] + '</td>';
+      html += '</tr>';
+    }
+    if (!showAll) {
+      html += '<tr><td colspan="' + hdrs.length + '" style="text-align:center;color:#999;font-style:italic;padding:0.5rem">... 共 ' + rows.length + ' 行，仅显示前 ' + maxRows + ' 行 ...</td></tr>';
+    }
+    html += '</tbody></table>';
+  }
+  return html;
+}
+
+function renderExpectedOutput(expStr) {
+  if (!expStr) return '';
+  // Try JSON format first
+  try {
+    var data = JSON.parse(expStr);
+    if (data.rows && data.rows.length) {
+      var html = '<div class="exp-label">预期输出</div><table class="data-table"><thead><tr>';
+      for (var h = 0; h < data.headers.length; h++) html += '<th>' + data.headers[h] + '</th>';
+      html += '</tr></thead><tbody>';
+      for (var r = 0; r < data.rows.length; r++) {
+        var isSep = data.rows[r][0] === '...' || data.rows[r][0] === '…';
+        html += '<tr' + (isSep ? ' style="text-align:center;color:var(--text2);font-style:italic;background:var(--tag-bg)"' : '') + '>';
+        if (isSep) {
+          html += '<td colspan="' + data.headers.length + '" style="padding:0.35rem">' + (data.rows[r][1] || data.rows[r][0]) + '</td>';
+        } else {
+          for (var c = 0; c < data.rows[r].length; c++) html += '<td>' + (data.rows[r][c] === null ? 'NULL' : data.rows[r][c]) + '</td>';
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      return html;
+    }
+  } catch(e) { /* fall through to text format */ }
+  // Text table format: lines with | separator, second line is -+-
+  var lines = expStr.split('\n');
+  if (lines.length < 2) return '<div class="exp-label">预期输出</div><pre class="expected-output-text">' + expStr + '</pre>';
+  var headerLine = lines[0];
+  var sepLine = lines[1] || '';
+  var dataLines = [];
+  for (var i = 2; i < lines.length; i++) {
+    if (lines[i].trim()) dataLines.push(lines[i]);
+  }
+  // Check if separator line contains -+- (table format)
+  if (sepLine.indexOf('-+-') >= 0) {
+    var headers = headerLine.split('|').map(function(s) { return s.trim(); });
+    var html = '<div class="exp-label">预期输出</div><table class="data-table"><thead><tr>';
+    for (var h = 0; h < headers.length; h++) html += '<th>' + headers[h] + '</th>';
+    html += '</tr></thead><tbody>';
+    for (var r = 0; r < dataLines.length; r++) {
+      var cells = dataLines[r].split('|').map(function(s) { return s.trim(); });
+      html += '<tr>';
+      for (var c = 0; c < cells.length; c++) html += '<td>' + cells[c] + '</td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    return html;
+  }
+  return '<div class="exp-label">预期输出</div><pre class="expected-output-text">' + expStr + '</pre>';
+}
+
+function renderSqlPanel(q) {
+  if (!q.table_schema && !q.initial_data) return '';
+  var code = '';
+  if (q.table_schema) code += q.table_schema.replace(/</g, '&lt;') + ';\n';
+  if (q.initial_data) code += q.initial_data.replace(/</g, '&lt;') + '\n';
+  var id = 'sql_panel_' + q.id;
+  return '<div class="sql-toggle" onclick="var p=document.getElementById(\'' + id + '\');p.classList.toggle(\'open\');this.querySelector(\'span\').textContent=p.classList.contains(\'open\')?\'收起 SQL\':\'展开 SQL\'"><span>展开 SQL</span> <i class="fas fa-chevron-down" style="font-size:0.5rem"></i></div><div class="sql-panel" id="' + id + '"><div class="sql-code">' + code + '</div></div>';
+}
+
+function renderSchemaAndData(q) {
+  var html = '';
+  if (q.initial_data) html += renderDataTable(q.initial_data, q.table_schema);
+  return html;
+}
+
+function renderTablesRow(q) {
+  var dataHtml = renderSchemaAndData(q);
+  var expHtml = renderExpectedOutput(q.expected_output || '');
+  if (!dataHtml && !expHtml) return '';
+  return '<div class="tables-row">' +
+    (dataHtml ? '<div class="table-col">' + dataHtml + '</div>' : '') +
+    (expHtml ? '<div class="table-col">' + expHtml + '</div>' : '') +
+    '</div>';
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  // Highlight correct nav button (both practice and exam share data-page="practice")
+  var btns = document.querySelectorAll('.nav-btn[data-page="' + name + '"]');
+  if (btns.length > 1 && currentPool === 'exam') btns[1].classList.add('active');
+  else if (btns.length > 0) btns[0].classList.add('active');
+  if (name === 'practice') {
+    document.getElementById('poolLabel').textContent = currentPool === 'exam' ? '🎯 真题测试' : '📝 自主练习';
+    if (!_catSelectBuilt) { buildCategorySelect(); _catSelectBuilt = true; }
+    loadPracticeQuestions();
+  }
+}
+
+async function apiGet(path) {
+  var t0 = performance.now();
+  const r = await fetch(API_BASE + path);
+  var ms = Math.round(performance.now() - t0);
+  _showPerf(ms, path.split('?')[0]);
+  if (!r.ok) throw new Error('API error');
+  return r.json();
+}
+
+async function apiPost(path, data) {
+  saveAllCM();
+  var t0 = performance.now();
+  const r = await fetch(API_BASE + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+  var ms = Math.round(performance.now() - t0);
+  _showPerf(ms, path.split('?')[0]);
+  if (!r.ok) throw new Error('API error');
+  return r.json();
+}
+
+function withCM(html) {
+  setTimeout(function() { initAllCodeMirrors(); }, 100);
+  return html;
+}
+
+function parseOptions(str) {
+  if (typeof str !== 'string') return str || [];
+  return str.replace(/\|\|/g, '\x00').split('|').filter(function(o) { return o.trim() !== ''; }).map(function(o) { return o.replace(/\x00/g, '||'); });
+}
+
+
+
+
+
+
+
+function selectOpt(prefix, qid, idx, btn) {
+  var container = document.getElementById(prefix + '_opts_' + qid);
+  if (!container) return;
+  var btns = container.querySelectorAll('.option-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('selected');
+  btn.classList.add('selected');
+  // Store selected answer on the container
+  container.dataset.selected = btn.textContent;
+}
+
+function clearOpt(prefix, qid) {
+  var container = document.getElementById(prefix + '_opts_' + qid);
+  if (container) {
+    var btns = container.querySelectorAll('.option-btn');
+    for (var i = 0; i < btns.length; i++) btns[i].classList.remove('selected');
+  }
+}
+
+function showOptionExplanations(prefix, qid, options, explanations, correctAnswer) {
+  var container = document.getElementById(prefix + '_opts_' + qid);
+  if (!container) return;
+  var opts = parseOptions(options);
+  var expls = parseOptions(explanations);
+  var html = '';
+  for (var i = 0; i < opts.length; i++) {
+    var isCorrect = opts[i].trim().toLowerCase() === correctAnswer.trim().toLowerCase();
+    var mark = isCorrect ? '✓' : '✗';
+    var explain = (expls && expls[i]) ? expls[i] : (isCorrect ? '这是正确答案' : '');
+    html += '<div class="opt-explain" style="background:' + (isCorrect ? 'rgba(34,139,34,0.08)' : 'rgba(220,20,20,0.06)') + '">';
+    html += '<span class="mark" style="color:' + (isCorrect ? '#1a6b1a' : '#b22222') + '">' + mark + '</span>';
+    html += '<span><code style="font-family:Oswald,Consolas,monospace;font-size:0.75rem">' + opts[i].replace(/</g, '&lt;') + '</code>';
+    if (explain) html += '<br><span style="color:#666;font-size:0.75rem">' + explain + '</span>';
+    html += '</span></div>';
+  }
+  container.innerHTML = html;
+}
+
+function renderQuestion(q, prefix) {
+  var diffMap = { easy: '简单', medium: '中等', hard: '困难' };
+  var diffClass = { easy: 'tag-easy', medium: 'tag-medium', hard: 'tag-hard' };
+  var hasOpts = q.options && (typeof q.options === 'string' ? q.options.trim() : q.options.length);
+  var hint = q.hint || '';
+  var html = '<div class="flex gap-2 flex-wrap mb-2">';
+  html += '<span class="tag">' + q.category + '</span>';
+  html += '<span class="tag ' + diffClass[q.difficulty] + '">' + diffMap[q.difficulty] + '</span>';
+  html += '<span class="tag" style="background:' + (hasOpts ? 'rgba(52,119,191,0.15)' : 'rgba(193,124,74,0.20)') + ';color:' + (hasOpts ? '#3477bf' : '#a8683e') + '">' + (hasOpts ? '选择题' : '填空题') + '</span>';
+  html += '</div>';
+  html += '<h3 class="title-serif text-lg mb-2">' + q.title + '</h3>';
+  html += '<p class="question-desc">' + q.description + '</p>';
+  html += renderTablesRow(q);
+  html += renderSqlPanel(q);
+  if (hasOpts) {
+    html += '<div class="flex flex-col gap-1.5 my-2" id="' + prefix + '_opts_' + q.id + '">';
+    var opts = parseOptions(q.options);
+    for (var i = 0; i < opts.length; i++) {
+      html += '<button class="option-btn" onclick="selectOpt(\'' + prefix + '\',' + q.id + ',' + i + ',this)">' + opts[i].replace(/</g, '&lt;') + '</button>';
+    }
+    html += '</div>';
+  } else {
+    if (hint) html += '<div class="text-xs mb-2" style="color:#a8683e"><i class="fas fa-lightbulb mr-1"></i> ' + hint + '</div>';
+    html += '<textarea class="code-input" id="' + prefix + '_inp_' + q.id + '" placeholder="手动输入你的 SQL 语句..." oninput="clearOpt(\'' + prefix + '\',' + q.id + ')"></textarea>';
+  }
+  html += '<div id="' + prefix + '_res_' + q.id + '" class="result-box" style="display:none"></div>';
+  html += '<div class="mt-2"><button class="btn btn-primary" onclick="' + (prefix === 'journey' ? 'submitJourneyAnswer' : 'submitPracticeAnswer') + '(' + q.id + ')"><i class="fas fa-paper-plane mr-1"></i> 提交答案</button></div>';
+  return html;
+}
+
+
+
+
+
+
+
+
+
+// ==================== Journey 自适应进阶 ====================
+var journeyData = null;
+var currentJourneyQid = null;
+
+async function startJourney() {
+  document.getElementById('journeyStart').style.display = 'none';
+  document.getElementById('journeyQuiz').style.display = 'block';
+  document.getElementById('journeyResult').style.display = 'none';
+  try {
+    var resp = await apiPost('/journey/start', { session_id: sessionId });
+    journeyData = resp;
+    showJourneyQuestion(resp);
+  } catch (e) {
+    document.getElementById('journeyQuestion').innerHTML = '<p style="color:#b04a4a">加载失败，请确保后端已启动</p>';
+  }
+}
+
+function showJourneyQuestion(data) {
+  journeyQuestionStart = Date.now();
+  var actionMap = { advance: '进阶', consolidate: '巩固', easier: '降难度', start: '开始', fallback: '练习', skip: '跳级', review: '复习', fillin: '填空题' };
+  document.getElementById('journeyNodeLabel').textContent = data.current_node ? getNodeName(data.current_node, data.graph) : '加载中';
+  document.getElementById('journeyStats').textContent = (data.total_answered || 0) + '题';
+  var progress = data.total_answered > 0 ? Math.min(100, (data.total_correct || 0) / Math.max(1, data.total_answered) * 100) : 0;
+  document.getElementById('journeyProgress').style.width = progress + '%';
+  var tag = document.getElementById('journeyActionTag');
+  if (data.action && actionMap[data.action]) {
+    tag.style.display = 'inline-block'; tag.textContent = actionMap[data.action];
+  } else { tag.style.display = 'none'; }
+  // sync deep mode toggle
+  if (data.deep_mode !== undefined) document.getElementById('deepModeToggle').checked = data.deep_mode;
+  renderJourneyBadges(data.graph, data.mastery, data.unlocked_nodes, data.current_node);
+  // question
+  currentJourneyQid = null;
+  document.getElementById('journeyNextBtn').style.display = 'none';
+  var el = document.getElementById('journeyQuestion');
+  if (data.question) {
+    currentJourneyQid = data.question.id;
+    // attach fillin_mode and hint to question object so renderQuestion can use them
+    data.question.fillin_mode = data.fillin_mode || false;
+    data.question.hint = data.hint || '';
+    el.innerHTML = renderQuestion(data.question, 'journey'); setTimeout(initAllCodeMirrors, 100);
+    var ta = el.querySelector('textarea');
+    if (ta) ta.focus();
+  } else {
+    el.innerHTML = '<p class="text-sm opacity-60 text-center py-4">所有知识点已掌握！🎉</p>';
+    document.getElementById('journeyNextBtn').style.display = 'none';
+  }
+}
+
+async function toggleDeepMode() {
+  var enabled = document.getElementById('deepModeToggle').checked;
+  await apiPost('/journey/toggle_deep', { session_id: sessionId, enabled: enabled });
+}
+
+function getNodeName(nodeId, graph) {
+  if (!graph || !graph.nodes) return nodeId;
+  for (var i = 0; i < graph.nodes.length; i++) {
+    if (graph.nodes[i].id === nodeId) return graph.nodes[i].name;
+  }
+  return nodeId;
+}
+
+function renderJourneyBadges(graph, mastery, unlocked, current) {
+  var el = document.getElementById('journeyGraph');
+  if (!graph || !graph.nodes) { el.innerHTML = ''; return; }
+  var html = '';
+  var unlockedSet = {};
+  var masteredSet = {};
+  if (unlocked) for (var i = 0; i < unlocked.length; i++) unlockedSet[unlocked[i]] = true;
+  if (mastery) for (var key in mastery) {
+    if (mastery[key].total_count > 0 && mastery[key].correct_count / mastery[key].total_count >= 0.7) masteredSet[key] = true;
+  }
+  var unlockedCount = 0;
+  for (var j = 0; j < graph.nodes.length; j++) {
+    var n = graph.nodes[j];
+    var cls = 'graph-node';
+    if (n.id === current) { cls += ' current'; unlockedCount++; }
+    else if (masteredSet[n.id]) { cls += ' mastered'; unlockedCount++; }
+    else if (unlockedSet[n.id]) { cls += ''; unlockedCount++; }
+    else cls += ' locked';
+    html += '<span class="' + cls + '" title="' + (n.description || '') + '"><i class="fas ' + (n.icon || 'fa-code') + '"></i>' + n.name + '</span>';
+  }
+  el.innerHTML = html;
+  document.getElementById('unlockedCount').textContent = unlockedCount;
+}
+
+async function submitJourneyAnswer(qid) { saveAllCM();
+  var q = journeyData && journeyData.question && journeyData.question.id === qid ? journeyData.question : null;
+  var input = '';
+  var inp = document.getElementById('journey_inp_' + qid);
+  if (inp) { input = inp.value.trim(); } else {
+    var sel = document.querySelector('#journey_opts_' + qid + ' .option-btn.selected');
+    if (sel) input = sel.textContent.trim();
+  }
+  if (!input) return alert('请先输入或选择答案');
+  var elapsed = Math.round((Date.now() - journeyQuestionStart) / 1000);
+  try {
+    var resp = await apiPost('/journey/next', { session_id: sessionId, question_id: qid, answer: input, duration: elapsed });
+    var resultBox = document.getElementById('journey_res_' + qid);
+    resultBox.style.display = 'block';
+    resultBox.className = 'result-box ' + (resp.last_answer_correct ? 'correct' : 'wrong');
+    if (resp.last_answer_correct === true) {
+      resultBox.innerHTML = '<strong><i class="fas fa-check-circle mr-1"></i> 回答正确</strong>';
+    } else if (resp.last_answer_correct === false) {
+      resultBox.innerHTML = '<strong><i class="fas fa-times-circle mr-1"></i> 回答错误</strong>';
+      if (q) resultBox.innerHTML += '<br>正确答案：<strong>' + q.correct_answer + '</strong>';
+      if (q && q.options && q.option_explanations) {
+        showOptionExplanations('journey', qid, q.options, q.option_explanations, q.correct_answer);
+      }
+    }
+    if (resp.explanation) resultBox.innerHTML += '<div class="explanation"><i class="fas fa-lightbulb mr-1"></i> ' + resp.explanation + '</div>';
+    var submitBtn = document.querySelector('#journeyQuestion .btn-primary');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '已提交'; }
+    journeyData = resp;
+    document.getElementById('journeyNextBtn').style.display = 'inline-flex';
+  } catch (e) { alert('提交失败'); }
+}
+
+var journeyMapExpanded = false;
+function toggleJourneyMap() {
+  journeyMapExpanded = !journeyMapExpanded;
+  document.getElementById('journeyGraph').style.display = journeyMapExpanded ? 'flex' : 'none';
+  document.getElementById('journeyMapToggle').innerHTML = journeyMapExpanded ? '<i class="fas fa-chevron-up"></i>' : '<i class="fas fa-chevron-down"></i>';
+}
+
+var journeyVizExpanded = false;
+function toggleJourneyViz() {
+  journeyVizExpanded = !journeyVizExpanded;
+  document.getElementById('journeyVizFrame').style.display = journeyVizExpanded ? 'block' : 'none';
+  document.getElementById('journeyVizToggle').innerHTML = journeyVizExpanded ? '<i class="fas fa-chevron-up"></i>' : '<i class="fas fa-chevron-down"></i>';
+}
+
+function nextJourney() {
+  showJourneyQuestion(journeyData);
+}
+
+// ==================== 刷题 ====================
+// ---- 筛选器事件 ----
+function onFilterChange() {
+  loadPracticeQuestions();
+}
+
+async function loadPracticeQuestions() {
+  var difficulty = document.getElementById('filterDifficulty').value;
+  var nodeIds = resolveCategoryFilter();
+  var params = [];
+  // 优先用知识图谱节点筛选；退化为category筛选
+  if (nodeIds && nodeIds.length > 0) {
+    // 后端支持 node=xxx 参数：筛选关联该知识节点的题目
+    // 取第一个节点（选择父分类时，后端已通过 _expand 展开）
+    params.push('node=' + encodeURIComponent(nodeIds[0]));
+  }
+  if (difficulty) params.push('difficulty=' + encodeURIComponent(difficulty));
+  document.getElementById('practiceList').innerHTML = '<div class="text-center text-sm py-4 opacity-50"><i class="fas fa-spinner fa-spin mr-1"></i> 加载中...</div>';
+  document.getElementById('questionDetail').classList.remove('visible');
+  document.getElementById('questionDetail').style.display = 'none';
+  document.getElementById('practiceList').style.display = 'block';
+  try {
+    params.push('pool=' + currentPool);
+    var data = await apiGet('/questions?' + params.join('&'));
+    practiceQuestions = data.questions;
+    // Merge static questions into practice pool
+    if (currentPool === 'practice') {
+      practiceQuestions = practiceQuestions.concat(STATIC_QUESTIONS);
+    }
+    renderPracticeList();
+  } catch (e) {
+    document.getElementById('practiceList').innerHTML = '<p style="color:#b04a4a;text-align:center">加载失败，请确保后端已启动</p>';
+  }
+}
+
+function renderPracticeList() {
+  var el = document.getElementById('practiceList');
+  // Apply all filters client-side (search + type + difficulty + category)
+  var searchText = (document.getElementById('filterSearch').value || '').toLowerCase();
+  var filterType = document.getElementById('filterType').value;
+  var filterDifficulty = document.getElementById('filterDifficulty').value;
+  var nodeIds = resolveCategoryFilter();
+  var filtered = practiceQuestions;
+  if (searchText) {
+    filtered = filtered.filter(function(q) {
+      return (q.title && q.title.toLowerCase().indexOf(searchText) !== -1) ||
+             (q.description && q.description.toLowerCase().indexOf(searchText) !== -1) ||
+             (q.category && q.category.toLowerCase().indexOf(searchText) !== -1);
+    });
+  }
+  if (filterType === 'mcq') {
+    filtered = filtered.filter(function(q) { return q.options && q.options.toString().trim(); });
+  } else if (filterType === 'fillin') {
+    filtered = filtered.filter(function(q) { return !q.options || !q.options.toString().trim(); });
+  }
+  if (filterDifficulty) {
+    filtered = filtered.filter(function(q) { return q.difficulty === filterDifficulty; });
+  }
+  // 分类筛选（对静态题+动态题统一生效）
+  if (nodeIds && nodeIds.length > 0) {
+    filtered = filtered.filter(function(q) {
+      if (nodeIds.indexOf(q.category) !== -1) return true;
+      // 静态选择题分类映射
+      var mapped = STATIC_CAT_MAP[q.category];
+      if (mapped) {
+        for (var k = 0; k < mapped.length; k++) {
+          if (nodeIds.indexOf(mapped[k]) !== -1) return true;
+        }
+      }
+      return false;
+    });
+  }
+  document.getElementById('poolCount').textContent = filtered.length + ' 题';
+
+  if (!filtered.length) {
+    el.innerHTML = '<div class="text-center text-sm py-4 opacity-50">暂无符合条件的题目</div>';
+    return;
+  }
+  var diffMap = { easy: '简单', medium: '中等', hard: '困难' };
+  var diffClass = { easy: 'tag-easy', medium: 'tag-medium', hard: 'tag-hard' };
+  var html = '';
+  for (var i = 0; i < filtered.length; i++) {
+    var q = filtered[i];
+    var hasOpts = q.options && (typeof q.options === 'string' ? q.options.trim() : q.options.length);
+    var desc = (q.description || '').replace(/\n/g, ' ').substring(0, 80);
+    var qid = q.id != null ? q.id : ('static_' + practiceQuestions.indexOf(q));
+    html += '<div class="card p-3 question-item" onclick="showPracticeDetail(\'' + qid + '\')">';
+    html += '<div class="flex gap-2 flex-wrap mb-1">';
+    html += '<span class="tag">' + q.category + '</span>';
+    html += '<span class="tag ' + (diffClass[q.difficulty] || '') + '">' + (diffMap[q.difficulty] || q.difficulty) + '</span>';
+    html += '<span class="tag" style="background:' + (hasOpts ? 'rgba(52,119,191,0.15)' : 'rgba(193,124,74,0.20)') + ';color:' + (hasOpts ? '#3477bf' : '#a8683e') + '">' + (hasOpts ? '选择' : '填空') + '</span>';
+    html += '</div>';
+    html += '<h3>' + q.title + '</h3>';
+    html += '<p>' + desc + '...</p>';
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function showPracticeDetail(qid) {
+  var q = null;
+  // Find question by id (number for API, string 'static_N' for static)
+  for (var i = 0; i < practiceQuestions.length; i++) {
+    var pq = practiceQuestions[i];
+    var pqid = pq.id != null ? pq.id : ('static_' + i);
+    if (pqid == qid) { q = pq; if (pq.id == null) q._isStatic = true; break; }
+  }
+  if (!q) return;
+  currentPracticeQ = q;
+  document.getElementById('practiceList').style.display = 'none';
+  var detail = document.getElementById('questionDetail');
+  detail.style.display = 'block';
+  detail.classList.add('visible');
+  document.getElementById('practiceQuestion').innerHTML = renderPracticeQuestion(q);
+  setTimeout(initAllCodeMirrors, 100);
+  setTimeout(function() { var ta = document.querySelector('#practiceQuestion textarea'); if (ta && ta._cm) ta._cm.focus(); else if (ta) ta.focus(); }, 150);
+}
+
+function renderPracticeQuestion(q) {
+  var diffMap = { easy: '简单', medium: '中等', hard: '困难' };
+  var diffClass = { easy: 'tag-easy', medium: 'tag-medium', hard: 'tag-hard' };
+  var hasOpts = q.options && (typeof q.options === 'string' ? q.options.trim() : q.options.length);
+  var html = '<div class="flex gap-2 flex-wrap mb-2">';
+  html += '<span class="tag">' + q.category + '</span>';
+  html += '<span class="tag ' + (diffClass[q.difficulty] || '') + '">' + (diffMap[q.difficulty] || q.difficulty) + '</span>';
+  html += '<span class="tag" style="background:' + (hasOpts ? 'rgba(52,119,191,0.15)' : 'rgba(193,124,74,0.20)') + ';color:' + (hasOpts ? '#3477bf' : '#a8683e') + '">' + (hasOpts ? '选择题' : '填空题') + '</span>';
+  html += '</div>';
+  html += '<h3 class="title-serif text-lg mb-2">' + q.title + '</h3>';
+  html += '<p class="question-desc">' + q.description + '</p>';
+
+  // Static questions: simple MCQ, no SQL execution
+  if (q._isStatic) {
+    if (hasOpts) {
+      html += '<div class="flex flex-col gap-1.5 my-2" id="prac_opts_static">';
+      var opts = Array.isArray(q.options) ? q.options : parseOptions(q.options);
+      for (var i = 0; i < opts.length; i++) {
+        var optText = typeof opts[i] === 'string' ? opts[i] : (opts[i].text || opts[i]);
+        var optKey = typeof opts[i] === 'object' && opts[i].key ? opts[i].key : String.fromCharCode(65 + i);
+        html += '<button class="option-btn" onclick="checkStaticAnswer(\'' + optKey + '\',this)">' + optKey + '. ' + optText.replace(/</g, '&lt;') + '</button>';
+      }
+      html += '</div>';
+    }
+    html += '<div id="prac_res_static" class="result-box" style="display:none"></div>';
+    return html;
+  }
+
+  html += renderTablesRow(q);
+  html += renderSqlPanel(q);
+  if (hasOpts) {
+    html += '<div class="flex flex-col gap-1.5 my-2" id="prac_opts_' + q.id + '">';
+    var opts = parseOptions(q.options);
+    for (var i = 0; i < opts.length; i++) {
+      html += '<button class="option-btn" onclick="selectOpt(\'prac\',' + q.id + ',' + i + ',this)">' + opts[i].replace(/</g, '&lt;') + '</button>';
+    }
+    html += '</div>';
+  } else {
+    html += '<textarea class="code-input" id="prac_inp_' + q.id + '" placeholder="手动输入你的 SQL 语句..."></textarea>';
+  }
+  html += '<div id="prac_res_' + q.id + '" class="result-box" style="display:none"></div>';
+  html += '<div class="mt-2"><button class="btn btn-primary" id="prac_btn_' + q.id + '" onclick="submitPracticeAnswer(' + q.id + ')"><i class="fas fa-paper-plane mr-1"></i> 提交答案</button></div>';
+  return html;
+}
+
+function checkStaticAnswer(key, btn) {
+  var q = currentPracticeQ;
+  if (!q) return;
+  var correct = q.answer || q.correct_answer;
+  var isCorrect = (key === correct);
+  // Disable all option buttons
+  var allBtns = document.querySelectorAll('#prac_opts_static .option-btn');
+  for (var i = 0; i < allBtns.length; i++) { allBtns[i].disabled = true; }
+  // Highlight
+  btn.classList.add(isCorrect ? 'selected' : 'wrong');
+  // Find and highlight correct
+  for (var i = 0; i < allBtns.length; i++) {
+    var bkey = allBtns[i].textContent.charAt(0);
+    if (bkey === correct) allBtns[i].classList.add('correct-answer');
+  }
+  var res = document.getElementById('prac_res_static');
+  res.style.display = 'block';
+  res.className = 'result-box ' + (isCorrect ? 'correct' : 'wrong');
+  res.innerHTML = isCorrect
+    ? '<strong><i class="fas fa-check-circle mr-1"></i> 回答正确！</strong>'
+    : '<strong><i class="fas fa-times-circle mr-1"></i> 回答错误，正确答案：' + correct + '</strong>';
+  if (q.explanation) {
+    res.innerHTML += '<div class="explanation"><i class="fas fa-lightbulb mr-1"></i> ' + q.explanation + '</div>';
+  }
+}
+
+async function submitPracticeAnswer(qid) { saveAllCM();
+  var q = null;
+  for (var i = 0; i < practiceQuestions.length; i++) { if (practiceQuestions[i].id === qid) { q = practiceQuestions[i]; break; } }
+  if (!q) q = currentPracticeQ;
+  var input = '';
+  var inp = document.getElementById('prac_inp_' + qid);
+  if (inp) { input = inp.value.trim(); } else {
+    var sel = document.querySelector('#prac_opts_' + qid + ' .option-btn.selected');
+    if (sel) input = sel.textContent.trim();
+  }
+  if (!input) return alert('请先输入或选择答案');
+  var result = await apiPost('/submit', { session_id: sessionId, question_id: qid, answer: input });
+  var resultBox = document.getElementById('prac_res_' + qid);
+  resultBox.style.display = 'block';
+  resultBox.className = 'result-box ' + (result.is_correct ? 'correct' : 'wrong');
+  resultBox.innerHTML = result.is_correct
+    ? '<strong><i class="fas fa-check-circle mr-1"></i> 回答正确</strong>'
+    : '<strong><i class="fas fa-times-circle mr-1"></i> 回答错误</strong><br>正确答案：<strong>' + result.correct_answer + '</strong>';
+  resultBox.innerHTML += '<div class="explanation"><i class="fas fa-lightbulb mr-1"></i> ' + (result.explanation || '') + '</div>';
+  if (!result.is_correct && q && q.options && q.option_explanations) {
+    showOptionExplanations('prac', qid, q.options, q.option_explanations, q.correct_answer);
+  }
+  var btn = document.getElementById('prac_btn_' + qid);
+  if (btn) { btn.disabled = true; btn.textContent = '已提交'; }
+  var isMcq = q && q.options && (typeof q.options === 'string' ? q.options.trim() : q.options.length);
+  var showDerivedNext = result.is_correct && isMcq;
+  if (showDerivedNext) {
+    currentPrototypeQ = q;
+  } else {
+    currentPrototypeQ = null;
+  }
+  var nextLabel = showDerivedNext ? '举一反三 →' : '下一题';
+  var nextHint = showDerivedNext ? '已掌握该选择题，进入举一反三' : '';
+  resultBox.innerHTML += '<div class="mt-3" style="border-top:1px solid var(--border);padding-top:0.75rem">' +
+    (nextHint ? '<p class="text-sm mb-2"><i class="fas fa-lightbulb mr-1" style="color:var(--accent)"></i> ' + nextHint + '</p>' : '') +
+    '<button class="btn btn-accent" onclick="onPracticeNext()"><i class="fas fa-arrow-right mr-1"></i> ' + nextLabel + '</button></div>';
+}
+
+function onPracticeNext() {
+  if (currentPrototypeQ) {
+    var pid = currentPrototypeQ.id;
+    currentPrototypeQ = null;
+    startDerivedPractice(pid);
+  } else {
+    backToPracticeList();
+  }
+}
+
+async function startDerivedPractice(prototypeId) {
+  document.getElementById('practiceList').style.display = 'none';
+  document.getElementById('questionDetail').style.display = 'none';
+  document.getElementById('questionDetail').classList.remove('visible');
+  var section = document.getElementById('deriveSection');
+  section.style.display = 'block';
+  var area = document.getElementById('deriveArea');
+  area.innerHTML = '<div class="text-center text-sm py-4 opacity-50"><i class="fas fa-spinner fa-spin mr-1"></i> 生成举一反三题目...</div>';
+  try {
+    var resp = await apiPost('/practice/derive', { question_id: prototypeId });
+    currentDerivedQ = resp.derived_question;
+    renderDerivedQuestion(currentDerivedQ);
+  } catch(e) {
+    area.innerHTML = '<p style="color:#b04a4a">生成失败</p>';
+  }
+}
+
+function renderDerivedQuestion(dq) {
+  var area = document.getElementById('deriveArea');
+  var html = '<div class="highlight-box mb-3"><p class="text-sm"><i class="fas fa-lightbulb mr-1 accent"></i><strong>举一反三</strong> — 这是根据你刚做对的选择题生成的填空题，请手动编写 SQL 语句。</p></div>';
+  // Tags
+  var diffMap = { easy: '简单', medium: '中等', hard: '困难' };
+  var diffClass = { easy: 'tag-easy', medium: 'tag-medium', hard: 'tag-hard' };
+  html += '<div class="flex gap-2 flex-wrap mb-2">';
+  html += '<span class="tag">' + dq.category + '</span>';
+  html += '<span class="tag ' + diffClass[dq.difficulty] + '">' + diffMap[dq.difficulty] + '</span>';
+  html += '<span class="tag" style="background:rgba(193,124,74,0.20);color:#a8683e">填空题</span>';
+  html += '</div>';
+  html += '<h3 class="title-serif text-lg mb-2">' + dq.title + '</h3>';
+  html += '<p class="question-desc">' + dq.description + '</p>';
+  // Schema and data
+  if (dq.initial_data) {
+    var schemaHtml = '';
+    var schemaMap = {};
+    try {
+      if (dq.table_schema) {
+        var stmts = dq.table_schema.split(';');
+        for (var s = 0; s < stmts.length; s++) {
+          var m = stmts[s].match(/(?:CREATE\s+TABLE\s+)?(\w+)\s*\((.*)\)/i);
+          if (m) { schemaMap[m[1]] = m[2]; }
+        }
+      }
+      // Use existing renderDataTable
+      var dataHtml = renderDataTable(dq.initial_data, dq.table_schema);
+      html += dataHtml;
+    } catch(e) {}
+  }
+  // SQL panel
+  html += '<div class="sql-toggle" onclick="var p=document.getElementById(\'derivedSqlPanel\');p.classList.toggle(\'open\');this.querySelector(\'span\').textContent=p.classList.contains(\'open\')?\'收起 SQL\':\'展开 SQL\'"><span>展开 SQL</span> <i class="fas fa-chevron-down" style="font-size:0.5rem"></i></div><div class="sql-panel" id="derivedSqlPanel"><div class="sql-code">';
+  if (dq.table_schema) html += dq.table_schema.replace(/</g, '&lt;') + ';\n';
+  if (dq.initial_data) html += dq.initial_data.replace(/</g, '&lt;') + '\n';
+  html += '</div></div>';
+  // Expected output
+  if (dq.expected_output) html += renderExpectedOutput(dq.expected_output);
+  // Input
+  html += '<textarea class="code-input" id="derived_inp" placeholder="手动输入你的 SQL 语句..."></textarea>';
+  html += '<div id="derived_res" class="result-box" style="display:none"></div>';
+  html += '<div class="mt-2"><button class="btn btn-primary" id="derived_btn" onclick="submitDerivedAnswer()"><i class="fas fa-paper-plane mr-1"></i> 提交答案</button></div>';
+  area.innerHTML = html;
+  setTimeout(initAllCodeMirrors, 100);
+  setTimeout(function() { var ta = document.getElementById('derived_inp'); if (ta && ta._cm) ta._cm.focus(); else if (ta) ta.focus(); }, 150);
+}
+
+async function submitDerivedAnswer() { saveAllCM();
+  if (!currentDerivedQ) return;
+  var input = document.getElementById('derived_inp').value.trim();
+  if (!input) return alert('请先输入 SQL 语句');
+  var result = await apiPost('/submit', { session_id: sessionId, question_id: currentDerivedQ.id, answer: input });
+  var resultBox = document.getElementById('derived_res');
+  resultBox.style.display = 'block';
+  resultBox.className = 'result-box ' + (result.is_correct ? 'correct' : 'wrong');
+  resultBox.innerHTML = result.is_correct
+    ? '<strong><i class="fas fa-check-circle mr-1"></i> 回答正确</strong>'
+    : '<strong><i class="fas fa-times-circle mr-1"></i> 回答错误</strong><br>正确答案：<strong>' + result.correct_answer + '</strong>';
+  resultBox.innerHTML += '<div class="explanation"><i class="fas fa-lightbulb mr-1"></i> ' + (result.explanation || '') + '</div>';
+  var btn = document.getElementById('derived_btn');
+  if (btn) { btn.disabled = true; btn.textContent = '已提交'; }
+  // Get next recommendation
+  var rec = await apiPost('/practice/recommend', {
+    session_id: sessionId,
+    derived_question_id: currentDerivedQ.id,
+    was_correct: result.is_correct
+  });
+  resultBox.innerHTML += '<div class="mt-3" style="border-top:1px solid var(--border);padding-top:0.75rem">';
+  if (rec.recommended && rec.question) {
+    resultBox.innerHTML += '<p class="text-sm mb-2"><i class="fas fa-arrow-right mr-1" style="color:var(--accent)"></i> ' + rec.reason + '</p>';
+    resultBox.innerHTML += '<button class="btn btn-accent" onclick="showRecommendedQuestion(' + rec.question.id + ')"><i class="fas fa-play mr-1"></i> 开始练习</button>';
+    // Store the recommended question
+    var found = false;
+    for (var i = 0; i < practiceQuestions.length; i++) {
+      if (practiceQuestions[i].id === rec.question.id) { found = true; break; }
+    }
+    if (!found) practiceQuestions.push(rec.question);
+    currentPrototypeQ = null;
+  } else {
+    resultBox.innerHTML += '<p class="text-sm opacity-60"><i class="fas fa-check-circle mr-1" style="color:var(--success)"></i> 该知识点已全部掌握，可返回列表选择其他题目</p>';
+  }
+  resultBox.innerHTML += '</div>';
+}
+
+function showRecommendedQuestion(qid) {
+  var q = null;
+  for (var i = 0; i < practiceQuestions.length; i++) { if (practiceQuestions[i].id === qid) { q = practiceQuestions[i]; break; } }
+  if (!q) return;
+  // Show this question in the detail view
+  document.getElementById('deriveSection').style.display = 'none';
+  document.getElementById('questionDetail').style.display = 'block';
+  document.getElementById('questionDetail').classList.add('visible');
+  currentPracticeQ = q;
+  document.getElementById('practiceQuestion').innerHTML = renderPracticeQuestion(q);
+  setTimeout(initAllCodeMirrors, 100);
+  setTimeout(function() { var ta = document.querySelector('#practiceQuestion textarea'); if (ta && ta._cm) ta._cm.focus(); else if (ta) ta.focus(); }, 150);
+}
+
+function exitDerivedPractice() {
+  document.getElementById('deriveSection').style.display = 'none';
+  document.getElementById('practiceList').style.display = 'block';
+  document.getElementById('questionDetail').style.display = 'none';
+  document.getElementById('questionDetail').classList.remove('visible');
+  currentDerivedQ = null;
+  currentPrototypeQ = null;
+}
+
+function backToPracticeList() {
+  document.getElementById('questionDetail').classList.remove('visible');
+  document.getElementById('questionDetail').style.display = 'none';
+  document.getElementById('practiceList').style.display = 'block';
+}
+
+// ==================== 错题集 ====================
+var wrongQuestions = [];
+var summaryExpanded = false;
+
+function toggleSummary() {
+  summaryExpanded = !summaryExpanded;
+  document.getElementById('summaryBody').style.display = summaryExpanded ? 'flex' : 'none';
+  document.getElementById('summaryToggle').innerHTML = summaryExpanded ? '<i class="fas fa-chevron-up"></i>' : '<i class="fas fa-chevron-down"></i>';
+}
+
+async function loadWrongSet() {
+  var el = document.getElementById('wrongList');
+  el.innerHTML = '<div class="text-center text-sm py-4 opacity-50"><i class="fas fa-spinner fa-spin mr-1"></i> 加载中...</div>';
+  try {
+    var data = await apiGet('/progress/' + encodeURIComponent(sessionId));
+    wrongQuestions = data.progress.filter(function(p) { return !p.is_correct; });
+    renderWrongSummary(data);
+    renderWrongList();
+  } catch (e) {
+    el.innerHTML = '<p style="color:#b04a4a;text-align:center">加载失败</p>';
+  }
+}
+
+function renderWrongSummary(data) {
+  var body = document.getElementById('summaryBody');
+  var total = data.total || 0;
+  var correct = data.correct || 0;
+  var wrong = total - correct;
+  var avgDuration = 0;
+  var durationCount = 0;
+  if (total > 0) {
+    var sum = 0;
+    for (var i = 0; i < data.progress.length; i++) {
+      var d = data.progress[i].duration || 0;
+      if (d > 0) { sum += d; durationCount++; }
+    }
+    if (durationCount > 0) avgDuration = Math.round(sum / durationCount);
+  }
+  body.innerHTML = '';
+  body.innerHTML += '<div class="text-center"><div class="num-oswald text-xl">' + total + '</div><div class="text-xs opacity-50">总答题</div></div>';
+  body.innerHTML += '<div class="text-center"><div class="num-oswald text-xl" style="color:#2c241b">' + correct + '</div><div class="text-xs opacity-50">正确</div></div>';
+  body.innerHTML += '<div class="text-center"><div class="num-oswald text-xl" style="color:#b04a4a">' + wrong + '</div><div class="text-xs opacity-50">错误</div></div>';
+  body.innerHTML += '<div class="text-center"><div class="num-oswald text-xl">' + (data.accuracy || 0) + '%</div><div class="text-xs opacity-50">正确率</div></div>';
+}
+
+function renderWrongList() {
+  var el = document.getElementById('wrongList');
+  if (!wrongQuestions.length) {
+    el.innerHTML = '<div class="text-center text-sm py-6 opacity-50"><i class="fas fa-check-circle mr-1" style="color:#2c241b"></i> 暂无错题，继续保持！</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < wrongQuestions.length; i++) {
+    var w = wrongQuestions[i];
+    html += '<div class="card p-3" style="cursor:pointer" onclick="showWrongDetail(' + i + ')">';
+    html += '<div class="flex gap-2 flex-wrap mb-1">';
+    html += '<span class="tag">' + (w.category || '') + '</span>';
+    html += '<span class="tag" style="background:rgba(176,74,74,0.12);color:#b04a4a">✗ 答错</span>';
+    html += '</div>';
+    html += '<h3>' + (w.title || '') + '</h3>';
+    html += '<p style="font-size:0.75rem;color:#666">你的答案：<code style="font-family:Oswald,Consolas,monospace">' + (w.user_answer || '').replace(/</g, '&lt;') + '</code></p>';
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function showWrongDetail(idx) {
+  var w = wrongQuestions[idx];
+  var diffLabel = { easy: '简单', medium: '中等', hard: '困难' };
+  var html = '<div class="card p-4 fade-in">';
+  html += '<div class="flex gap-2 flex-wrap mb-2">';
+  html += '<span class="tag">' + (w.category || '') + '</span>';
+  html += '<span class="tag" style="background:rgba(176,74,74,0.12);color:#b04a4a">' + (diffLabel[w.difficulty] || w.difficulty) + '</span>';
+  html += '</div>';
+  html += '<h3 class="title-serif text-lg mb-2">' + (w.title || '') + '</h3>';
+  html += '<p class="question-desc">' + (w.description || '') + '</p>';
+  html += renderSchemaAndData(w);
+  if (w.expected_output) html += renderExpectedOutput(w.expected_output);
+  html += '<div style="margin-top:0.5rem;padding:0.5rem;border-left:4px solid #b04a4a;background:rgba(176,74,74,0.06);border-radius:0 0.4rem 0.4rem 0">';
+  html += '<div class="text-xs opacity-50">你的答案</div>';
+  html += '<code style="font-family:Oswald,Consolas,monospace;font-size:0.85rem">' + (w.user_answer || '').replace(/</g, '&lt;') + '</code>';
+  html += '<div class="text-xs opacity-50 mt-2">正确答案</div>';
+  html += '<code style="font-family:Oswald,Consolas,monospace;font-size:0.85rem;color:#1a6b1a">' + (w.correct_answer || '').replace(/</g, '&lt;') + '</code>';
+  if (w.explanation) html += '<div class="text-xs mt-2" style="color:#666"><i class="fas fa-lightbulb mr-1"></i> ' + w.explanation + '</div>';
+  html += '</div></div>';
+  var el = document.getElementById('wrongList');
+  el.innerHTML = '<a class="back-link" onclick="loadWrongSet()" style="cursor:pointer;margin-bottom:0.5rem;display:inline-block"><i class="fas fa-arrow-left mr-1"></i> 返回错题列表</a>' + html;
+}
+
+// update showPage to load wrong set
+var origShowPage = showPage;
+showPage = function(name) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('page-' + name).classList.add('active');
+  var btns = document.querySelectorAll('.nav-btn[data-page="' + name + '"]');
+  if (btns.length > 1 && currentPool === 'exam') btns[1].classList.add('active');
+  else if (btns.length > 0) btns[0].classList.add('active');
+  if (name === 'practice') { document.getElementById('poolLabel').textContent = currentPool === 'exam' ? '🎯 真题测试' : '📝 自主练习'; if (!_catSelectBuilt) { buildCategorySelect(); _catSelectBuilt = true; } loadPracticeQuestions(); }
+  else if (name === 'wrongset') { summaryExpanded = false; document.getElementById('summaryBody').style.display = 'none'; document.getElementById('summaryToggle').innerHTML = '<i class="fas fa-chevron-down"></i>'; loadWrongSet(); }
+};
+
+// 确保默认页面可见
+var defaultPage = document.querySelector('.nav-btn.active');
+if (defaultPage) {
+  showPage(defaultPage.getAttribute('data-page'));
+} else {
+  showPage('journey');
+}
+
+// Show user info in header/footer
+updateUserUI();
+
+// ===== 色觉辅助模式切换 =====
+(function() {
+  var saved = localStorage.getItem('cb_mode');
+  if (saved === '1') { document.body.classList.add('cb-mode'); var t = document.getElementById('cbToggle'); if (t) t.classList.add('cb-active'); }
+})();
+function toggleColorblind() {
+  var body = document.body;
+  var on = body.classList.toggle('cb-mode');
+  var t = document.getElementById('cbToggle');
+  if (t) { if (on) t.classList.add('cb-active'); else t.classList.remove('cb-active'); }
+  localStorage.setItem('cb_mode', on ? '1' : '0');
+}
+</script>
+</body>
+</html>

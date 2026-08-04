@@ -1,0 +1,455 @@
+import uuid, os, random, re
+
+def normalize_sql(sql):
+    """Normalize SQL for flexible comparison, handling column reordering, aliases, etc."""
+    s = sql.strip().rstrip(';').strip().lower()
+    s = re.sub(r'\s+', ' ', s)
+    # Remove quotes around aliases
+    s = s.replace("'", '').replace('"', '')
+    # Handle SELECT: sort columns alphabetically
+    m = re.match(r'(select\s+)(.*?)(\s+from\s+.*)', s, re.DOTALL)
+    if m:
+        prefix = m.group(1)
+        cols = m.group(2)
+        rest = m.group(3)
+        # Split columns by comma, strip each, sort
+        col_list = [c.strip() for c in cols.split(',')]
+        # Normalize each column: remove AS keyword for sorting
+        def sort_key(col):
+            c = re.sub(r'\s+as\s+.*', '', col).strip()
+            c = re.sub(r'\s+.*', '', c).strip()
+            return c
+        col_list.sort(key=sort_key)
+        cols_sorted = ', '.join(col_list)
+        s = prefix + cols_sorted + rest
+    return s
+
+def answers_match(user_answer, correct_answer):
+    return normalize_sql(user_answer) == normalize_sql(correct_answer)
+
+from flask import Flask, jsonify, redirect, request, send_from_directory
+from flask_cors import CORS
+from database import init_db, seed_questions, seed_exam_questions, seed_knowledge_graph, get_all_questions, get_exam_questions, get_question_by_id, get_questions_by_node, get_question_node_id, save_answer, get_progress, get_graph, get_mastery, init_journey, journey_next, get_journey_state, get_connection, login_user, register_user, login_or_register, get_admin_stats, get_admin_users, save_diagnostic_result, get_diagnostic_result, get_or_create_derived_question, get_derived_question_by_id, get_questions_by_node_and_type, get_node_id_for_question, is_mcq, check_username_exists, close_db, get_diagnostic_questions
+
+app = Flask(__name__, static_folder=None)
+CORS(app)
+app.teardown_appcontext(close_db)
+
+# ---- 全局错误处理 ----
+@app.errorhandler(400)
+def bad_request(e):
+    return jsonify({"error": "请求参数有误"}), 400
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({"error": "请求的资源不存在"}), 404
+
+@app.errorhandler(405)
+def method_not_allowed(e):
+    return jsonify({"error": "请求方法不允许"}), 405
+
+@app.errorhandler(500)
+def internal_error(e):
+    app.logger.error(f"Internal server error: {e}")
+    return jsonify({"error": "服务器内部错误，请稍后重试"}), 500
+
+# ---- 速率限制（安全降级：未安装flask-limiter时无操作） ----
+try:
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "60 per hour"],
+        storage_uri="memory://",
+    )
+except ImportError:
+    class _NoopLimiter:
+        def limit(self, *args, **kwargs):
+            def decorator(f): return f
+            return decorator
+    limiter = _NoopLimiter()
+
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
+
+@app.route('/')
+def index():
+    # 门户入口页（玻璃拟态），「进入平台」按钮跳转 /index.html 练习前端
+    return send_from_directory(FRONTEND_DIR, 'index_glass.html')
+
+@app.route('/index.html')
+def index_html():
+    return send_from_directory(FRONTEND_DIR, 'index.html')
+
+@app.route('/index_glass.html')
+def index_glass_page():
+    return send_from_directory(FRONTEND_DIR, 'index_glass.html')
+
+@app.route('/about.html')
+def about_page():
+    return send_from_directory(FRONTEND_DIR, 'about.html')
+
+@app.route('/about')
+def about_page_alias():
+    return redirect('/about.html', 301)
+
+@app.route('/nidus_logo.png')
+def nidus_logo():
+    return send_from_directory(FRONTEND_DIR, 'nidus_logo.png')
+
+@app.route('/login')
+def login_page():
+    # 玻璃拟态登录/注册页（原 login.html 已废弃）
+    return send_from_directory(FRONTEND_DIR, 'login_glass.html')
+
+@app.route('/login_glass.html')
+def login_glass_page():
+    return send_from_directory(FRONTEND_DIR, 'login_glass.html')
+
+@app.route('/index_ngrok.html')
+def index_ngrok():
+    return redirect('/index.html', 301)
+
+@app.route('/login_ngrok.html')
+def login_ngrok():
+    return redirect('/login', 301)
+
+@app.route('/echarts.min.js')
+def echarts_js():
+    return send_from_directory(FRONTEND_DIR, 'echarts.min.js')
+
+@app.route('/knowledge-map')
+def knowledge_map_page():
+    return send_from_directory(FRONTEND_DIR, 'knowledge_map.html')
+
+@app.route('/diagnostic-page')
+def diagnostic_page():
+    return send_from_directory(FRONTEND_DIR, 'diagnostic.html')
+
+@app.route('/basic-select')
+def basic_select_page():
+    return send_from_directory(FRONTEND_DIR, 'basic_select.html')
+
+@app.route('/advanced-select')
+def advanced_select_page():
+    return send_from_directory(FRONTEND_DIR, 'advanced_select.html')
+
+@app.route('/format-sample')
+def format_sample_page():
+    return send_from_directory(FRONTEND_DIR, 'format_sample.html')
+
+# ---- 摸底小测 ----
+@app.route('/api/diagnostic')
+def get_diagnostic():
+    """按知识图谱层级选取摸底题：level 0-1→easy, 2-3→medium, 4+→hard"""
+    selected = get_diagnostic_questions()
+    if not selected:
+        return jsonify({"error": "题库为空"}), 404
+    for q in selected:
+        shuffle_options(q)
+    return jsonify({"diagnostic": selected, "total": len(selected)})
+
+@app.route('/api/diagnostic/complete', methods=['POST'])
+def diagnostic_complete():
+    data = request.get_json()
+    session_id = data.get('session_id')
+    results = data.get('results', [])
+    if not session_id:
+        return jsonify({"error": "缺少 session_id"}), 400
+    total = len(results)
+    answered = [r for r in results if not r.get('skipped')]
+    correct = sum(1 for r in answered if r.get('is_correct'))
+    skipped = sum(1 for r in results if r.get('skipped'))
+    accuracy = round(correct / total * 100, 1) if total > 0 else 0
+    # Store results
+    diagnostic_data = {
+        'total': total, 'correct': correct, 'skipped': skipped,
+        'accuracy': accuracy, 'details': results
+    }
+    save_diagnostic_result(session_id, diagnostic_data)
+    return jsonify(diagnostic_data)
+
+@app.route('/api/diagnostic/result')
+def diagnostic_result():
+    session_id = request.args.get('session_id')
+    if not session_id:
+        return jsonify({"error": "缺少 session_id"}), 400
+    result = get_diagnostic_result(session_id)
+    if not result:
+        return jsonify({"completed": False, "total": 0, "correct": 0, "skipped": 0, "accuracy": 0, "details": []})
+    result['completed'] = True
+    return jsonify(result)
+
+# ---- 刷题 ----
+def shuffle_options(question):
+    """Shuffle options together with their explanations."""
+    # If already a list (previously shuffled), just re-shuffle in-place
+    if isinstance(question['options'], list):
+        combined = list(zip(question['options'], question.get('option_explanations', [])))
+        random.shuffle(combined)
+        question['options'] = [c[0] for c in combined]
+        question['option_explanations'] = [c[1] for c in combined] if question.get('option_explanations') else []
+        return
+    opts_raw = question['options'] if isinstance(question['options'], str) else ''
+    exps_raw = question.get('option_explanations', '') or ''
+    # Protect || before splitting by | (|| is SQL concat, not delimiter)
+    opts = [o.replace('\x00', '||') for o in opts_raw.replace('||', '\x00').split('|') if o.strip()] if opts_raw else []
+    exps = [e.replace('\x00', '||') for e in exps_raw.replace('||', '\x00').split('|') if e.strip()] if exps_raw else []
+    combined = list(zip(opts, exps)) if exps and len(exps) == len(opts) else [(o, '') for o in opts]
+    random.shuffle(combined)
+    question['options'] = [c[0] for c in combined]
+    question['option_explanations'] = [c[1] for c in combined] if exps else []
+
+@app.route('/api/questions')
+def list_questions():
+    category = request.args.get('category')
+    difficulty = request.args.get('difficulty')
+    node = request.args.get('node')
+    pool = request.args.get('pool', 'practice')  # 'practice' or 'exam'
+    if pool == 'exam':
+        questions = get_exam_questions(category, difficulty, node=node)
+    else:
+        questions = get_all_questions(category, difficulty, node=node)
+    # 列表视图只返回轻量字段（详情、schema、data 等在 /api/questions/<id> 才给）
+    summary = [{'id': q['id'], 'title': q['title'], 'category': q['category'],
+                'difficulty': q['difficulty'], 'source': q.get('source',''),
+                'pool': q.get('pool','practice'),
+                'description': (q.get('description','') or '')[:120],
+                'options': q.get('options','')} for q in questions]
+    return jsonify({"questions": summary, "total": len(summary), "pool": pool})
+
+@app.route('/api/questions/<int:qid>')
+def get_question(qid):
+    q = get_question_by_id(qid)
+    if not q:
+        return jsonify({"error": "题目不存在"}), 404
+    shuffle_options(q)
+    return jsonify(q)
+
+# ---- 提交答案 ----
+@app.route('/api/submit', methods=['POST'])
+@limiter.limit("30 per minute")
+def submit_answer():
+    data = request.get_json()
+    session_id = data.get('session_id', str(uuid.uuid4()))
+    question_id = data.get('question_id')
+    user_answer = data.get('answer', '').strip()
+    save_qid = question_id
+    # Try regular question first, then derived question
+    q = get_question_by_id(question_id)
+    is_derived = False
+    if not q:
+        dq = get_derived_question_by_id(question_id)
+        if dq:
+            q = dq
+            is_derived = True
+            save_qid = dq['prototype_id']
+            del q['prototype_id']
+        else:
+            return jsonify({"error": "题目不存在"}), 404
+    correct = q['correct_answer'].strip()
+    is_correct = answers_match(user_answer, correct)
+    save_answer(session_id, save_qid, user_answer, is_correct)
+    return jsonify({
+        "is_correct": is_correct,
+        "correct_answer": correct,
+        "explanation": q['explanation'],
+        "session_id": session_id
+    })
+
+# ---- 衍生题（举一反三）----
+@app.route('/api/practice/derive', methods=['POST'])
+def derive_question():
+    """Create or retrieve a fill-in derived question from a MCQ prototype."""
+    data = request.get_json()
+    prototype_id = data.get('question_id')
+    if not prototype_id:
+        return jsonify({"error": "缺少 question_id"}), 400
+    dq = get_or_create_derived_question(prototype_id)
+    if not dq:
+        return jsonify({"error": "原型题不存在或不是选择题"}), 400
+    return jsonify({"derived_question": dq})
+
+@app.route('/api/practice/recommend', methods=['POST'])
+def practice_recommend():
+    """After answering a derived question, recommend the next question.
+    - If derived was correct → recommend a fill-in from same node
+    - If derived was wrong → recommend a MCQ from same node
+    """
+    data = request.get_json()
+    session_id = data.get('session_id')
+    derived_qid = data.get('derived_question_id')
+    was_correct = data.get('was_correct')
+    if not session_id or not derived_qid or was_correct is None:
+        return jsonify({"error": "缺少参数"}), 400
+    dq = get_derived_question_by_id(derived_qid)
+    if not dq:
+        return jsonify({"error": "衍生题不存在"}), 400
+    node_id = get_node_id_for_question(dq['prototype_id'])
+    if not node_id:
+        return jsonify({"error": "未找到知识点映射"}), 400
+    recommend_fillin = bool(was_correct)
+    rec = get_questions_by_node_and_type(node_id, session_id, is_mcq_type=not recommend_fillin, exclude_ids=[dq['prototype_id'], derived_qid])
+    return jsonify({
+        "recommended": rec is not None,
+        "question": rec,
+        "node_id": node_id,
+        "reason": "已掌握该知识点，推荐同知识点填空题继续巩固" if recommend_fillin else "该知识点仍需练习，推荐同知识点选择题先巩固"
+    })
+
+# ---- 知识图谱 ----
+@app.route('/api/graph')
+def get_knowledge_graph():
+    return jsonify(get_graph())
+
+# ---- Journey 自适应模式 ----
+@app.route('/api/journey/start', methods=['POST'])
+def journey_start():
+    data = request.get_json()
+    session_id = data.get('session_id', str(uuid.uuid4()))
+    diag = get_diagnostic_result(session_id)
+    init_journey(session_id, diagnostic_data=diag)
+    result = journey_next(session_id)
+    if result.get('question'):
+        shuffle_options(result['question'])
+    return jsonify(result)
+
+@app.route('/api/journey/next', methods=['POST'])
+def journey_next_route():
+    data = request.get_json()
+    session_id = data.get('session_id')
+    question_id = data.get('question_id')
+    if question_id is not None:
+        question_id = int(question_id)
+    user_answer = data.get('answer', '').strip()
+    duration = data.get('duration')
+    if duration is not None:
+        duration = float(duration)
+    if not session_id:
+        return jsonify({"error": "缺少 session_id"}), 400
+    # grade answer
+    is_correct = None
+    if question_id and user_answer:
+        q = get_question_by_id(question_id)
+        if q:
+            is_correct = answers_match(user_answer, q['correct_answer'])
+            save_answer(session_id, question_id, user_answer, is_correct, duration or 0)
+    result = journey_next(session_id, just_answered_qid=question_id, was_correct=is_correct, duration=duration)
+    if result.get('question'):
+        shuffle_options(result['question'])
+    result['last_answer_correct'] = is_correct
+    return jsonify(result)
+
+@app.route('/api/journey/status', methods=['POST'])
+def journey_status():
+    data = request.get_json()
+    session_id = data.get('session_id')
+    if not session_id:
+        return jsonify({"error": "缺少 session_id"}), 400
+    state = get_journey_state(session_id)
+    if not state:
+        return jsonify({"error": "尚未开始 Journey"}), 404
+    graph = get_graph()
+    mastery = get_mastery(session_id)
+    from database import _get_unlocked_nodes
+    unlocked = _get_unlocked_nodes(session_id)
+    progress = get_progress(session_id)
+    total = len(progress)
+    correct = sum(1 for p in progress if p['is_correct'])
+    return jsonify({
+        "state": state,
+        "graph": graph,
+        "mastery": mastery,
+        "unlocked_nodes": unlocked,
+        "total_answered": total,
+        "total_correct": correct,
+        "accuracy": round(correct / total * 100, 1) if total > 0 else 0
+    })
+
+@app.route('/api/journey/toggle_deep', methods=['POST'])
+def toggle_deep():
+    data = request.get_json()
+    session_id = data.get('session_id')
+    enabled = data.get('enabled', True)
+    if not session_id:
+        return jsonify({"error": "缺少 session_id"}), 400
+    conn = get_connection()
+    conn.execute('UPDATE journey_state SET deep_mode=? WHERE session_id=?', (1 if enabled else 0, session_id))
+    conn.commit()
+    return jsonify({"deep_mode": enabled, "session_id": session_id})
+
+@app.route('/api/login', methods=['POST'])
+@limiter.limit("8 per minute")
+def login():
+    """Login only — does NOT auto-register."""
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+    if not username:
+        return jsonify({"error": "请输入用户名"}), 400
+    if not password:
+        return jsonify({"error": "请输入密码"}), 400
+    session_id, reason = login_user(username, password)
+    if not session_id:
+        if reason == 'not_found':
+            return jsonify({"error": "用户不存在，请先注册"}), 404
+        return jsonify({"error": "密码错误"}), 401
+    return jsonify({"session_id": session_id, "username": username})
+
+@app.route('/api/register', methods=['POST'])
+@limiter.limit("5 per minute")
+def register():
+    """Register new user — username must be unique, password >= 6 chars."""
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+    if not username:
+        return jsonify({"error": "请输入用户名"}), 400
+    if not password or len(password) < 8 or len(password) > 16:
+        return jsonify({"error": "密码需为8-16个字符"}), 400
+    session_id, reason = register_user(username, password)
+    if not session_id:
+        if reason == 'exists':
+            return jsonify({"error": "用户名已存在，请直接登录"}), 409
+        return jsonify({"error": "注册失败，请重试"}), 500
+    return jsonify({"session_id": session_id, "username": username})
+
+@app.route('/api/check-username')
+def check_username():
+    """检查用户名是否已被占用"""
+    name = request.args.get('name', '').strip()
+    if not name or len(name) < 2:
+        return jsonify({"exists": False})
+    exists = check_username_exists(name)
+    return jsonify({"exists": exists})
+
+@app.route('/api/progress/<session_id>')
+def get_user_progress(session_id):
+    progress = get_progress(session_id)
+    total = len(progress)
+    correct = sum(1 for p in progress if p['is_correct'])
+    return jsonify({
+        "session_id": session_id,
+        "total": total,
+        "correct": correct,
+        "accuracy": round(correct / total * 100, 1) if total > 0 else 0,
+        "progress": progress
+})
+    
+@app.route('/admin')
+def admin_page():
+    return send_from_directory(FRONTEND_DIR, 'admin.html')
+
+@app.route('/api/admin/stats')
+def admin_stats():
+    return jsonify(get_admin_stats())
+
+@app.route('/api/admin/users')
+def admin_users():
+    return jsonify(get_admin_users())
+
+if __name__ == '__main__':
+    init_db()
+    seed_questions()
+    seed_knowledge_graph()
+    app.run(debug=True, port=5000)

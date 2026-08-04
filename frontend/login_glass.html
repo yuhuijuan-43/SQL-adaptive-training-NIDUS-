@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 · SQL 自适应训练</title>
+<style>
+/* ============================================================
+   SQL 自适应训练 — 登录 / 注册页（浅色玻璃拟态 · 与门户统一）
+   会话约定：sessionStorage.sql_user + 成功后跳转 index.html?new=1
+   ============================================================ */
+:root {
+  --bg-0: #eef3fc;
+  --bg-1: #e3ecf9;
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(88, 110, 170, 0.14);
+  --glass-border-hover: rgba(88, 110, 170, 0.30);
+  --text-1: #1b2747;
+  --text-2: #48577c;
+  --text-3: #8b96b4;
+  --accent: #4a7dff;
+  --accent-grad: linear-gradient(135deg, #4a7dff 0%, #8b5bff 100%);
+  --success: #0ea678;
+  --error: #e04a55;
+  --radius: 18px;
+  --sans: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  --shadow: 0 10px 34px rgba(58, 82, 148, 0.13);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans); color: var(--text-1); line-height: 1.6; overflow-x: hidden;
+  min-height: 100vh; display: flex; flex-direction: column;
+  background:
+    radial-gradient(1100px 700px at 88% -12%, rgba(140, 120, 255, 0.18), transparent 60%),
+    radial-gradient(900px 620px at -8% 18%, rgba(80, 140, 255, 0.16), transparent 55%),
+    radial-gradient(800px 560px at 50% 115%, rgba(70, 190, 210, 0.13), transparent 55%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%);
+}
+.orb { position: fixed; border-radius: 50%; filter: blur(100px); z-index: 0; pointer-events: none; }
+.orb-1 { width: 500px; height: 500px; background: #b9a6ff; top: -160px; right: -120px; opacity: 0.30; animation: drift 19s ease-in-out infinite; }
+.orb-2 { width: 430px; height: 430px; background: #9cc0ff; top: 42%; left: -190px; opacity: 0.27; animation: drift 24s ease-in-out infinite reverse; }
+.orb-3 { width: 370px; height: 370px; background: #93e2ea; bottom: -140px; right: 20%; opacity: 0.24; animation: drift 27s ease-in-out infinite; }
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(42px, -28px) scale(1.07); }
+  66% { transform: translate(-30px, 24px) scale(0.94); }
+}
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+/* ---- 顶部导航 ---- */
+.navbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px);
+  border-bottom: 1px solid rgba(88, 110, 170, 0.12);
+}
+.nav-inner { max-width: 1180px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; gap: 30px; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; cursor: pointer; user-select: none; }
+.logo-badge {
+  width: 40px; height: 40px; border-radius: 10px; overflow: hidden; flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.7);
+  filter: drop-shadow(0 2px 6px rgba(58, 82, 148, 0.18));
+}
+.logo-badge img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.nav-links { display: flex; gap: 4px; flex: 1; }
+.nav-link {
+  padding: 7px 14px; border-radius: 999px; font-size: 13.5px; color: var(--text-2);
+  cursor: pointer; transition: all 0.2s; border: none; background: none; font-family: inherit;
+}
+.nav-link:hover { color: var(--text-1); background: rgba(88, 110, 170, 0.08); }
+.nav-link.active { color: #fff; background: var(--accent-grad); box-shadow: 0 4px 14px rgba(90, 100, 255, 0.35); }
+/* ---- 登录卡片 ---- */
+.auth-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 46px 20px 60px; position: relative; z-index: 1; }
+.auth-card { width: 100%; max-width: 460px; padding: 36px 38px; position: relative; overflow: hidden; }
+.auth-card::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(320px 190px at 85% 0%, rgba(120, 100, 255, 0.12), transparent 70%);
+}
+.auth-head { text-align: center; margin-bottom: 26px; }
+.auth-title { font-size: 23px; font-weight: 800; }
+.auth-title .grad { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.auth-sub { font-size: 12.5px; color: var(--text-3); margin-top: 6px; }
+/* 选项卡 */
+.tabs { display: flex; background: rgba(88, 110, 170, 0.08); border-radius: 12px; padding: 4px; margin-bottom: 24px; }
+.tab {
+  flex: 1; height: 38px; border: none; border-radius: 9px; cursor: pointer; font-family: inherit;
+  font-size: 13.5px; font-weight: 700; color: var(--text-2); background: transparent; transition: all 0.22s;
+}
+.tab.on { color: #fff; background: var(--accent-grad); box-shadow: 0 4px 14px rgba(90, 100, 255, 0.35); }
+/* 表单 */
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-2); margin-bottom: 7px; }
+.field .inp-wrap { position: relative; }
+.field .inp-wrap .u-ico {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  color: var(--text-3); opacity: 0.75; pointer-events: none; transition: color 0.2s, opacity 0.2s;
+  display: grid; place-items: center;
+}
+.field input {
+  width: 100%; height: 44px; padding: 0 14px 0 40px; border-radius: 11px; outline: none;
+  background: rgba(255, 255, 255, 0.6); border: 1px solid var(--glass-border);
+  color: var(--text-1); font-family: inherit; font-size: 13.5px; transition: all 0.2s;
+}
+.field input::placeholder { color: var(--text-3); }
+.field input:focus { border-color: rgba(74, 125, 255, 0.7); background: #fff; box-shadow: 0 0 0 3px rgba(74, 125, 255, 0.14); }
+.field input.err { border-color: rgba(224, 74, 85, 0.6); }
+.field input.ok { border-color: rgba(14, 166, 120, 0.5); }
+.field .hint { font-size: 11.5px; margin-top: 5px; min-height: 16px; }
+.hint.err { color: var(--error); }
+.hint.ok { color: var(--success); }
+/* 输入框右侧按钮（骰子 / 眼睛） */
+.inp-wrap.has-right input { padding-right: 78px; }
+.inp-btn {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 30px; height: 30px; border: none; background: none; cursor: pointer;
+  opacity: 0.5; transition: all 0.2s; border-radius: 8px;
+  display: grid; place-items: center; color: var(--text-2);
+}
+.inp-btn:hover { opacity: 1; background: rgba(88, 110, 170, 0.1); }
+.inp-btn.eye { right: 38px; }
+/* 密码强度 */
+.strength-box { margin-top: 8px; }
+.strength-bar { height: 5px; border-radius: 99px; background: rgba(88, 110, 170, 0.12); overflow: hidden; }
+.strength-bar .fill { height: 100%; width: 0; border-radius: 99px; transition: width 0.3s, background 0.3s; }
+.strength-label { font-size: 11.5px; margin-top: 6px; min-height: 16px; color: var(--text-3); }
+.rule-list { display: none; margin-top: 4px; }
+.rule-item { font-size: 11.5px; color: var(--text-3); margin: 3px 0; }
+.rule-item::before { content: '✗ '; }
+.rule-item.pass { color: var(--success); }
+.rule-item.pass::before { content: '✓ '; }
+.field-row { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; margin: 2px 0 18px; }
+.checkbox { display: flex; align-items: center; gap: 7px; color: var(--text-2); cursor: pointer; user-select: none; }
+.checkbox input { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+.link { color: var(--accent); text-decoration: none; cursor: pointer; }
+.link:hover { text-decoration: underline; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 46px; width: 100%; border-radius: 12px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 14.5px; font-weight: 700; color: #fff;
+  background: var(--accent-grad); box-shadow: 0 5px 22px rgba(90, 100, 255, 0.4); transition: all 0.25s;
+}
+.btn:hover:not(:disabled) { box-shadow: 0 8px 30px rgba(90, 100, 255, 0.55); transform: translateY(-1px); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn .spin { display: inline-block; width: 15px; height: 15px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.divider { display: flex; align-items: center; gap: 12px; color: var(--text-3); font-size: 11.5px; margin: 20px 0 16px; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(88, 110, 170, 0.14); }
+.oauth-row { display: flex; justify-content: center; gap: 12px; }
+.oauth-btn {
+  width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+  background: rgba(255, 255, 255, 0.6); border: 1px solid var(--glass-border);
+  color: var(--text-2); font-size: 16px; cursor: pointer; transition: all 0.2s;
+}
+.oauth-btn { --oauth-hover: var(--accent); }
+.oauth-btn:hover { color: var(--oauth-hover); border-color: var(--oauth-hover); transform: translateY(-2px); box-shadow: 0 6px 18px rgba(58, 82, 148, 0.15); }
+.oauth-btn.oauth-wechat { --oauth-hover: #07c160; }
+.oauth-btn.oauth-github { --oauth-hover: #24292f; }
+.auth-foot { text-align: center; font-size: 12.5px; color: var(--text-3); margin-top: 18px; }
+.back-home { display: block; text-align: center; margin-top: 18px; font-size: 12.5px; color: var(--text-3); text-decoration: none; }
+.back-home:hover { color: var(--accent); }
+.back-home .arr { font-family: var(--mono, monospace); margin-right: 5px; }
+/* 面板切换动画 */
+.panel { display: none; }
+.panel.show { display: block; animation: fadeUp 0.3s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+/* ---- Toast ---- */
+.toast-wrap { position: fixed; top: 80px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 10px; }
+.toast {
+  min-width: 260px; max-width: 360px; padding: 13px 17px; border-radius: 13px; font-size: 13px;
+  background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(18px);
+  border: 1px solid rgba(88, 110, 170, 0.2); box-shadow: 0 10px 34px rgba(58, 82, 148, 0.18);
+  display: flex; gap: 11px; align-items: center; color: var(--text-1);
+  animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.toast.ok { border-color: rgba(14, 166, 120, 0.35); } .toast.ok .tdot { background: var(--success); box-shadow: 0 0 8px rgba(14, 166, 120, 0.5); }
+.toast.bad { border-color: rgba(224, 74, 85, 0.35); } .toast.bad .tdot { background: var(--error); box-shadow: 0 0 8px rgba(224, 74, 85, 0.5); }
+.toast.info { border-color: rgba(74, 125, 255, 0.35); } .toast.info .tdot { background: var(--accent); box-shadow: 0 0 8px rgba(74, 125, 255, 0.5); }
+.toast .tdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.toast.out { animation: slideOut 0.3s ease forwards; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(30px); } }
+/* ---- 页脚 ---- */
+.footer {
+  border-top: 1px solid rgba(88, 110, 170, 0.14); padding: 20px 0 26px; text-align: center;
+  font-size: 12px; color: var(--text-3); position: relative; z-index: 1;
+}
+/* ---- 滚动条 ---- */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: rgba(88, 110, 170, 0.25); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(88, 110, 170, 0.4); }
+::-webkit-scrollbar-track { background: transparent; }
+/* ---- 响应式 ---- */
+@media (max-width: 560px) {
+  .auth-card { padding: 28px 22px; }
+  .nav-inner { padding: 0 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 背景光球 -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- ========== 顶部导航 ========== -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="logo" onclick="window.location.href='index_glass.html'">
+      <div class="logo-badge"><img src="nidus_logo.png" alt="NIDUS"></div>
+      <span>SQL 自适应训练</span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-link" onclick="window.location.href='index_glass.html'">首页</button>
+      <button class="nav-link active" onclick="window.location.href='login_glass.html'">登录</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ========== 登录 / 注册 ========== -->
+<div class="auth-wrap">
+  <div class="auth-card glass fade-up">
+    <div class="auth-head">
+      <div class="auth-title">欢迎来到 <span class="grad">SQL 自适应训练</span></div>
+      <div class="auth-sub">登录后同步你的学习画像与进度</div>
+    </div>
+
+    <!-- 选项卡 -->
+    <div class="tabs">
+      <button class="tab on" id="tabLogin" onclick="switchTab('login')">账号登录</button>
+      <button class="tab" id="tabRegister" onclick="switchTab('register')">注册账号</button>
+    </div>
+
+    <!-- 登录面板 -->
+    <div class="panel show" id="panelLogin">
+      <form onsubmit="doLogin(event)" autocomplete="on">
+        <div class="field">
+          <label for="inpUser">用户名</label>
+          <div class="inp-wrap">
+            <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+            <input id="inpUser" type="text" placeholder="请输入用户名" autocomplete="username">
+          </div>
+          <div class="hint" id="loginUserHint"></div>
+        </div>
+        <div class="field">
+          <label for="inpPass">密码</label>
+          <div class="inp-wrap has-right">
+            <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input id="inpPass" type="password" placeholder="请输入密码" autocomplete="current-password">
+            <button type="button" class="inp-btn eye" id="inpPassEye" title="显示密码" onclick="togglePwd('inpPass','inpPassEye')"></button>
+          </div>
+          <div class="hint" id="loginPassHint"></div>
+        </div>
+        <div class="field-row">
+          <label class="checkbox"><input type="checkbox" id="rememberMe" checked>记住我</label>
+          <a class="link" href="javascript:void(0)" onclick="toast('info','请联系管理员重置密码','info')">忘记密码？</a>
+        </div>
+        <button class="btn" type="submit" id="loginBtn">登 录</button>
+      </form>
+      <div class="divider">其他方式</div>
+      <div class="oauth-row">
+        <button class="oauth-btn oauth-wechat" title="微信登录（开发中）" onclick="toast('info','微信登录开发中','info')">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .145.117.262.262.262a.262.262 0 0 0 .152-.049l1.826-1.109a.59.59 0 0 1 .49-.071 8.18 8.18 0 0 0 2.667.459c.11 0 .216-.008.326-.011a4.737 4.737 0 0 1-.225-1.469c0-3.006 2.872-5.443 6.415-5.443.32 0 .634.027.944.065C15.207 4.845 12.233 2.188 8.691 2.188zm-2.75 3.668c.585 0 1.058.473 1.058 1.058s-.473 1.058-1.058 1.058-1.058-.473-1.058-1.058.473-1.058 1.058-1.058zm5.48 0c.586 0 1.058.473 1.058 1.058s-.473 1.058-1.058 1.058-1.058-.473-1.058-1.058.473-1.058 1.058-1.058zM24 14.765c0-2.586-2.476-4.683-5.53-4.683-3.052 0-5.529 2.097-5.529 4.683s2.477 4.683 5.53 4.683c.647 0 1.271-.106 1.853-.307a.471.471 0 0 1 .391.058l1.459.886a.21.21 0 0 0 .121.039.21.21 0 0 0 .21-.21.77.77 0 0 0-.039-.17l-.31-1.181a.472.472 0 0 1 .17-.53A3.53 3.53 0 0 0 24 14.765zm-7.3-.684a.845.845 0 1 1 0-1.69.845.845 0 0 1 0 1.69zm3.548 0a.845.845 0 1 1 0-1.69.845.845 0 0 1 0 1.69z"/></svg>
+        </button>
+        <button class="oauth-btn oauth-github" title="GitHub 登录（开发中）" onclick="toast('info','GitHub 登录开发中','info')">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        </button>
+      </div>
+      <div class="auth-foot">
+        还没有账号？<a class="link" href="javascript:void(0)" onclick="switchTab('register')">立即注册</a>
+      </div>
+    </div>
+
+    <!-- 注册面板 -->
+    <div class="panel" id="panelRegister">
+      <form onsubmit="doRegister(event)" autocomplete="on">
+        <div class="field">
+          <label for="regUser">用户名</label>
+          <div class="inp-wrap has-right">
+            <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+            <input id="regUser" type="text" placeholder="输入你的名字" autocomplete="username" oninput="onRegUserInput()">
+            <button type="button" class="inp-btn" title="随机用户名" onclick="randomUsername()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></svg></button>
+          </div>
+          <div class="hint" id="regUserHint"></div>
+        </div>
+        <div class="field">
+          <label for="regPass">密码</label>
+          <div class="inp-wrap has-right">
+            <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input id="regPass" type="password" placeholder="8-16 位，含大小写+数字" autocomplete="new-password" oninput="onRegPassInput()">
+            <button type="button" class="inp-btn eye" id="regPassEye" title="显示密码" onclick="togglePwd('regPass','regPassEye')"></button>
+            <button type="button" class="inp-btn" title="随机安全密码" onclick="randomPassword()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></svg></button>
+          </div>
+          <div class="strength-box">
+            <div class="strength-bar"><div class="fill" id="strengthFill"></div></div>
+            <div class="strength-label" id="strengthLabel"></div>
+            <div class="rule-list" id="ruleList">
+              <div class="rule-item" id="ruleLen">8-16 个字符</div>
+              <div class="rule-item" id="ruleUpper">包含大写字母</div>
+              <div class="rule-item" id="ruleLower">包含小写字母</div>
+              <div class="rule-item" id="ruleDigit">包含数字</div>
+              <div class="rule-item" id="ruleSpecial">包含特殊字符（可选）</div>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="regPass2">确认密码</label>
+          <div class="inp-wrap has-right">
+            <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input id="regPass2" type="password" placeholder="再次输入密码" autocomplete="new-password" oninput="onRegPassInput()">
+            <button type="button" class="inp-btn eye" id="regPass2Eye" title="显示密码" onclick="togglePwd('regPass2','regPass2Eye')"></button>
+          </div>
+          <div class="hint" id="regPass2Hint"></div>
+        </div>
+        <button class="btn" type="submit" id="regBtn" disabled>注 册</button>
+      </form>
+      <div class="auth-foot">
+        已有账号？<a class="link" href="javascript:void(0)" onclick="switchTab('login')">直接登录</a>
+      </div>
+    </div>
+
+    <a class="back-home" href="index_glass.html"><span class="arr">←</span>返回首页</a>
+  </div>
+</div>
+
+<!-- ========== 页脚 ========== -->
+<footer class="footer">
+  © 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台
+</footer>
+
+<!-- Toast -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ============================================================
+   登录 / 注册（玻璃拟态版）
+   接口：POST /api/login · POST /api/register · GET /api/check-username
+   会话：sessionStorage.sql_user → 跳转 index.html?new=1（与做题页约定一致）
+   路径：首页 index_glass.html → 本页 → 做题页 index.html（已接线）
+   ============================================================ */
+const API_BASE = '/api';
+const $ = id => document.getElementById(id);
+
+/* ---- 选项卡 ---- */
+function switchTab(name) {
+  $('panelLogin').classList.toggle('show', name === 'login');
+  $('panelRegister').classList.toggle('show', name === 'register');
+  $('tabLogin').classList.toggle('on', name === 'login');
+  $('tabRegister').classList.toggle('on', name === 'register');
+  if (name === 'register') { checkUsername(); onRegPassInput(); } // 同步注册状态
+}
+
+/* ---- 输入框图标随聚焦变色 ---- */
+document.querySelectorAll('.field input').forEach(inp => {
+  inp.addEventListener('focus', () => { const ic = inp.parentElement.querySelector('.u-ico'); if (ic) ic.style.opacity = 1; });
+  inp.addEventListener('blur', () => { const ic = inp.parentElement.querySelector('.u-ico'); if (ic) ic.style.opacity = 0.55; });
+});
+
+/* ---- 表单辅助 ---- */
+function setHint(id, text, type) {
+  const el = $(id);
+  el.textContent = text || '';
+  el.className = 'hint' + (type ? ' ' + type : '');
+}
+function setInputState(inpId, state) {
+  const el = $(inpId);
+  el.classList.remove('err', 'ok');
+  if (state) el.classList.add(state);
+}
+function loading(btn, on) {
+  const b = $(btn);
+  if (on) { b.dataset.txt = b.textContent; b.innerHTML = '<span class="spin"></span>请稍候…'; b.disabled = true; }
+  else { b.textContent = b.dataset.txt || b.textContent; b.disabled = false; }
+}
+
+/* ---- 随机生成（迁移自旧版登录页） ---- */
+function randomUsername() {
+  const prefixes = ['sql_dev', 'data_fan', 'query_master', 'db_coder', 'analyst'];
+  const base = prefixes[Math.floor(Math.random() * prefixes.length)];
+  const suffix = Math.floor(Math.random() * 9000 + 1000);
+  $('regUser').value = base + suffix;
+  onRegUserInput();
+}
+function randomPassword() {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghjkmnpqrstuvwxyz';
+  const digits = '23456789';
+  const special = '!@#$%&*';
+  const all = upper + lower + digits + special;
+  const pick = s => s[Math.floor(Math.random() * s.length)];
+  let pwd = '';
+  // 确保每类至少一个
+  pwd += pick(upper); pwd += pick(lower); pwd += pick(lower);
+  pwd += pick(digits); pwd += pick(digits); pwd += pick(special);
+  // 补到 16 位并打乱
+  while (pwd.length < 16) pwd += pick(all);
+  pwd = pwd.split('').sort(() => Math.random() - 0.5).join('');
+  $('regPass').value = pwd;
+  $('regPass2').value = pwd;
+  onRegPassInput();
+  toast('info', '已生成随机安全密码，可点击眼睛图标查看', 'info');
+}
+/* Lucide 线性图标（官方路径，ISC 协议） */
+function svgIcon(inner, size) {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="' + size + '" height="' + size + '">' + inner + '</svg>';
+}
+const ICON_EYE = '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>';
+const ICON_EYE_OFF = '<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>';
+function togglePwd(inpId, btnId) {
+  const inp = $(inpId), btn = $(btnId);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.innerHTML = svgIcon(show ? ICON_EYE_OFF : ICON_EYE, 15);
+  btn.title = show ? '隐藏密码' : '显示密码';
+}
+/* 初始化眼睛图标 */
+['inpPassEye', 'regPassEye', 'regPass2Eye'].forEach(id => {
+  const el = $(id);
+  if (el) el.innerHTML = svgIcon(ICON_EYE, 15);
+});
+
+/* ---- 用户名占用检查（注册） ---- */
+let _userCheckTimer = null;
+let _userExists = false;
+function onRegUserInput() { _userExists = false; checkUsername(); }
+function checkUsername() {
+  clearTimeout(_userCheckTimer);
+  const u = $('regUser').value.trim();
+  if (!u) { setHint('regUserHint', ''); setInputState('regUser', ''); _userExists = false; updateRegisterBtn(); return; }
+  if (u.length < 3) { setHint('regUserHint', '用户名至少 3 个字符', 'err'); setInputState('regUser', 'err'); _userExists = false; updateRegisterBtn(); return; }
+  _userCheckTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(API_BASE + '/check-username?name=' + encodeURIComponent(u));
+      const d = await r.json();
+      _userExists = !!d.exists;
+      if (d.exists) { setHint('regUserHint', '该用户名已被占用，试试随机生成', 'err'); setInputState('regUser', 'err'); }
+      else { setHint('regUserHint', '✓ 用户名可用', 'ok'); setInputState('regUser', 'ok'); }
+    } catch (e) { setHint('regUserHint', ''); setInputState('regUser', ''); }
+    updateRegisterBtn();
+  }, 350);
+}
+
+/* ---- 密码强度（迁移自旧版登录页） ---- */
+const WEAK_PASSWORDS = ['password','12345678','123456789','qwerty123','abc12345','password123','admin123','letmein12','welcome01','monkey123','dragon123','master123','123123123','iloveyou1','trustno01','sunshine1','football1','baseball1','qwertyuiop','1q2w3e4r5t'];
+function checkPasswordStrength(pwd) {
+  if (!pwd) return { score: 0, label: '', color: 'transparent', checks: [false,false,false,false,false] };
+  let score = 0;
+  const checks = [
+    pwd.length >= 8 && pwd.length <= 16,
+    /[A-Z]/.test(pwd),
+    /[a-z]/.test(pwd),
+    /\d/.test(pwd),
+    /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pwd)
+  ];
+  checks.forEach(c => { if (c) score++; });
+  if (WEAK_PASSWORDS.indexOf(pwd.toLowerCase()) >= 0) score = Math.min(score, 1);
+  if (pwd.length >= 12) score = Math.min(5, score + 1);
+  const label = score <= 1 ? '弱' : score <= 2 ? '中' : score <= 3 ? '强' : '非常强';
+  const color = score <= 1 ? '#e04a55' : score <= 2 ? '#e67e22' : score <= 3 ? '#27ae60' : '#1e8449';
+  return { score, label, color, checks };
+}
+function onRegPassInput() {
+  const pwd = $('regPass').value;
+  const hasContent = pwd.trim().length > 0;
+  const result = checkPasswordStrength(pwd);
+  $('strengthFill').style.width = (result.score / 5 * 100) + '%';
+  $('strengthFill').style.background = result.color;
+  $('strengthLabel').textContent = hasContent ? '强度：' + result.label : '';
+  $('strengthLabel').style.color = result.color;
+  $('ruleList').style.display = hasContent ? 'block' : 'none';
+  ['ruleLen', 'ruleUpper', 'ruleLower', 'ruleDigit', 'ruleSpecial'].forEach((id, i) => {
+    $(id).classList.toggle('pass', result.checks[i]);
+  });
+  checkConfirmMatch();
+  updateRegisterBtn();
+}
+function checkConfirmMatch() {
+  const p1 = $('regPass').value, p2 = $('regPass2').value;
+  if (!p2) { setHint('regPass2Hint', ''); setInputState('regPass2', ''); updateRegisterBtn(); return; }
+  if (p1 === p2) { setHint('regPass2Hint', '✓ 密码一致', 'ok'); setInputState('regPass2', 'ok'); }
+  else { setHint('regPass2Hint', '两次输入的密码不一致', 'err'); setInputState('regPass2', 'err'); }
+  updateRegisterBtn();
+}
+function updateRegisterBtn() {
+  const name = $('regUser').value.trim();
+  const pwd = $('regPass').value;
+  const confirm = $('regPass2').value;
+  const hasBasic = pwd.length >= 8 && pwd.length <= 16 && /[A-Z]/.test(pwd) && /[a-z]/.test(pwd) && /\d/.test(pwd);
+  const can = name.length >= 3 && hasBasic && pwd === confirm && !_userExists;
+  $('regBtn').disabled = !can;
+}
+
+/* ---- 登录 ---- */
+async function doLogin(e) {
+  e.preventDefault();
+  const user = $('inpUser').value.trim();
+  const pass = $('inpPass').value;
+  let ok = true;
+  if (!user) { setHint('loginUserHint', '请输入用户名', 'err'); setInputState('inpUser', 'err'); ok = false; }
+  if (!pass) { setHint('loginPassHint', '请输入密码', 'err'); setInputState('inpPass', 'err'); ok = false; }
+  if (!ok) return;
+  loading('loginBtn', true);
+  try {
+    const r = await fetch(API_BASE + '/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass })
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      loading('loginBtn', false);
+      if (r.status === 404) { setHint('loginUserHint', '用户不存在，请先注册', 'err'); setInputState('inpUser', 'err'); }
+      else if (r.status === 401) { setHint('loginPassHint', '密码错误', 'err'); setInputState('inpPass', 'err'); }
+      else toast('bad', d.error || '登录失败，请重试', 'bad');
+      return;
+    }
+    sessionStorage.setItem('sql_user', JSON.stringify({ name: d.username, session_id: d.session_id, loggedIn: true, loginAt: Date.now() }));
+    $('loginBtn').textContent = '✓ 登录成功';
+    toast('ok', '登录成功！正在进入做题页面…', 'ok');
+    setTimeout(() => { window.location.href = 'index.html?new=1'; }, 800);
+  } catch (err) {
+    loading('loginBtn', false);
+    toast('bad', '无法连接服务器，请确认后端已启动', 'bad');
+  }
+}
+
+/* ---- 注册 ---- */
+async function doRegister(e) {
+  e.preventDefault();
+  const user = $('regUser').value.trim();
+  const p1 = $('regPass').value, p2 = $('regPass2').value;
+  if (user.length < 3) { setHint('regUserHint', '用户名至少 3 个字符', 'err'); setInputState('regUser', 'err'); return; }
+  if (_userExists) { setHint('regUserHint', '该用户名已被占用，试试随机生成', 'err'); setInputState('regUser', 'err'); return; }
+  if (!(p1.length >= 8 && p1.length <= 16 && /[A-Z]/.test(p1) && /[a-z]/.test(p1) && /\d/.test(p1))) { toast('bad', '密码需 8-16 位，且包含大小写字母和数字', 'bad'); return; }
+  if (p1 !== p2) { setHint('regPass2Hint', '两次输入的密码不一致', 'err'); setInputState('regPass2', 'err'); return; }
+  loading('regBtn', true);
+  try {
+    const r = await fetch(API_BASE + '/register', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: p1 })
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      loading('regBtn', false);
+      if (r.status === 409) { setHint('regUserHint', '用户名已存在，请直接登录', 'err'); setInputState('regUser', 'err'); }
+      else toast('bad', d.error || '注册失败，请重试', 'bad');
+      return;
+    }
+    sessionStorage.setItem('sql_user', JSON.stringify({ name: d.username, session_id: d.session_id, loggedIn: true, loginAt: Date.now() }));
+    $('regBtn').textContent = '✓ 注册成功';
+    toast('ok', '注册成功，已自动登录！', 'ok');
+    setTimeout(() => { window.location.href = 'index.html?new=1'; }, 800);
+  } catch (err) {
+    loading('regBtn', false);
+    toast('bad', '无法连接服务器，请确认后端已启动', 'bad');
+  }
+}
+
+/* ---- Toast ---- */
+function toast(msg, type) {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span class="tdot"></span><span>${msg}</span>`;
+  $('toastWrap').appendChild(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3400);
+}
+
+/* 已登录用户直接进入做题页 */
+(function() {
+  try {
+    const raw = sessionStorage.getItem('sql_user');
+    if (raw) { const u = JSON.parse(raw); if (u && u.session_id && u.loggedIn) { window.location.href = 'index.html'; } }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
