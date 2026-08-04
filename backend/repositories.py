@@ -210,6 +210,18 @@ def invalidate_graph_cache():
     global _graph_cache
     _graph_cache = None
 
+def get_ambient_titles(limit=40):
+    """后台滚动背景用的题目轻量样本：仅标题与难度。
+
+    刻意不含 description / table_schema / initial_data / options / 答案——
+    公开接口，不泄漏任何可做题内容，只作视觉装饰。
+    """
+    conn = get_connection()
+    rows = conn.execute(
+        'SELECT title, difficulty FROM questions WHERE pool=? ORDER BY RANDOM() LIMIT ?',
+        ('practice', limit)).fetchall()
+    return [dict(r) for r in rows]
+
 def save_answer(session_id, question_id, user_answer, is_correct, duration=0):
     # 未登录用户不记录答题记录
     if not _is_authenticated(session_id):

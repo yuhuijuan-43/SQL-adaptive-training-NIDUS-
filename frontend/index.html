@@ -6,6 +6,7 @@
 <title>SQL 自适应练习</title>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" rel="stylesheet">
+<link href="/css/ambient.css" rel="stylesheet">
 <style>
   :root { --bg: #eef3fc; --card: rgba(255,255,255,0.72); --text: #1b2747; --text2: #48577c; --border: rgba(88,110,170,0.16); --accent: #4a7dff; --accent-hover: #6a90ff; --tag-bg: rgba(88,110,170,0.08); --code-bg: rgba(255,255,255,0.75); --success: #0ea678; --error: #e04a55; --accent-grad: linear-gradient(135deg, #4a7dff 0%, #8b5bff 100%); }
   * { box-sizing: border-box; }
@@ -251,6 +252,8 @@
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
 <div class="orb orb-3"></div>
+<!-- 试题背景滚动（45° 右上飘过，纯装饰） -->
+<div id="ambient-bg"></div>
 
 <div class="max-w-[960px] mx-auto main-wrap">
 
@@ -609,12 +612,16 @@ var sqlUser = null;
 try { var raw = sessionStorage.getItem('sql_user'); if (raw) sqlUser = JSON.parse(raw); } catch(e) {}
 var sessionId = (sqlUser && sqlUser.session_id) ? sqlUser.session_id : 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
 
+// 游客不允许读题：未登录直接去登录页（背景滚动由登录页展示）
+if (!sqlUser || !sqlUser.session_id || !sqlUser.loggedIn) {
+  window.location.href = '/login';
+}
+
 // Validate stored session (clear if user no longer exists in DB)
 if (sqlUser && sqlUser.session_id) {
-  fetch(API_BASE + '/progress/' + sqlUser.session_id)
-    .then(function(r) { return r.json(); })
+  apiGet('/progress/' + sqlUser.session_id)
     .then(function(data) {
-      if (data.error) { sessionStorage.removeItem('sql_user'); sqlUser = null; updateUserUI(); }
+      if (data && data.error) { sessionStorage.removeItem('sql_user'); sqlUser = null; updateUserUI(); }
     })
     .catch(function() {});
 }
@@ -2547,21 +2554,41 @@ function showPage(name) {
   }
 }
 
+// 登录态失效（401）→ 清会话并回登录页
+function redirectIfUnauthorized(r) {
+  if (r.status === 401) {
+    sessionStorage.removeItem('sql_user');
+    window.location.href = '/login';
+    return true;
+  }
+  return false;
+}
+
+// 登录门槛：所有 API 需携带 session_id（GET 走查询参数，POST 走请求体）
+function withSessionParam(path) {
+  if (path.indexOf('session_id') !== -1) return path;
+  return path + (path.indexOf('?') === -1 ? '?' : '&') + 'session_id=' + encodeURIComponent(sessionId);
+}
+
 async function apiGet(path) {
   var t0 = performance.now();
-  const r = await fetch(API_BASE + path);
+  const r = await fetch(API_BASE + withSessionParam(path));
   var ms = Math.round(performance.now() - t0);
   _showPerf(ms, path.split('?')[0]);
+  if (redirectIfUnauthorized(r)) throw new Error('unauthorized');
   if (!r.ok) throw new Error('API error');
   return r.json();
 }
 
 async function apiPost(path, data) {
   saveAllCM();
+  data = data || {};
+  if (!data.session_id) data.session_id = sessionId;
   var t0 = performance.now();
   const r = await fetch(API_BASE + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
   var ms = Math.round(performance.now() - t0);
   _showPerf(ms, path.split('?')[0]);
+  if (redirectIfUnauthorized(r)) throw new Error('unauthorized');
   if (!r.ok) throw new Error('API error');
   return r.json();
 }
@@ -3285,5 +3312,6 @@ function toggleColorblind() {
   localStorage.setItem('cb_mode', on ? '1' : '0');
 }
 </script>
+<script src="/js/ambient.js"></script>
 </body>
 </html>

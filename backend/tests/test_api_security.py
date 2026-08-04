@@ -39,28 +39,46 @@ class TestPasswordPolicy:
         assert r.status_code == 400
 
 
-class TestAnonymousContract:
-    """当前行为契约：游客可读题/提交判题，但进度不落库"""
+class TestLoginGate:
+    """产品决策：游客不允许读题/答题，全部 401；仅公开端点放行"""
 
-    def test_anonymous_can_read_question_list(self, client):
-        assert client.get('/api/questions').status_code == 200
+    def test_anonymous_cannot_list_questions(self, client):
+        assert client.get('/api/questions').status_code == 401
 
-    def test_anonymous_gets_full_question(self, client):
-        r = client.get('/api/questions/1')
-        assert r.status_code == 200
-        assert 'correct_answer' in r.get_json()
-        assert 'initial_data' in r.get_json()
+    def test_anonymous_cannot_get_question_detail(self, client):
+        assert client.get('/api/questions/1').status_code == 401
 
-    def test_anonymous_submit_judges_but_does_not_record(self, client):
+    def test_anonymous_cannot_submit(self, client):
         r = client.post('/api/submit', json={
             'question_id': 1, 'answer': 'SELECT * FROM employees', 'session_id': 'anon-xyz'})
+        assert r.status_code == 401
+
+    def test_anonymous_cannot_read_progress(self, client):
+        assert client.get('/api/progress/anon-xyz').status_code == 401
+
+    def test_anonymous_cannot_start_journey(self, client):
+        assert client.post('/api/journey/start', json={'session_id': 'anon-xyz'}).status_code == 401
+
+    def test_public_graph_open(self, client):
+        assert client.get('/api/graph').status_code == 200
+
+    def test_public_ambient_titles_only(self, client):
+        r = client.get('/api/ambient')
+        assert r.status_code == 200
+        items = r.get_json()
+        assert items
+        for i in items:
+            assert set(i.keys()) == {'title', 'difficulty'}   # 不含任何可做题内容
+
+    def test_public_check_username_open(self, client):
+        assert client.get('/api/check-username?name=abc').status_code == 200
+
+    def test_logged_in_can_read(self, client):
+        sid = client.post('/api/register', json={'username': 'u_gate', 'password': 'password123'}).get_json()['session_id']
+        # GET 走查询参数（前端 apiGet 自动注入），POST 走请求体
+        assert client.get('/api/questions?session_id=' + sid).status_code == 200
+        r = client.post('/api/submit', json={
+            'question_id': 1, 'answer': 'SELECT * FROM employees', 'session_id': sid})
         assert r.status_code == 200
         assert r.get_json()['is_correct'] is True
-        assert len(get_progress('anon-xyz')) == 0
-
-    def test_anonymous_submit_wrong_gets_judge_error(self, client):
-        r = client.post('/api/submit', json={
-            'question_id': 1, 'answer': 'SELECT * FROM nosuchtable', 'session_id': 'anon-xyz'})
-        d = r.get_json()
-        assert d['is_correct'] is False
-        assert 'judge_error' in d and '表不存在' in d['judge_error']
+        assert len(get_progress(sid)) == 1

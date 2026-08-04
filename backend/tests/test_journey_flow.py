@@ -20,12 +20,10 @@ class TestJourneyFlow:
         assert r['question'] is not None
         assert r['phase'] == 'cold'
 
-    def test_anonymous_journey_creates_state(self, client):
-        # 当前契约：游客也能建 journey 会话（进度不落库但会话存在）
+    def test_anonymous_journey_rejected(self, client):
+        # 登录门槛：游客不能开始 Journey
         r = client.post('/api/journey/start', json={'session_id': 'anon-journey'})
-        assert r.status_code == 200
-        assert db.get_connection().execute(
-            "SELECT COUNT(*) FROM journey_state WHERE session_id='anon-journey'").fetchone()[0] == 1
+        assert r.status_code == 401
 
     def test_answer_correct_advances(self, client):
         sid = _register(client)
