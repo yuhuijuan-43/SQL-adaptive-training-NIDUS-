@@ -383,6 +383,59 @@ const VISION = {
 
 const UPDATES = [
   {
+    date: '2026-08-04', tag: 'new', tagText: '新功能',
+    title: '真实 SQL 判题引擎上线',
+    desc: '填空题不再比对文本——答案放进真实数据库执行，与标准答案的结果集逐行比对；答错时给出「表不存在」「语法错误」等具体提示。',
+    overview: '此前填空题用字符串相似度判题，同一语句的不同合法写法可能被误判。新引擎在内存数据库中真实重建题目环境（表结构 + 数据），把用户 SQL 与标准答案各执行一遍，比较结果集：列顺序、行顺序、COUNT(*) 与 COUNT(非空列) 等语义等价写法都能正确判对；执行出错时直接提示「表不存在」「列不存在」「语法错误」等具体原因，让用户知道错在哪里。',
+    points: [
+      '<b>结果集比对</b>：判题依据是「实际跑出来的结果」，不是文本相似度——等价写法不再误判。',
+      '<b>真实执行环境</b>：每题按题目自带的表结构与数据在内存库中重建环境，与真实数据库行为一致。',
+      '<b>错误即反馈</b>：语法错误、表/列不存在等执行错误直接提示给用户，答错也能学到东西。',
+      '<b>只读安全</b>：仅允许单条 SELECT / WITH 等只读语句，防止写入类语句破坏判题环境。'
+    ],
+    thinking: '判题的底线是「你的答案真的能跑出那个结果」。文本比对再聪明也只是近似，我们把判题推进到真实执行——结果集一致才算对。这个改动让填空题从「背答案」变成「真验证」，也让错误提示成为学习反馈的一部分。',
+    stats: [['2ms', '单题判题耗时'], ['3 类', '常见错误提示'], ['多例', '等价写法测试']]
+  },
+  {
+    date: '2026-08-04', tag: 'new', tagText: '新功能',
+    title: '全站中英双语上线',
+    desc: '门户、了解我们、登录注册、做题前端全面支持中英切换，右上角一键切换，偏好自动记忆。',
+    overview: '平台面向更大范围用户，四个页面全部接入双语：页面文案、输入框占位符、表单校验提示、密码强度、操作反馈统一走翻译体系；右上角语言按钮一键切换，偏好保存后下次自动生效；更新动态等长内容也提供完整英文版。',
+    points: [
+      '<b>全局覆盖</b>：页面文案、占位符、校验提示、toast 反馈全部双语。',
+      '<b>一键切换</b>：右上角语言按钮，偏好本地记忆，切换即时生效。',
+      '<b>内容双语</b>：更新动态、功能说明等长内容同步提供英文版。'
+    ],
+    thinking: '好的产品要让更多人无障碍使用。语言不只是翻译文案，而是把整个交互链路（提示、反馈、内容）都变成可切换的——为此我们统一了一套轻量翻译机制，新增页面自动接入。',
+    stats: [['4+', '页面接入双语'], ['300+', '翻译词条'], ['1 键', '即时切换']]
+  },
+  {
+    date: '2026-08-04', tag: 'new', tagText: '新功能',
+    title: '团队管理后台上线',
+    desc: '团队协作功能上线：管理后台、管理员账号体系、同事在线状态、用户密码管理（重置 + 回退）；登录与敏感操作采用双重验证保护。',
+    overview: '平台进入团队化运营：管理员可通过团队邀请注册专属账号；登录管理后台需账号密码与统一密钥双重验证；管理员面板支持查看同事的最后上线时间、管理平台用户密码（重置与最多三次回退，防误操作）。团队邀请方式与安全密钥等敏感信息不在此公开。',
+    points: [
+      '<b>双重验证</b>：管理后台登录需管理员账号密码 + 统一密钥双重校验，防账号泄露。',
+      '<b>同事在线</b>：管理员面板实时展示其他管理员的最后上线时间。',
+      '<b>密码管理</b>：支持重置平台用户密码，并保留最多 3 次回退，防误操作。',
+      '<b>记录隔离</b>：密码历史按账号类型独立管理，互不干扰。'
+    ],
+    thinking: '团队协作的前提是安全与可控。登录双重验证、密码回退这些设计，都是为了让「有人能管」这件事本身安全、可逆、不易误伤。',
+    stats: [['2 重', '登录验证'], ['3 次', '密码回退上限'], ['实时', '同事在线同步']]
+  },
+  {
+    date: '2026-08-04', tag: 'opt', tagText: '优化',
+    title: '安全加固：登录保护升级',
+    desc: '未登录用户无法查看题目内容与答案，需登录后开始练习；失效会话自动清理并引导重新登录。',
+    overview: '平台内容保护升级：题目列表、题目详情、答案与解析均要求登录后访问，游客仅能浏览门户、了解我们与登录注册页面，保障题库与学习数据安全。',
+    points: [
+      '<b>内容保护</b>：题目、答案、解析相关接口全部登录校验。',
+      '<b>会话守卫</b>：会话失效自动清理本地状态并引导重新登录，避免误操作。'
+    ],
+    thinking: '题库是平台的核心资产，学习数据属于用户自己。登录保护是基础门槛，后续会持续完善权限体系。',
+    stats: [['100%', '题目接口登录保护'], ['自动', '失效会话清理']]
+  },
+  {
     date: '2026-08-03', tag: 'new', tagText: '新功能',
     title: '玻璃拟态门户体系上线',
     desc: '全新门户首页 + 登录注册页上线，全站统一浅色玻璃拟态风格，路径改为「门户 → 登录 → 做题」三级流转。',
@@ -507,6 +560,59 @@ const VISION_EN = {
 };
 
 const UPDATES_EN = [
+  {
+    date: '2026-08-04', tag: 'new', tagText: 'New Feature',
+    title: 'Real SQL judging engine launched',
+    desc: 'Fill-in answers are no longer compared as text — they are executed in a real database and matched row-by-row against the expected result set; wrong answers get specific hints like "table not found" or "syntax error".',
+    overview: 'Fill-in questions used to be judged by string similarity, which could misjudge valid equivalent formulations. The new engine rebuilds the question environment (schema + data) in an in-memory database, executes the user\'s SQL and the reference answer, and compares result sets: column order, row order, COUNT(*) vs COUNT(non-null column) and other semantically equivalent forms are all judged correctly; execution errors produce concrete hints — "table not found", "column not found", "syntax error" — so learners know exactly where they went wrong.',
+    points: [
+      '<b>Result-set comparison</b>: judging relies on "what actually runs", not text similarity — equivalent formulations are no longer misjudged.',
+      '<b>Real execution environment</b>: each question\'s schema and data are rebuilt in an in-memory database, behaving like a real database.',
+      '<b>Errors as feedback</b>: syntax errors and missing tables/columns are surfaced directly to the learner — you learn even from a wrong answer.',
+      '<b>Read-only safety</b>: only single read-only statements (SELECT / WITH) are allowed, preventing write statements from breaking the judging environment.'
+    ],
+    thinking: 'The bottom line of judging is "your answer can really produce that result". However clever text comparison is, it is only an approximation — we moved judging to real execution: correct only when the result sets match. This turns fill-ins from "memorizing answers" into "real verification", and makes error hints part of the learning feedback.',
+    stats: [['2ms', 'judging per question'], ['3', 'common error hints'], ['many', 'equivalence test cases']]
+  },
+  {
+    date: '2026-08-04', tag: 'new', tagText: 'New Feature',
+    title: 'Full-site bilingual support',
+    desc: 'The portal, About page, login/register and practice frontend now support one-click Chinese/English switching, with the preference remembered automatically.',
+    overview: 'To serve a wider audience, all four pages now support both languages: page copy, input placeholders, form validation messages, password strength and action feedback all go through one translation system; a language button in the top-right corner switches instantly, and the preference is saved for next time. Long-form content such as update notes is fully translated too.',
+    points: [
+      '<b>Full coverage</b>: page copy, placeholders, validation hints and toast feedback are all bilingual.',
+      '<b>One-click switch</b>: language button in the top-right corner, preference remembered locally, takes effect instantly.',
+      '<b>Bilingual content</b>: long-form content like update notes also ships in English.'
+    ],
+    thinking: 'A good product should be accessible to more people. Language is not just translating copy — it means making the whole interaction chain (hints, feedback, content) switchable. We built one lightweight translation system that new pages plug into automatically.',
+    stats: [['4+', 'bilingual pages'], ['300+', 'translated entries'], ['1 click', 'instant switch']]
+  },
+  {
+    date: '2026-08-04', tag: 'new', tagText: 'New Feature',
+    title: 'Team admin panel launched',
+    desc: 'Team collaboration is live: admin dashboard, admin accounts, colleagues\' online status, and user password management (reset + rollback); login and sensitive operations are protected by double verification.',
+    overview: 'The platform now runs as a team: admins register dedicated accounts through a team invitation; entering the admin dashboard requires both the account password and a unified key (double verification); the admin panel shows colleagues\' last-online time and manages platform user passwords (reset, plus up to three rollbacks to prevent mistakes). The invitation method and security keys are not disclosed here.',
+    points: [
+      '<b>Double verification</b>: admin dashboard login requires both the admin account password and a unified key, guarding against account leaks.',
+      '<b>Colleagues online</b>: the admin panel shows other admins\' last-online time in real time.',
+      '<b>Password management</b>: reset platform user passwords, with up to 3 rollbacks to prevent mistakes.',
+      '<b>Isolated records</b>: password history is managed per account type, never cross-contaminated.'
+    ],
+    thinking: 'Team collaboration demands security and control. Double verification at login and password rollback are both about making "someone being able to manage" itself safe, reversible and hard to misuse.',
+    stats: [['2x', 'login verification'], ['3', 'rollback limit'], ['realtime', 'colleague sync']]
+  },
+  {
+    date: '2026-08-04', tag: 'opt', tagText: 'Optimization',
+    title: 'Security hardening: login protection upgraded',
+    desc: 'Visitors cannot view question content or answers without signing in; stale sessions are cleaned up automatically with a prompt to sign in again.',
+    overview: 'Content protection has been upgraded: question lists, details, answers and explanations now all require login. Visitors can only browse the portal, About page and login/register pages, protecting the question bank and learning data.',
+    points: [
+      '<b>Content protection</b>: all question/answer/explanation endpoints require login.',
+      '<b>Session guard</b>: expired sessions are cleaned up locally and the user is guided back to sign in, avoiding mis-operation.'
+    ],
+    thinking: 'The question bank is the platform\'s core asset, and learning data belongs to the users themselves. Login protection is the baseline; the permission system will keep evolving.',
+    stats: [['100%', 'question APIs login-protected'], ['auto', 'stale session cleanup']]
+  },
   {
     date: '2026-08-03', tag: 'new', tagText: 'New Feature',
     title: 'Glassmorphism portal system launched',
