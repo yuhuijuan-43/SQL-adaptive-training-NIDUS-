@@ -4,7 +4,8 @@ import sqlite3
 import re
 import json
 import os
-from database import get_connection, seed_questions, DB_PATH
+from db import get_connection, DB_PATH
+from seeding import seed_questions
 
 SCRAPED_SOURCES = {
     "w3resource_sql": "https://www.w3resource.com/sql-exercises/"

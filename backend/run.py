@@ -1,7 +1,8 @@
 import sys, os, socket, signal, atexit, sqlite3
 
 sys.path.insert(0, os.path.dirname(__file__))
-from database import init_db, seed_questions, seed_exam_questions, seed_knowledge_graph, DB_PATH
+from db import init_db, DB_PATH
+from seeding import seed_questions, seed_exam_questions, seed_knowledge_graph
 
 # ---- 启动初始化 ----
 init_db()

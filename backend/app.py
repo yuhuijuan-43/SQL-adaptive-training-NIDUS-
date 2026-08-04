@@ -29,7 +29,16 @@ def answers_match(user_answer, correct_answer):
 
 from flask import Flask, jsonify, redirect, request, send_from_directory
 from flask_cors import CORS
-from database import init_db, seed_questions, seed_exam_questions, seed_knowledge_graph, get_all_questions, get_exam_questions, get_question_by_id, get_questions_by_node, get_question_node_id, save_answer, get_progress, get_graph, get_mastery, init_journey, journey_next, get_journey_state, get_connection, login_user, register_user, login_or_register, get_admin_stats, get_admin_users, save_diagnostic_result, get_diagnostic_result, get_or_create_derived_question, get_derived_question_by_id, get_questions_by_node_and_type, get_node_id_for_question, is_mcq, check_username_exists, close_db, get_diagnostic_questions
+from db import init_db, get_connection, close_db
+from repositories import (get_all_questions, get_exam_questions, get_question_by_id,
+    get_questions_by_node, get_question_node_id, save_answer, get_progress, get_graph,
+    get_mastery, save_diagnostic_result, get_diagnostic_result,
+    get_or_create_derived_question, get_derived_question_by_id,
+    get_questions_by_node_and_type, get_node_id_for_question, is_mcq,
+    get_diagnostic_questions, get_admin_stats, get_admin_users)
+from auth import login_user, register_user, login_or_register, check_username_exists
+from engine import init_journey, journey_next, get_journey_state, _get_unlocked_nodes
+from seeding import seed_questions, seed_exam_questions, seed_knowledge_graph
 
 app = Flask(__name__, static_folder=None)
 CORS(app)
@@ -351,7 +360,6 @@ def journey_status():
         return jsonify({"error": "尚未开始 Journey"}), 404
     graph = get_graph()
     mastery = get_mastery(session_id)
-    from database import _get_unlocked_nodes
     unlocked = _get_unlocked_nodes(session_id)
     progress = get_progress(session_id)
     total = len(progress)
