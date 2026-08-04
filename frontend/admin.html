@@ -113,6 +113,19 @@
 
 </div>
 
+<!-- 用户答题记录弹窗（点击排行榜/明细行打开） -->
+<div id="userDetailModal" style="display:none;position:fixed;inset:0;background:rgba(20,30,50,0.45);z-index:999;align-items:center;justify-content:center;padding:1rem;" onclick="if(event.target===this)closeUserDetail()">
+  <div style="background:var(--card);border-radius:0.6rem;max-width:760px;width:100%;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.25);">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.8rem 1rem;border-bottom:1px solid var(--border);">
+      <span class="num-oswald text-sm" id="modalTitle">答题记录</span>
+      <button onclick="closeUserDetail()" style="border:none;background:none;font-size:1.3rem;cursor:pointer;color:var(--text2);line-height:1;">&times;</button>
+    </div>
+    <div style="overflow:auto;padding:1rem;">
+      <div id="modalBody">加载中...</div>
+    </div>
+  </div>
+</div>
+
 <script>
 // 后台页支持 file:// 直接打开：必须用绝对地址（相对路径在 file:// 下会指向 file:///api）
 // 若服务部署在其他机器/端口，改这里即可，例如 'http://10.86.168.226:5000/api'
@@ -172,7 +185,10 @@ function drawDiffBars(easy, medium, hard) {
   document.getElementById('diffChart').innerHTML = html;
 }
 
+var _rankUsers = [];   // 排行榜当前用户列表（供点击柱子时取用户数据）
+
 function drawUserBars(users) {
+  _rankUsers = users;
   var html = '';
   if (users.length === 0) { document.getElementById('userChart').innerHTML = '<text x="230" y="70" text-anchor="middle" fill="#87867f" font-size="12">暂无用户数据</text>'; return; }
   var max = 1;
@@ -185,13 +201,74 @@ function drawUserBars(users) {
     var h = Math.max(3, (u.answered / max) * 90);
     var x = startX + i * (barW + gap);
     var accColor = u.accuracy >= 70 ? '#788c5d' : (u.accuracy >= 40 ? '#c17c4a' : '#b04a4a');
-    html += '<rect x="' + x + '" y="' + (115 - h) + '" width="' + barW + '" height="' + h + '" fill="' + accColor + '" rx="3" opacity="0.8"/>';
+    var tip = escapeHtml('查看 ' + u.username + ' 的答题记录');
+    html += '<rect x="' + x + '" y="' + (115 - h) + '" width="' + barW + '" height="' + h + '" fill="' + accColor + '" rx="3" opacity="0.8" style="cursor:pointer" onclick="openUserDetail(_rankUsers[' + i + '])"><title>' + tip + '</title></rect>';
     html += '<text x="' + (x + barW / 2) + '" y="110" text-anchor="middle" fill="#2c241b" font-family="Oswald" font-size="11" font-weight="700">' + u.answered + '</text>';
     var name = u.username.length > 6 ? u.username.substring(0, 6) + '..' : u.username;
-    html += '<text x="' + (x + barW / 2) + '" y="125" text-anchor="middle" fill="#87867f" font-size="7">' + name + '</text>';
+    html += '<text x="' + (x + barW / 2) + '" y="125" text-anchor="middle" fill="#87867f" font-size="7" style="cursor:pointer" onclick="openUserDetail(_rankUsers[' + i + '])">' + name + '</text>';
     html += '<text x="' + (x + barW / 2) + '" y="135" text-anchor="middle" fill="' + accColor + '" font-size="7">' + (u.answered > 0 ? u.accuracy + '%' : '-') + '</text>';
   }
   document.getElementById('userChart').innerHTML = html;
+}
+
+// ---- 用户答题记录弹窗 ----
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+function openUserDetail(user) {
+  if (!user || !user.session_id) return;
+  var modal = document.getElementById('userDetailModal');
+  modal.style.display = 'flex';
+  document.getElementById('modalTitle').textContent = escapeHtml(user.username) + ' 的答题记录';
+  document.getElementById('modalBody').innerHTML = '加载中...';
+  adminFetch('/admin/user-progress?session_id=' + encodeURIComponent(user.session_id))
+    .then(function(r) {
+      if (r.status === 401) {
+        sessionStorage.removeItem('admin_token');
+        closeUserDetail();
+        alert('管理员 Token 无效，请刷新页面重新输入');
+        return null;
+      }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(d) {
+      if (!d) return;
+      var answers = d.answers || [];
+      if (!answers.length) {
+        document.getElementById('modalBody').innerHTML = '<p class="text-sm opacity-50">该用户暂无答题记录</p>';
+        return;
+      }
+      var html = '<table><thead><tr><th>题目</th><th>用户答案</th><th>结果</th><th>用时</th><th>时间</th></tr></thead><tbody>';
+      for (var i = 0; i < answers.length; i++) {
+        var a = answers[i];
+        var title = a.title || ('题目 #' + a.question_id);
+        var ans = (a.user_answer || '').replace(/\s+/g, ' ').trim();
+        if (ans.length > 40) ans = ans.substring(0, 40) + '…';
+        var time = a.answered_at ? new Date(a.answered_at + ' UTC').toLocaleString() : '-';
+        html += '<tr>' +
+          '<td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(title) + '">' + escapeHtml(title) + '</td>' +
+          '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(ans || '-') + '">' + escapeHtml(ans || '-') + '</td>' +
+          '<td>' + (a.is_correct ? '<span style="color:#6b9e7a">对</span>' : '<span style="color:#c97a7a">错</span>') + '</td>' +
+          '<td>' + (a.duration ? Math.round(a.duration) + 's' : '-') + '</td>' +
+          '<td style="font-size:0.65rem;color:#87867f">' + escapeHtml(time) + '</td>' +
+          '</tr>';
+      }
+      html += '</tbody></table>';
+      document.getElementById('modalBody').innerHTML = html;
+    })
+    .catch(function(e) {
+      console.error('[admin] 答题记录加载失败:', e);
+      document.getElementById('modalBody').innerHTML =
+        '<p class="text-sm" style="color:#b04a4a">加载失败：请确认后端已启动（更新后端后需重启服务）</p>';
+    });
+}
+
+function closeUserDetail() {
+  document.getElementById('userDetailModal').style.display = 'none';
 }
 
 function adminErrorMsg(e) {
@@ -219,7 +296,7 @@ function renderUserTable() {
     var u = pageUsers[i];
     var lastActive = u.last_active ? new Date(u.last_active + ' UTC').toLocaleString() : '从未作答';
     var accClass = u.accuracy >= 60 ? '' : (u.accuracy > 0 ? 'style="color:var(--accent)"' : 'style="color:var(--error)"');
-    html += '<tr><td><strong>' + u.username + '</strong></td>';
+    html += '<tr style="cursor:pointer" onclick="openUserDetail(_allUsers[' + (start + i) + '])" title="查看答题记录"><td><strong>' + u.username + '</strong></td>';
     html += '<td class="num-oswald">' + u.answered + '</td>';
     html += '<td style="color:var(--text)">' + u.correct + '</td>';
     html += '<td class="num-oswald" ' + accClass + '>' + (u.answered > 0 ? u.accuracy + '%' : '-') + '</td>';

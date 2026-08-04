@@ -9,7 +9,7 @@ from repositories import (get_all_questions, get_exam_questions, get_question_by
     get_mastery, save_diagnostic_result, get_diagnostic_result,
     get_or_create_derived_question, get_derived_question_by_id,
     get_questions_by_node_and_type, get_node_id_for_question, is_mcq,
-    get_diagnostic_questions, get_admin_stats, get_admin_users)
+    get_diagnostic_questions, get_admin_stats, get_admin_users, get_progress_summary)
 from auth import (login_user, register_user, login_or_register, check_username_exists,
     _is_authenticated)
 from engine import init_journey, journey_next, get_journey_state, _get_unlocked_nodes
@@ -71,7 +71,8 @@ FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'fronten
 # ---- 登录门槛：游客不允许读题/答题 ----
 # 公开端点白名单：登录注册、用户名检查、知识图谱结构、背景装饰标题、admin（自行校验 token）
 _PUBLIC_API_PATHS = {'/api/login', '/api/register', '/api/check-username',
-                     '/api/graph', '/api/admin/stats', '/api/admin/users'}
+                     '/api/graph', '/api/admin/stats', '/api/admin/users',
+                     '/api/admin/user-progress'}
 
 def _request_session_id():
     """从请求体 / 查询参数 / 路径参数中提取 session_id"""
@@ -482,6 +483,17 @@ def admin_users():
     if not _check_admin_token():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     return jsonify(get_admin_users())
+
+@app.route('/api/admin/user-progress')
+@limiter.limit("30 per minute")
+def admin_user_progress():
+    """管理员查看指定用户的答题记录摘要（?session_id=xxx）"""
+    if not _check_admin_token():
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    session_id = request.args.get('session_id', '').strip()
+    if not session_id:
+        return jsonify({"error": "缺少 session_id"}), 400
+    return jsonify({"session_id": session_id, "answers": get_progress_summary(session_id)})
 
 if __name__ == '__main__':
     init_db()

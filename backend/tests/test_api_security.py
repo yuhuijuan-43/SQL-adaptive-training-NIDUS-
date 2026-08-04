@@ -22,6 +22,26 @@ class TestAdminAuth:
         r = client.get('/api/admin/users', headers={'Authorization': 'Bearer test-admin-token'})
         assert r.status_code == 200
 
+    def test_user_progress_requires_token(self, client):
+        assert client.get('/api/admin/user-progress?session_id=x').status_code == 401
+
+    def test_user_progress_missing_param(self, client):
+        r = client.get('/api/admin/user-progress', headers={'Authorization': 'Bearer test-admin-token'})
+        assert r.status_code == 400
+
+    def test_user_progress_returns_answers(self, client):
+        sid = client.post('/api/register', json={'username': 'u_prog', 'password': 'password123'}).get_json()['session_id']
+        client.post('/api/submit', json={
+            'question_id': 1, 'answer': 'SELECT * FROM employees', 'session_id': sid})
+        r = client.get('/api/admin/user-progress?session_id=' + sid,
+                       headers={'Authorization': 'Bearer test-admin-token'})
+        assert r.status_code == 200
+        d = r.get_json()
+        assert len(d['answers']) == 1
+        a = d['answers'][0]
+        # 摘要不含大字段，但含关键信息
+        assert set(a.keys()) >= {'question_id', 'user_answer', 'is_correct', 'title', 'answered_at'}
+
 
 class TestPasswordPolicy:
     def test_short_password_rejected(self, client):

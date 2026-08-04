@@ -293,3 +293,14 @@ def get_progress(session_id):
         FROM user_progress up JOIN questions q ON up.question_id = q.id
         WHERE up.session_id=? ORDER BY up.answered_at''', (session_id,)).fetchall()
     return [dict(r) for r in rows]
+
+def get_progress_summary(session_id, limit=200):
+    """单用户答题记录摘要（管理后台用）：仅题目标题+答案+对错+用时，不传题目正文等大字段。
+    LEFT JOIN：真题库答题记录可能无对应 questions 行（数据模型历史原因），回退显示题目 id。"""
+    conn = get_connection()
+    rows = conn.execute('''SELECT up.question_id, up.user_answer, up.is_correct, up.duration,
+        up.answered_at, q.title, q.difficulty
+        FROM user_progress up LEFT JOIN questions q ON up.question_id = q.id
+        WHERE up.session_id=? ORDER BY up.answered_at DESC, up.id DESC LIMIT ?''',
+        (session_id, limit)).fetchall()
+    return [dict(r) for r in rows]
