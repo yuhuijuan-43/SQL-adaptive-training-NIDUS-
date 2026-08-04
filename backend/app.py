@@ -9,7 +9,7 @@ from repositories import (get_all_questions, get_exam_questions, get_question_by
     get_mastery, save_diagnostic_result, get_diagnostic_result,
     get_or_create_derived_question, get_derived_question_by_id,
     get_questions_by_node_and_type, get_node_id_for_question, is_mcq,
-    get_diagnostic_questions, get_admin_stats, get_admin_users, get_ambient_titles)
+    get_diagnostic_questions, get_admin_stats, get_admin_users)
 from auth import (login_user, register_user, login_or_register, check_username_exists,
     _is_authenticated)
 from engine import init_journey, journey_next, get_journey_state, _get_unlocked_nodes
@@ -69,7 +69,7 @@ FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'fronten
 # ---- 登录门槛：游客不允许读题/答题 ----
 # 公开端点白名单：登录注册、用户名检查、知识图谱结构、背景装饰标题、admin（自行校验 token）
 _PUBLIC_API_PATHS = {'/api/login', '/api/register', '/api/check-username',
-                     '/api/graph', '/api/ambient', '/api/admin/stats', '/api/admin/users'}
+                     '/api/graph', '/api/admin/stats', '/api/admin/users'}
 
 def _request_session_id():
     """从请求体 / 查询参数 / 路径参数中提取 session_id"""
@@ -139,19 +139,6 @@ def login_ngrok():
 def echarts_js():
     return send_from_directory(FRONTEND_DIR, 'echarts.min.js')
 
-@app.route('/css/<path:filename>')
-def css_files(filename):
-    return send_from_directory(os.path.join(FRONTEND_DIR, 'css'), filename)
-
-@app.route('/js/<path:filename>')
-def js_files(filename):
-    return send_from_directory(os.path.join(FRONTEND_DIR, 'js'), filename)
-
-@app.route('/api/ambient')
-def ambient_titles():
-    """背景滚动装饰用的题目轻量样本（仅标题+难度，公开）"""
-    limit = min(int(request.args.get('limit', 40)), 100)
-    return jsonify(get_ambient_titles(limit))
 
 @app.route('/knowledge-map')
 def knowledge_map_page():

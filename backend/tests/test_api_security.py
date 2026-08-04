@@ -62,14 +62,6 @@ class TestLoginGate:
     def test_public_graph_open(self, client):
         assert client.get('/api/graph').status_code == 200
 
-    def test_public_ambient_titles_only(self, client):
-        r = client.get('/api/ambient')
-        assert r.status_code == 200
-        items = r.get_json()
-        assert items
-        for i in items:
-            assert set(i.keys()) == {'title', 'difficulty'}   # 不含任何可做题内容
-
     def test_public_check_username_open(self, client):
         assert client.get('/api/check-username?name=abc').status_code == 200
 
