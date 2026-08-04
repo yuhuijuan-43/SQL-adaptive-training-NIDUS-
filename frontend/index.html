@@ -618,14 +618,24 @@ if (!sqlUser || !sqlUser.session_id || !sqlUser.loggedIn) {
   window.location.href = '/login';
 }
 
-// Validate stored session (clear if user no longer exists in DB)
-if (sqlUser && sqlUser.session_id) {
-  apiGet('/progress/' + sqlUser.session_id)
-    .then(function(data) {
-      if (data && data.error) { sessionStorage.removeItem('sql_user'); sqlUser = null; updateUserUI(); }
+// 静默校验本地会话：失效（401）→ 清会话 + 原地显示登录提示，不做硬跳转（避免登录后闪回 /login）
+// 注意：不走 apiGet（其 401 会触发 redirectIfUnauthorized 弹回登录页）
+function validateSessionSilently() {
+  if (!sqlUser || !sqlUser.session_id) return;
+  var t0 = performance.now();
+  fetch(API_BASE + '/progress/' + encodeURIComponent(sqlUser.session_id))
+    .then(function(r) {
+      var ms = Math.round(performance.now() - t0);
+      _showPerf(ms, '/progress/<sid>');
+      if (r.status === 401) {
+        sessionStorage.removeItem('sql_user');
+        sqlUser = null;
+        updateUserUI();   // 原地显示「登录 / 注册」入口，不跳转
+      }
     })
     .catch(function() {});
 }
+validateSessionSilently();
 
 // 切换用户：先清除本地会话再进登录页，避免登录页的"已登录自动跳回"逻辑误触发
 function switchUser() {
