@@ -75,6 +75,8 @@ body {
 }
 .nav-link:hover { color: var(--text-1); background: rgba(88, 110, 170, 0.08); }
 .nav-link.active { color: #fff; background: var(--accent-grad); box-shadow: 0 4px 14px rgba(90, 100, 255, 0.35); }
+/* 语言切换：始终钉在导航右上角（窄屏 nav-links 隐藏时也生效） */
+#langBtn { margin-left: auto; border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.5); font-size: 12.5px; }
 /* ---- 登录卡片 ---- */
 .auth-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 46px 20px 60px; position: relative; z-index: 1; }
 .auth-card { width: 100%; max-width: 460px; padding: 36px 38px; position: relative; overflow: hidden; }
