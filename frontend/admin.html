@@ -483,6 +483,7 @@ function confirmReset() {
       closeReset();
       toast('密码已重置：' + _resetTarget, 'ok');
       copyText(pwd).then(function(ok) { if (ok) toast('已复制到剪贴板', 'ok'); });
+      loadAdmin();   // 立即刷新用户表，回退按钮马上出现
     })
     .catch(function(e) {
       if (e.message !== '401') toast('重置失败', 'bad');
