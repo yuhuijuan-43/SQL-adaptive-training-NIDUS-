@@ -185,7 +185,7 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
       <div>
         <div style="font-size:20px;font-weight:800;"><span data-i18n="welcome">你好，</span><span id="meName" style="background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent;">-</span></div>
-        <div class="sec-tip" data-i18n="welcome_sub">这里是管理员的工作台：查看同事动态，管理平台用户密码</div>
+        <div class="sec-tip" data-i18n="welcome_sub">这里是管理员的工作台：查看同事动态与团队信息</div>
       </div>
       <div style="display:flex;gap:8px">
         <button class="mini-btn" onclick="window.location.href='index_glass.html'" data-i18n="back_portal">返回门户</button>
@@ -248,20 +248,15 @@ const I18N = {
   page_title: { zh: '管理员面板 · SQL 自适应训练', en: 'Admin Panel · SQL Adaptive Training' },
   nav_panel: { zh: '管理员面板', en: 'Admin Panel' },
   welcome: { zh: '你好，', en: 'Hello, ' },
-  welcome_sub: { zh: '这里是管理员的工作台：查看同事动态，管理平台用户密码', en: 'Your admin workspace: see colleagues\' activity and manage platform user passwords' },
+  welcome_sub: { zh: '这里是管理员的工作台：查看同事动态与团队信息', en: 'Your admin workspace: see colleagues\' activity and manage platform user passwords' },
   back_portal: { zh: '返回门户', en: 'Back to Portal' },
   logout: { zh: '退出登录', en: 'Log Out' },
   colleagues_title: { zh: '我的同事', en: 'My Colleagues' },
   col_user: { zh: '管理员用户名', en: 'Admin Username' },
   col_last: { zh: '最后上线时间', en: 'Last Online' },
-  users_tip: { zh: '重置密码后请将新密码告知对方，新密码立即生效，旧密码失效；重置/回退仅限管理员操作',
-               en: 'Share the new password after reset — it takes effect immediately. Reset/rollback are admin-only operations.' },
   loading: { zh: '加载中...', en: 'Loading...' },
   empty_colleagues: { zh: '暂无其他管理员', en: 'No other admins yet' },
-  empty_users: { zh: '暂无平台用户', en: 'No platform users yet' },
   never: { zh: '从未上线', en: 'Never' },
-  reset_title: { zh: '重置密码', en: 'Reset Password' },
-  reset_tip: { zh: '为「{0}」设置新密码：新密码需 8-64 位，包含大小写字母和数字。', en: 'Set a new password for "{0}": 8-64 chars with upper, lower & digit.' },
   copy: { zh: '复制', en: 'Copy' },
   key_title: { zh: '统一管理员密钥', en: 'Unified Admin Key' },
   key_show: { zh: '显示', en: 'Show' },
@@ -269,8 +264,6 @@ const I18N = {
   key_copy: { zh: '复制密钥', en: 'Copy Key' },
   key_hint: { zh: '此密钥用于登录「管理后台」（门户导航 → 管理后台），请勿泄露给非管理员',
               en: 'Use this key to enter the Admin Dashboard (Portal nav → Admin). Do not share it with non-admins.' },
-  rollback_tip: { zh: '将把「{0}」的密码回退到上一个版本，该版本立即生效。剩余可回退次数：{1}（最多 3 次）。',
-                  en: 'Password of "{0}" will be restored to the previous version and takes effect immediately. Rollbacks left: {1} (max 3).' },
   copied: { zh: '已复制到剪贴板', en: 'Copied to clipboard' },
   copy_fail: { zh: '复制失败，请手动选择复制', en: 'Copy failed — please select manually' },
   err_401: { zh: '登录已过期，请重新登录', en: 'Session expired — please sign in again' },
