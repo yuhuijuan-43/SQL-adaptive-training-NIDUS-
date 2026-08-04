@@ -184,7 +184,7 @@ body {
   <div class="auth-card glass fade-up">
     <div class="auth-head">
       <div class="auth-title" data-i18n-html="auth_title">管理员<span class="grad">登录</span></div>
-      <div class="auth-sub" data-i18n="auth_sub">输入管理员用户名与统一密钥以进入管理后台</div>
+      <div class="auth-sub" data-i18n="auth_sub">双重验证：管理员账号密码 + 统一管理员密钥</div>
     </div>
 
     <form onsubmit="doAdminLogin(event)" autocomplete="off">
@@ -192,9 +192,18 @@ body {
         <label for="admUser" data-i18n="label_user">管理员用户名</label>
         <div class="inp-wrap">
           <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-          <input id="admUser" type="text" placeholder="admin" autocomplete="off" data-i18n-placeholder="ph_user">
+          <input id="admUser" type="text" placeholder="请输入管理员用户名" autocomplete="off" data-i18n-placeholder="ph_user">
         </div>
         <div class="hint" id="admUserHint"></div>
+      </div>
+      <div class="field">
+        <label for="admPass" data-i18n="label_pass">管理员密码</label>
+        <div class="inp-wrap has-right">
+          <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+          <input id="admPass" type="password" placeholder="请输入管理员密码" autocomplete="off" data-i18n-placeholder="ph_pass">
+          <button type="button" class="inp-btn eye" id="admPassEye" title="显示密码" data-i18n-title="show_pwd" onclick="togglePass()"></button>
+        </div>
+        <div class="hint" id="admPassHint"></div>
       </div>
       <div class="field">
         <label for="admKey" data-i18n="label_key">统一管理员密钥</label>
@@ -234,19 +243,25 @@ const I18N = {
   nav_about: { zh: '了解我们', en: 'About' },
   nav_enter: { zh: '进入平台', en: 'Enter' },
   auth_title: { zh: '管理员<span class="grad">登录</span>', en: 'Admin <span class="grad">Login</span>' },
-  auth_sub: { zh: '输入管理员用户名与统一密钥以进入管理后台', en: 'Enter the admin username and unified key to open the admin panel' },
+  auth_sub: { zh: '双重验证：管理员账号密码 + 统一管理员密钥', en: 'Double verification: admin account password + Unified Admin Key' },
   label_user: { zh: '管理员用户名', en: 'Admin Username' },
+  label_pass: { zh: '管理员密码', en: 'Admin Password' },
   label_key: { zh: '统一管理员密钥', en: 'Unified Admin Key' },
   ph_user: { zh: '请输入管理员用户名', en: 'Enter admin username' },
+  ph_pass: { zh: '请输入管理员密码', en: 'Enter admin password' },
   ph_key: { zh: '请输入统一管理员密钥', en: 'Enter the admin key' },
   show_key: { zh: '显示密钥', en: 'Show key' },
   hide_key: { zh: '隐藏密钥', en: 'Hide key' },
+  show_pwd: { zh: '显示密码', en: 'Show password' },
+  hide_pwd: { zh: '隐藏密码', en: 'Hide password' },
   btn_enter: { zh: '进入管理后台', en: 'Enter Admin Panel' },
   back_home: { zh: '返回首页', en: 'Back to Home' },
   footer: { zh: '© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台', en: '© 2026 SQL Adaptive Training · A personalized SQL learning platform' },
   need_user: { zh: '请输入管理员用户名', en: 'Please enter the admin username' },
+  need_pass: { zh: '请输入管理员密码', en: 'Please enter the admin password' },
   need_key: { zh: '请输入统一管理员密钥', en: 'Please enter the admin key' },
-  bad_creds: { zh: '用户名或密钥不正确', en: 'Incorrect username or key' },
+  bad_creds: { zh: '账号或密钥不正确', en: 'Incorrect account or key' },
+  admin_notfound: { zh: '管理员不存在，请先凭内推码注册', en: 'Admin not found — register with a referral code first' },
   too_many: { zh: '尝试过于频繁，请稍后再试', en: 'Too many attempts — try again later' },
   net_error: { zh: '无法连接服务器，请确认后端已启动', en: 'Cannot reach server — make sure the backend is running' },
   ok_msg: { zh: '验证通过，正在进入管理后台…', en: 'Verified — entering the admin panel…' },
@@ -272,12 +287,18 @@ function toggleLang() {
 }
 applyI18n();
 
-/* ---- 眼睛图标 ---- */
+/* ---- 眼睛图标（密码/密钥显示切换） ---- */
 let keyShown = false;
 function toggleKey() {
   keyShown = !keyShown;
   $('admKey').type = keyShown ? 'text' : 'password';
   $('admKeyEye').title = keyShown ? t('hide_key') : t('show_key');
+}
+let passShown = false;
+function togglePass() {
+  passShown = !passShown;
+  $('admPass').type = passShown ? 'text' : 'password';
+  $('admPassEye').title = passShown ? t('hide_pwd') : t('show_pwd');
 }
 
 /* ---- 表单辅助 ---- */
@@ -299,33 +320,43 @@ function toast(msg, type) {
   setTimeout(() => { tEl.classList.add('out'); setTimeout(() => tEl.remove(), 300); }, 3400);
 }
 
-/* ---- 提交验证 ---- */
+/* ---- 提交验证（双重验证：账号密码 + 统一密钥） ---- */
 async function doAdminLogin(e) {
   e.preventDefault();
   const username = $('admUser').value.trim();
+  const password = $('admPass').value;
   const key = $('admKey').value.trim();
   let ok = true;
   if (!username) { setHint('admUserHint', t('need_user'), 'err'); $('admUser').classList.add('err'); ok = false; }
+  if (!password) { setHint('admPassHint', t('need_pass'), 'err'); $('admPass').classList.add('err'); ok = false; }
   if (!key) { setHint('admKeyHint', t('need_key'), 'err'); $('admKey').classList.add('err'); ok = false; }
   if (!ok) return;
   loading(true);
   try {
     const r = await fetch(API_BASE + '/admin/login', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: username, key: key })
+      body: JSON.stringify({ username: username, password: password, key: key })
     });
     const d = await r.json();
     loading(false);
     if (r.status === 429) { toast('bad', t('too_many'), 'bad'); return; }
     if (!r.ok) {
-      setHint('admUserHint', t('bad_creds'), 'err');
-      setHint('admKeyHint', t('bad_creds'), 'err');
-      $('admUser').classList.add('err');
-      $('admKey').classList.add('err');
+      if (r.status === 404) {
+        setHint('admUserHint', t('admin_notfound'), 'err');
+        $('admUser').classList.add('err');
+      } else {
+        setHint('admUserHint', t('bad_creds'), 'err');
+        setHint('admPassHint', t('bad_creds'), 'err');
+        setHint('admKeyHint', t('bad_creds'), 'err');
+        $('admUser').classList.add('err');
+        $('admPass').classList.add('err');
+        $('admKey').classList.add('err');
+      }
       return;
     }
     // 验证通过：保存密钥，admin.html 会自动读取跳过输入框
     sessionStorage.setItem('admin_token', d.token);
+    sessionStorage.setItem('admin_user', d.username || username);
     $('admBtn').textContent = '✓';
     toast('ok', t('ok_msg'), 'ok');
     setTimeout(() => { window.location.href = 'admin.html'; }, 700);
@@ -336,7 +367,7 @@ async function doAdminLogin(e) {
 }
 
 /* 输入时清除错误态 */
-['admUser', 'admKey'].forEach(id => {
+['admUser', 'admPass', 'admKey'].forEach(id => {
   $(id).addEventListener('input', () => {
     setHint(id + 'Hint', '');
     $(id).classList.remove('err');

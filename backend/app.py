@@ -63,7 +63,6 @@ except ImportError:
 
 # ---- Admin 鉴权：Bearer token（可通过环境变量覆盖） ----
 ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN', 'change-me-admin-token-2024')
-ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
 
 def _check_admin_token():
     """校验 Authorization: Bearer <token> 头"""
@@ -494,15 +493,22 @@ def admin_panel_page():
 @app.route('/api/admin/login', methods=['POST'])
 @limiter.limit("5 per minute")
 def admin_login():
-    """校验管理员用户名 + 统一密钥；通过后返回密钥供前端带进 admin.html"""
+    """管理后台登录（双重验证）：管理员账号密码（同步 admin_users）+ 统一管理员密钥"""
     import hmac
     data = request.get_json(silent=True) or {}
     username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
     key = (data.get('key') or '').strip()
-    # 常量时间比较，防时序攻击；统一返回模糊错误，不泄露哪一项不对
-    if username == ADMIN_USERNAME and key and hmac.compare_digest(key, ADMIN_TOKEN):
-        return jsonify({"ok": True, "token": ADMIN_TOKEN})
-    return jsonify({"error": "用户名或密钥不正确"}), 401
+    # 第一重：管理员账号密码（管理员信息已同步，登录自动更新最后上线时间）
+    ok, reason = login_admin(username, password)
+    if not ok:
+        if reason == 'not_found':
+            return jsonify({"error": "管理员不存在，请先凭内推码注册"}), 404
+        return jsonify({"error": "账号或密钥不正确"}), 401
+    # 第二重：统一管理员密钥（常量时间比较，防时序攻击）
+    if not key or not hmac.compare_digest(key, ADMIN_TOKEN):
+        return jsonify({"error": "账号或密钥不正确"}), 401
+    return jsonify({"ok": True, "token": ADMIN_TOKEN})
 
 @app.route('/api/admin/stats')
 @limiter.limit("20 per minute")
@@ -583,23 +589,13 @@ def admin_colleagues():
     me = request.args.get('me', '').strip()
     return jsonify({"colleagues": get_admin_colleagues(exclude_username=me or None)})
 
-def _check_double_verify(data):
-    """双重验证：操作需携带统一管理员密钥（verify_key），常量时间比较"""
-    import hmac
-    verify_key = (data.get('verify_key') or '').strip()
-    if not verify_key or not hmac.compare_digest(verify_key, ADMIN_TOKEN):
-        return False
-    return True
-
 @app.route('/api/admin/user-reset', methods=['POST'])
 @limiter.limit("10 per minute")
 def admin_user_reset():
-    """管理员重置密码（平台用户/管理员通用，需双重验证 verify_key）"""
+    """管理员重置密码（平台用户/管理员通用，Bearer 鉴权）"""
     if not _check_admin_token():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     data = request.get_json(silent=True) or {}
-    if not _check_double_verify(data):
-        return jsonify({"error": "双重验证失败：请输入统一管理员密钥"}), 403
     username = (data.get('username') or '').strip()
     new_password = data.get('new_password') or ''
     if not username or not new_password:
@@ -622,12 +618,10 @@ def admin_key():
 @app.route('/api/admin/password-rollback', methods=['POST'])
 @limiter.limit("10 per minute")
 def admin_password_rollback():
-    """回退密码到上一个版本（历史保留 3 条 → 最多回退 3 次；需双重验证 verify_key）"""
+    """回退密码到上一个版本（历史保留 3 条 → 最多回退 3 次；Bearer 鉴权）"""
     if not _check_admin_token():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     data = request.get_json(silent=True) or {}
-    if not _check_double_verify(data):
-        return jsonify({"error": "双重验证失败：请输入统一管理员密钥"}), 403
     username = (data.get('username') or '').strip()
     if not username:
         return jsonify({"error": "缺少参数"}), 400

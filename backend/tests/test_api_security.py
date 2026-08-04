@@ -22,22 +22,31 @@ class TestAdminAuth:
         r = client.get('/api/admin/users', headers={'Authorization': 'Bearer test-admin-token'})
         assert r.status_code == 200
 
-    def test_admin_login_wrong_credentials(self, client):
-        r = client.post('/api/admin/login', json={'username': 'admin', 'key': 'wrong'})
+    def test_admin_login_double_verify(self, client):
+        """管理后台登录双重验证：管理员账号密码 + 统一管理员密钥"""
+        H = {'Authorization': 'Bearer test-admin-token'}
+        client.post('/api/admin/auth-register', json={
+            'username': 'gate_admin', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
+        # 全对 → 200
+        r = client.post('/api/admin/login', json={
+            'username': 'gate_admin', 'password': 'Passw0rd1', 'key': 'test-admin-token'})
+        assert r.status_code == 200 and r.get_json()['token'] == 'test-admin-token'
+        # 密码错 → 401
+        r = client.post('/api/admin/login', json={
+            'username': 'gate_admin', 'password': 'wrong', 'key': 'test-admin-token'})
         assert r.status_code == 401
-
-    def test_admin_login_wrong_username(self, client):
-        r = client.post('/api/admin/login', json={'username': 'hacker', 'key': 'test-admin-token'})
+        # 密钥错 → 401
+        r = client.post('/api/admin/login', json={
+            'username': 'gate_admin', 'password': 'Passw0rd1', 'key': 'wrong'})
         assert r.status_code == 401
-
-    def test_admin_login_missing_fields(self, client):
-        assert client.post('/api/admin/login', json={}).status_code == 401
-
-    def test_admin_login_ok_returns_token(self, client):
-        r = client.post('/api/admin/login', json={'username': 'admin', 'key': 'test-admin-token'})
-        assert r.status_code == 200
-        d = r.get_json()
-        assert d['ok'] is True and d['token'] == 'test-admin-token'
+        # 缺密钥 → 401
+        r = client.post('/api/admin/login', json={
+            'username': 'gate_admin', 'password': 'Passw0rd1'})
+        assert r.status_code == 401
+        # 用户名不存在 → 404（提示先注册）
+        r = client.post('/api/admin/login', json={
+            'username': 'nobody', 'password': 'Passw0rd1', 'key': 'test-admin-token'})
+        assert r.status_code == 404
 
     def test_admin_gate_page_served(self, client):
         r = client.get('/admin-gate')
@@ -137,7 +146,7 @@ class TestAdminAccount:
             'username': 'stu_reset', 'password': 'Password1'}).get_json()['session_id']
         assert sid
         r = client.post('/api/admin/user-reset', json={
-            'username': 'stu_reset', 'new_password': 'NewPass123', 'verify_key': 'test-admin-token'},
+            'username': 'stu_reset', 'new_password': 'NewPass123'},
             headers={'Authorization': 'Bearer test-admin-token'})
         assert r.status_code == 200
         assert client.post('/api/login', json={
@@ -147,7 +156,7 @@ class TestAdminAccount:
 
     def test_user_reset_unknown_user(self, client):
         r = client.post('/api/admin/user-reset', json={
-            'username': 'nobody', 'new_password': 'NewPass123', 'verify_key': 'test-admin-token'},
+            'username': 'nobody', 'new_password': 'NewPass123'},
             headers={'Authorization': 'Bearer test-admin-token'})
         assert r.status_code == 404
 
@@ -156,12 +165,12 @@ class TestAdminAccount:
         client.post('/api/register', json={'username': 'stu_rb', 'password': 'PassOld1'})
         # 重置 → 历史 +1，回退按钮应出现
         client.post('/api/admin/user-reset', json={
-            'username': 'stu_rb', 'new_password': 'PassNew1', 'verify_key': 'test-admin-token'}, headers=H)
+            'username': 'stu_rb', 'new_password': 'PassNew1'}, headers=H)
         users = client.get('/api/admin/users', headers=H).get_json()
         u = next(x for x in users if x['username'] == 'stu_rb')
         assert u['rollback_count'] == 1
         # 回退 → 旧密码恢复
-        r = client.post('/api/admin/password-rollback', json={'username': 'stu_rb', 'verify_key': 'test-admin-token'}, headers=H)
+        r = client.post('/api/admin/password-rollback', json={'username': 'stu_rb'}, headers=H)
         assert r.status_code == 200
         assert client.post('/api/login', json={
             'username': 'stu_rb', 'password': 'PassOld1'}).status_code == 200
@@ -176,17 +185,17 @@ class TestAdminAccount:
         client.post('/api/register', json={'username': 'stu_rb3', 'password': 'PassA123'})
         for pwd in ('PassB123', 'PassC123', 'PassD123', 'PassE123'):   # 4 次重置
             assert client.post('/api/admin/user-reset', json={
-                'username': 'stu_rb3', 'new_password': pwd, 'verify_key': 'test-admin-token'}, headers=H).status_code == 200
+                'username': 'stu_rb3', 'new_password': pwd}, headers=H).status_code == 200
         users = client.get('/api/admin/users', headers=H).get_json()
         u = next(x for x in users if x['username'] == 'stu_rb3')
         assert u['rollback_count'] == 3          # 历史只保留最近 3 条
         # 回退 3 次成功（PassD123 → PassC123 → PassB123），第 4 次 409
         for expect in ('PassD123', 'PassC123', 'PassB123'):
             assert client.post('/api/admin/password-rollback', json={
-                'username': 'stu_rb3', 'verify_key': 'test-admin-token'}, headers=H).status_code == 200
+                'username': 'stu_rb3'}, headers=H).status_code == 200
             assert client.post('/api/login', json={
                 'username': 'stu_rb3', 'password': expect}).status_code == 200
-        r = client.post('/api/admin/password-rollback', json={'username': 'stu_rb3', 'verify_key': 'test-admin-token'}, headers=H)
+        r = client.post('/api/admin/password-rollback', json={'username': 'stu_rb3'}, headers=H)
         assert r.status_code == 409
 
     def test_admin_key_requires_token(self, client):
@@ -203,33 +212,9 @@ class TestAdminAccount:
 
     def test_password_rollback_no_history(self, client):
         r = client.post('/api/admin/password-rollback', json={
-            'username': 'nobody', 'verify_key': 'test-admin-token'},
+            'username': 'nobody'},
             headers={'Authorization': 'Bearer test-admin-token'})
         assert r.status_code == 409
-
-    def test_reset_requires_double_verify(self, client):
-        H = {'Authorization': 'Bearer test-admin-token'}
-        client.post('/api/register', json={'username': 'dv1', 'password': 'Password1'})
-        # 缺 verify_key → 403
-        r = client.post('/api/admin/user-reset', json={
-            'username': 'dv1', 'new_password': 'NewPass123'}, headers=H)
-        assert r.status_code == 403
-        # 错 verify_key → 403
-        r = client.post('/api/admin/user-reset', json={
-            'username': 'dv1', 'new_password': 'NewPass123', 'verify_key': 'wrong'}, headers=H)
-        assert r.status_code == 403
-        # 正确 → 200 且密码确实改了
-        r = client.post('/api/admin/user-reset', json={
-            'username': 'dv1', 'new_password': 'NewPass123', 'verify_key': 'test-admin-token'}, headers=H)
-        assert r.status_code == 200
-
-    def test_rollback_requires_double_verify(self, client):
-        H = {'Authorization': 'Bearer test-admin-token'}
-        client.post('/api/register', json={'username': 'dv2', 'password': 'Password1'})
-        client.post('/api/admin/user-reset', json={
-            'username': 'dv2', 'new_password': 'NewPass123', 'verify_key': 'test-admin-token'}, headers=H)
-        r = client.post('/api/admin/password-rollback', json={'username': 'dv2'}, headers=H)
-        assert r.status_code == 403
 
     def test_users_list_syncs_admins(self, client):
         H = {'Authorization': 'Bearer test-admin-token'}
@@ -248,7 +233,7 @@ class TestAdminAccount:
             'username': 'admin_rb', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
         # 重置管理员密码
         r = client.post('/api/admin/user-reset', json={
-            'username': 'admin_rb', 'new_password': 'Passw0rd2', 'verify_key': 'test-admin-token'}, headers=H)
+            'username': 'admin_rb', 'new_password': 'Passw0rd2'}, headers=H)
         assert r.status_code == 200
         assert client.post('/api/admin/auth-login', json={
             'username': 'admin_rb', 'password': 'Passw0rd2'}).status_code == 200
@@ -256,7 +241,7 @@ class TestAdminAccount:
             'username': 'admin_rb', 'password': 'Passw0rd1'}).status_code == 401
         # 回退 → 恢复原密码
         r = client.post('/api/admin/password-rollback', json={
-            'username': 'admin_rb', 'verify_key': 'test-admin-token'}, headers=H)
+            'username': 'admin_rb'}, headers=H)
         assert r.status_code == 200
         assert client.post('/api/admin/auth-login', json={
             'username': 'admin_rb', 'password': 'Passw0rd1'}).status_code == 200
@@ -283,16 +268,16 @@ class TestAdminAccount:
         client.post('/api/admin/auth-register', json={
             'username': 'a_k', 'password': 'AdminOld1', 'referral_code': 'NIDUS_Agent'})
         client.post('/api/admin/user-reset', json={
-            'username': 'u_k', 'new_password': 'UserNew1', 'verify_key': 'test-admin-token'}, headers=H)
+            'username': 'u_k', 'new_password': 'UserNew1'}, headers=H)
         client.post('/api/admin/user-reset', json={
-            'username': 'a_k', 'new_password': 'AdminNew1', 'verify_key': 'test-admin-token'}, headers=H)
+            'username': 'a_k', 'new_password': 'AdminNew1'}, headers=H)
         users = client.get('/api/admin/users', headers=H).get_json()
         by_name = {u['username']: u for u in users}
         assert by_name['u_k']['rollback_count'] == 1
         assert by_name['a_k']['rollback_count'] == 1
         # 回退平台用户 → 恢复 UserOld1；管理员不受影响仍用 AdminNew1
         client.post('/api/admin/password-rollback', json={
-            'username': 'u_k', 'verify_key': 'test-admin-token'}, headers=H)
+            'username': 'u_k'}, headers=H)
         assert client.post('/api/login', json={
             'username': 'u_k', 'password': 'UserOld1'}).status_code == 200
         assert client.post('/api/admin/auth-login', json={
