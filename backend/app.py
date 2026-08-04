@@ -15,7 +15,10 @@ from engine import init_journey, journey_next, get_journey_state, _get_unlocked_
 from seeding import seed_questions, seed_exam_questions, seed_knowledge_graph
 
 app = Flask(__name__, static_folder=None)
-CORS(app)
+# 同源部署（Flask 托管前端 + /api），仅放行本机来源；跨域仅影响浏览器，不影响正常访问
+CORS(app, resources={r"/api/*": {"origins": [
+    "http://localhost:5000", "http://127.0.0.1:5000", "http://localhost:3000", "http://127.0.0.1:3000",
+]}})
 app.teardown_appcontext(close_db)
 
 # ---- 全局错误处理 ----
@@ -37,13 +40,13 @@ def internal_error(e):
     return jsonify({"error": "服务器内部错误，请稍后重试"}), 500
 
 # ---- 速率限制（安全降级：未安装flask-limiter时无操作） ----
+# 只对写接口 / 登录注册 / admin 限流；读题、练习接口不限（避免误伤正常练习用户）
 try:
     from flask_limiter import Limiter
     from flask_limiter.util import get_remote_address
     limiter = Limiter(
         app=app,
         key_func=get_remote_address,
-        default_limits=["200 per day", "60 per hour"],
         storage_uri="memory://",
     )
 except ImportError:
@@ -52,6 +55,13 @@ except ImportError:
             def decorator(f): return f
             return decorator
     limiter = _NoopLimiter()
+
+# ---- Admin 鉴权：Bearer token（可通过环境变量 ADMIN_TOKEN 覆盖） ----
+ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN', 'change-me-admin-token-2024')
+
+def _check_admin_token():
+    """校验 Authorization: Bearer <token> 头"""
+    return request.headers.get('Authorization', '') == f'Bearer {ADMIN_TOKEN}'
 
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
 
@@ -393,8 +403,8 @@ def register():
     password = data.get('password', '').strip()
     if not username:
         return jsonify({"error": "请输入用户名"}), 400
-    if not password or len(password) < 8 or len(password) > 16:
-        return jsonify({"error": "密码需为8-16个字符"}), 400
+    if not password or len(password) < 8 or len(password) > 64:
+        return jsonify({"error": "密码需为8-64个字符"}), 400
     session_id, reason = register_user(username, password)
     if not session_id:
         if reason == 'exists':
@@ -429,11 +439,17 @@ def admin_page():
     return send_from_directory(FRONTEND_DIR, 'admin.html')
 
 @app.route('/api/admin/stats')
+@limiter.limit("20 per minute")
 def admin_stats():
+    if not _check_admin_token():
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     return jsonify(get_admin_stats())
 
 @app.route('/api/admin/users')
+@limiter.limit("20 per minute")
 def admin_users():
+    if not _check_admin_token():
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     return jsonify(get_admin_users())
 
 if __name__ == '__main__':

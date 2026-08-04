@@ -54,7 +54,7 @@ def login_user(username, password):
 def register_user(username, password):
     """注册：使用bcrypt存储密码"""
     import bcrypt
-    if not password or len(password.strip()) < 8 or len(password.strip()) > 16:
+    if not password or len(password.strip()) < 8 or len(password.strip()) > 64:
         return None, 'weak_password'
     conn = get_connection()
     existing = conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
