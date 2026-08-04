@@ -59,8 +59,9 @@ except ImportError:
             return decorator
     limiter = _NoopLimiter()
 
-# ---- Admin 鉴权：Bearer token（可通过环境变量 ADMIN_TOKEN 覆盖） ----
+# ---- Admin 鉴权：Bearer token（可通过环境变量覆盖） ----
 ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN', 'change-me-admin-token-2024')
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
 
 def _check_admin_token():
     """校验 Authorization: Bearer <token> 头"""
@@ -71,8 +72,8 @@ FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'fronten
 # ---- 登录门槛：游客不允许读题/答题 ----
 # 公开端点白名单：登录注册、用户名检查、知识图谱结构、背景装饰标题、admin（自行校验 token）
 _PUBLIC_API_PATHS = {'/api/login', '/api/register', '/api/check-username',
-                     '/api/graph', '/api/admin/stats', '/api/admin/users',
-                     '/api/admin/user-progress'}
+                     '/api/graph', '/api/admin/login', '/api/admin/stats',
+                     '/api/admin/users', '/api/admin/user-progress'}
 
 def _request_session_id():
     """从请求体 / 查询参数 / 路径参数中提取 session_id"""
@@ -469,6 +470,24 @@ def get_user_progress(session_id):
 @app.route('/admin')
 def admin_page():
     return send_from_directory(FRONTEND_DIR, 'admin.html')
+
+@app.route('/admin-gate')
+def admin_gate_page():
+    """管理员登录门（用户名 + 统一密钥）"""
+    return send_from_directory(FRONTEND_DIR, 'admin_gate.html')
+
+@app.route('/api/admin/login', methods=['POST'])
+@limiter.limit("5 per minute")
+def admin_login():
+    """校验管理员用户名 + 统一密钥；通过后返回密钥供前端带进 admin.html"""
+    import hmac
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    key = (data.get('key') or '').strip()
+    # 常量时间比较，防时序攻击；统一返回模糊错误，不泄露哪一项不对
+    if username == ADMIN_USERNAME and key and hmac.compare_digest(key, ADMIN_TOKEN):
+        return jsonify({"ok": True, "token": ADMIN_TOKEN})
+    return jsonify({"error": "用户名或密钥不正确"}), 401
 
 @app.route('/api/admin/stats')
 @limiter.limit("20 per minute")

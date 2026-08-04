@@ -22,6 +22,28 @@ class TestAdminAuth:
         r = client.get('/api/admin/users', headers={'Authorization': 'Bearer test-admin-token'})
         assert r.status_code == 200
 
+    def test_admin_login_wrong_credentials(self, client):
+        r = client.post('/api/admin/login', json={'username': 'admin', 'key': 'wrong'})
+        assert r.status_code == 401
+
+    def test_admin_login_wrong_username(self, client):
+        r = client.post('/api/admin/login', json={'username': 'hacker', 'key': 'test-admin-token'})
+        assert r.status_code == 401
+
+    def test_admin_login_missing_fields(self, client):
+        assert client.post('/api/admin/login', json={}).status_code == 401
+
+    def test_admin_login_ok_returns_token(self, client):
+        r = client.post('/api/admin/login', json={'username': 'admin', 'key': 'test-admin-token'})
+        assert r.status_code == 200
+        d = r.get_json()
+        assert d['ok'] is True and d['token'] == 'test-admin-token'
+
+    def test_admin_gate_page_served(self, client):
+        r = client.get('/admin-gate')
+        assert r.status_code == 200
+        assert '管理员' in r.get_data(as_text=True) or 'admin' in r.get_data(as_text=True).lower()
+
     def test_user_progress_requires_token(self, client):
         assert client.get('/api/admin/user-progress?session_id=x').status_code == 401
 

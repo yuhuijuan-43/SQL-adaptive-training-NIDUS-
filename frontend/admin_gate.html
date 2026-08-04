@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理员登录 · SQL 自适应训练</title>
+<style>
+/* ============================================================
+   管理员登录门（玻璃拟态 · 与门户/登录页统一）
+   校验通过后携带管理员密钥进入 admin.html
+   ============================================================ */
+:root {
+  --bg-0: #eef3fc;
+  --bg-1: #e3ecf9;
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(88, 110, 170, 0.14);
+  --glass-border-hover: rgba(88, 110, 170, 0.30);
+  --text-1: #1b2747;
+  --text-2: #48577c;
+  --text-3: #8b96b4;
+  --accent: #4a7dff;
+  --accent-grad: linear-gradient(135deg, #4a7dff 0%, #8b5bff 100%);
+  --success: #0ea678;
+  --error: #e04a55;
+  --radius: 18px;
+  --sans: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  --shadow: 0 10px 34px rgba(58, 82, 148, 0.13);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--sans); color: var(--text-1); line-height: 1.6; overflow-x: hidden;
+  min-height: 100vh; display: flex; flex-direction: column;
+  background:
+    radial-gradient(1100px 700px at 88% -12%, rgba(140, 120, 255, 0.18), transparent 60%),
+    radial-gradient(900px 620px at -8% 18%, rgba(80, 140, 255, 0.16), transparent 55%),
+    radial-gradient(800px 560px at 50% 115%, rgba(70, 190, 210, 0.13), transparent 55%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%);
+}
+.orb { position: fixed; border-radius: 50%; filter: blur(100px); z-index: 0; pointer-events: none; }
+.orb-1 { width: 500px; height: 500px; background: #b9a6ff; top: -160px; right: -120px; opacity: 0.30; animation: drift 19s ease-in-out infinite; }
+.orb-2 { width: 430px; height: 430px; background: #9cc0ff; top: 42%; left: -190px; opacity: 0.27; animation: drift 24s ease-in-out infinite reverse; }
+.orb-3 { width: 370px; height: 370px; background: #93e2ea; bottom: -140px; right: 20%; opacity: 0.24; animation: drift 27s ease-in-out infinite; }
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(42px, -28px) scale(1.07); }
+  66% { transform: translate(-30px, 24px) scale(0.94); }
+}
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+/* ---- 顶部导航 ---- */
+.navbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px);
+  border-bottom: 1px solid rgba(88, 110, 170, 0.12);
+}
+.nav-inner { max-width: 1180px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; gap: 30px; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; cursor: pointer; user-select: none; }
+.logo-badge {
+  width: 40px; height: 40px; border-radius: 10px; overflow: hidden; flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.7);
+  filter: drop-shadow(0 2px 6px rgba(58, 82, 148, 0.18));
+}
+.logo-badge img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.nav-links { display: flex; gap: 4px; flex: 1; }
+.nav-link {
+  padding: 7px 14px; border-radius: 999px; font-size: 13.5px; color: var(--text-2);
+  cursor: pointer; transition: all 0.2s; border: none; background: none; font-family: inherit;
+}
+.nav-link:hover { color: var(--text-1); background: rgba(88, 110, 170, 0.08); }
+.nav-link.active { color: #fff; background: var(--accent-grad); box-shadow: 0 4px 14px rgba(90, 100, 255, 0.35); }
+#langBtn { margin-left: auto; border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.5); font-size: 12.5px; }
+/* ---- 登录卡片 ---- */
+.auth-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 46px 20px 60px; position: relative; z-index: 1; }
+.auth-card { width: 100%; max-width: 420px; padding: 36px 38px; position: relative; overflow: hidden; }
+.auth-card::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(320px 190px at 85% 0%, rgba(120, 100, 255, 0.12), transparent 70%);
+}
+.auth-head { text-align: center; margin-bottom: 26px; }
+.auth-title { font-size: 23px; font-weight: 800; }
+.auth-title .grad { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.auth-sub { font-size: 12.5px; color: var(--text-3); margin-top: 6px; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-2); margin-bottom: 7px; }
+.field .inp-wrap { position: relative; }
+.field .inp-wrap .u-ico {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  color: var(--text-3); opacity: 0.75; pointer-events: none; transition: color 0.2s, opacity 0.2s;
+  display: grid; place-items: center;
+}
+.field input {
+  width: 100%; height: 44px; padding: 0 14px 0 40px; border-radius: 11px; outline: none;
+  background: rgba(255, 255, 255, 0.6); border: 1px solid var(--glass-border);
+  color: var(--text-1); font-family: inherit; font-size: 13.5px; transition: all 0.2s;
+}
+.field input::placeholder { color: var(--text-3); }
+.field input:focus { border-color: rgba(74, 125, 255, 0.7); background: #fff; box-shadow: 0 0 0 3px rgba(74, 125, 255, 0.14); }
+.field input.err { border-color: rgba(224, 74, 85, 0.6); }
+.field .hint { font-size: 11.5px; margin-top: 5px; min-height: 16px; }
+.hint.err { color: var(--error); }
+.inp-wrap.has-right input { padding-right: 78px; }
+.inp-btn {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 30px; height: 30px; border: none; background: none; cursor: pointer;
+  opacity: 0.5; transition: all 0.2s; border-radius: 8px;
+  display: grid; place-items: center; color: var(--text-2);
+}
+.inp-btn:hover { opacity: 1; background: rgba(88, 110, 170, 0.1); }
+.inp-btn.eye { right: 38px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 46px; width: 100%; border-radius: 12px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 14.5px; font-weight: 700; color: #fff;
+  background: var(--accent-grad); box-shadow: 0 5px 22px rgba(90, 100, 255, 0.4); transition: all 0.25s;
+}
+.btn:hover:not(:disabled) { box-shadow: 0 8px 30px rgba(90, 100, 255, 0.55); transform: translateY(-1px); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn .spin { display: inline-block; width: 15px; height: 15px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.back-home { display: block; text-align: center; margin-top: 18px; font-size: 12.5px; color: var(--text-3); text-decoration: none; }
+.back-home:hover { color: var(--accent); }
+.back-home .arr { font-family: var(--mono, monospace); margin-right: 5px; }
+.footer {
+  border-top: 1px solid rgba(88, 110, 170, 0.14); padding: 20px 0 26px; text-align: center;
+  font-size: 12px; color: var(--text-3); position: relative; z-index: 1;
+}
+/* ---- Toast ---- */
+.toast-wrap { position: fixed; top: 80px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 10px; }
+.toast {
+  min-width: 260px; max-width: 360px; padding: 13px 17px; border-radius: 13px; font-size: 13px;
+  background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(18px);
+  border: 1px solid rgba(88, 110, 170, 0.2); box-shadow: 0 10px 34px rgba(58, 82, 148, 0.18);
+  display: flex; gap: 11px; align-items: center; color: var(--text-1);
+  animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.toast.ok { border-color: rgba(14, 166, 120, 0.35); } .toast.ok .tdot { background: var(--success); box-shadow: 0 0 8px rgba(14, 166, 120, 0.5); }
+.toast.bad { border-color: rgba(224, 74, 85, 0.35); } .toast.bad .tdot { background: var(--error); box-shadow: 0 0 8px rgba(224, 74, 85, 0.5); }
+.toast .tdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.toast.out { animation: slideOut 0.3s ease forwards; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(30px); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.fade-up { animation: fadeUp 0.55s ease both; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: rgba(88, 110, 170, 0.25); border-radius: 99px; }
+::-webkit-scrollbar-track { background: transparent; }
+@media (max-width: 560px) {
+  .auth-card { padding: 28px 22px; }
+  .nav-inner { padding: 0 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 背景光球 -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- ========== 顶部导航 ========== -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="logo" onclick="window.location.href='index_glass.html'">
+      <div class="logo-badge"><img src="nidus_logo.png" alt="NIDUS"></div>
+      <span>SQL 自适应训练</span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-link" onclick="window.location.href='index_glass.html'" data-i18n="nav_home">首页</button>
+      <button class="nav-link" onclick="window.location.href='about.html'" data-i18n="nav_about">了解我们</button>
+      <button class="nav-link" onclick="window.location.href='login_glass.html'" data-i18n="nav_enter">进入平台</button>
+    </div>
+    <button class="nav-link" id="langBtn" onclick="toggleLang()">English</button>
+  </div>
+</nav>
+
+<!-- ========== 管理员登录 ========== -->
+<div class="auth-wrap">
+  <div class="auth-card glass fade-up">
+    <div class="auth-head">
+      <div class="auth-title" data-i18n-html="auth_title">管理员<span class="grad">登录</span></div>
+      <div class="auth-sub" data-i18n="auth_sub">输入管理员用户名与统一密钥以进入管理后台</div>
+    </div>
+
+    <form onsubmit="doAdminLogin(event)" autocomplete="off">
+      <div class="field">
+        <label for="admUser" data-i18n="label_user">管理员用户名</label>
+        <div class="inp-wrap">
+          <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+          <input id="admUser" type="text" placeholder="admin" autocomplete="off" data-i18n-placeholder="ph_user">
+        </div>
+        <div class="hint" id="admUserHint"></div>
+      </div>
+      <div class="field">
+        <label for="admKey" data-i18n="label_key">统一管理员密钥</label>
+        <div class="inp-wrap has-right">
+          <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></span>
+          <input id="admKey" type="password" placeholder="••••••••••••" autocomplete="off" data-i18n-placeholder="ph_key">
+          <button type="button" class="inp-btn eye" id="admKeyEye" title="显示密钥" data-i18n-title="show_key" onclick="toggleKey()"></button>
+        </div>
+        <div class="hint" id="admKeyHint"></div>
+      </div>
+      <button class="btn" type="submit" id="admBtn" data-i18n="btn_enter">进入管理后台</button>
+    </form>
+
+    <a class="back-home" href="index_glass.html"><span class="arr">←</span><span data-i18n="back_home">返回首页</span></a>
+  </div>
+</div>
+
+<!-- ========== 页脚 ========== -->
+<footer class="footer" data-i18n="footer">© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台</footer>
+
+<!-- Toast -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ============================================================
+   管理员登录门
+   接口：POST /api/admin/login { username, key }
+   成功：sessionStorage.admin_token = 密钥 → 跳转 admin.html（自动跳过其输入框）
+   ============================================================ */
+const API_BASE = '/api';
+const $ = id => document.getElementById(id);
+
+/* ---- 中英双语 ---- */
+const I18N = {
+  page_title: { zh: '管理员登录 · SQL 自适应训练', en: 'Admin Login · SQL Adaptive Training' },
+  nav_home: { zh: '首页', en: 'Home' },
+  nav_about: { zh: '了解我们', en: 'About' },
+  nav_enter: { zh: '进入平台', en: 'Enter' },
+  auth_title: { zh: '管理员<span class="grad">登录</span>', en: 'Admin <span class="grad">Login</span>' },
+  auth_sub: { zh: '输入管理员用户名与统一密钥以进入管理后台', en: 'Enter the admin username and unified key to open the admin panel' },
+  label_user: { zh: '管理员用户名', en: 'Admin Username' },
+  label_key: { zh: '统一管理员密钥', en: 'Unified Admin Key' },
+  ph_user: { zh: '请输入管理员用户名', en: 'Enter admin username' },
+  ph_key: { zh: '请输入统一管理员密钥', en: 'Enter the admin key' },
+  show_key: { zh: '显示密钥', en: 'Show key' },
+  hide_key: { zh: '隐藏密钥', en: 'Hide key' },
+  btn_enter: { zh: '进入管理后台', en: 'Enter Admin Panel' },
+  back_home: { zh: '返回首页', en: 'Back to Home' },
+  footer: { zh: '© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台', en: '© 2026 SQL Adaptive Training · A personalized SQL learning platform' },
+  need_user: { zh: '请输入管理员用户名', en: 'Please enter the admin username' },
+  need_key: { zh: '请输入统一管理员密钥', en: 'Please enter the admin key' },
+  bad_creds: { zh: '用户名或密钥不正确', en: 'Incorrect username or key' },
+  too_many: { zh: '尝试过于频繁，请稍后再试', en: 'Too many attempts — try again later' },
+  net_error: { zh: '无法连接服务器，请确认后端已启动', en: 'Cannot reach server — make sure the backend is running' },
+  ok_msg: { zh: '验证通过，正在进入管理后台…', en: 'Verified — entering the admin panel…' },
+  loading_txt: { zh: '请稍候…', en: 'Please wait…' },
+};
+
+let LANG = localStorage.getItem('lang') || 'zh';
+function t(key) { const e = I18N[key]; return e ? (e[LANG] || e.zh) : key; }
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n-html')); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.getAttribute('data-i18n-title')); });
+  document.title = t('page_title');
+  const btn = document.getElementById('langBtn');
+  if (btn) btn.textContent = LANG === 'zh' ? 'English' : '中文';
+  document.documentElement.lang = LANG === 'zh' ? 'zh-CN' : 'en';
+}
+function toggleLang() {
+  LANG = LANG === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('lang', LANG);
+  applyI18n();
+}
+applyI18n();
+
+/* ---- 眼睛图标 ---- */
+let keyShown = false;
+function toggleKey() {
+  keyShown = !keyShown;
+  $('admKey').type = keyShown ? 'text' : 'password';
+  $('admKeyEye').title = keyShown ? t('hide_key') : t('show_key');
+}
+
+/* ---- 表单辅助 ---- */
+function setHint(id, text, type) {
+  const el = $(id);
+  el.textContent = text || '';
+  el.className = 'hint' + (type ? ' ' + type : '');
+}
+function loading(on) {
+  const b = $('admBtn');
+  if (on) { b.dataset.txt = b.textContent; b.innerHTML = '<span class="spin"></span>' + t('loading_txt'); b.disabled = true; }
+  else { b.textContent = b.dataset.txt || b.textContent; b.disabled = false; }
+}
+function toast(msg, type) {
+  const tEl = document.createElement('div');
+  tEl.className = 'toast ' + type;
+  tEl.innerHTML = '<span class="tdot"></span><span>' + msg + '</span>';
+  $('toastWrap').appendChild(tEl);
+  setTimeout(() => { tEl.classList.add('out'); setTimeout(() => tEl.remove(), 300); }, 3400);
+}
+
+/* ---- 提交验证 ---- */
+async function doAdminLogin(e) {
+  e.preventDefault();
+  const username = $('admUser').value.trim();
+  const key = $('admKey').value.trim();
+  let ok = true;
+  if (!username) { setHint('admUserHint', t('need_user'), 'err'); $('admUser').classList.add('err'); ok = false; }
+  if (!key) { setHint('admKeyHint', t('need_key'), 'err'); $('admKey').classList.add('err'); ok = false; }
+  if (!ok) return;
+  loading(true);
+  try {
+    const r = await fetch(API_BASE + '/admin/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username, key: key })
+    });
+    const d = await r.json();
+    loading(false);
+    if (r.status === 429) { toast('bad', t('too_many'), 'bad'); return; }
+    if (!r.ok) {
+      setHint('admUserHint', t('bad_creds'), 'err');
+      setHint('admKeyHint', t('bad_creds'), 'err');
+      $('admUser').classList.add('err');
+      $('admKey').classList.add('err');
+      return;
+    }
+    // 验证通过：保存密钥，admin.html 会自动读取跳过输入框
+    sessionStorage.setItem('admin_token', d.token);
+    $('admBtn').textContent = '✓';
+    toast('ok', t('ok_msg'), 'ok');
+    setTimeout(() => { window.location.href = 'admin.html'; }, 700);
+  } catch (err) {
+    loading(false);
+    toast('bad', t('net_error'), 'bad');
+  }
+}
+
+/* 输入时清除错误态 */
+['admUser', 'admKey'].forEach(id => {
+  $(id).addEventListener('input', () => {
+    setHint(id + 'Hint', '');
+    $(id).classList.remove('err');
+  });
+});
+</script>
+</body>
+</html>
