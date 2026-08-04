@@ -240,14 +240,36 @@ def get_mastery(session_id):
     return {r['node_id']: dict(r) for r in rows}
 
 def reset_user_password(username, new_password):
-    """管理员重置平台用户密码（bcrypt 存储）"""
+    """管理员重置平台用户密码：旧密码先入历史（每用户最多 3 条），新密码 bcrypt 存储"""
     import bcrypt
     conn = get_connection()
-    row = conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
+    row = conn.execute('SELECT id, password FROM users WHERE username=?', (username,)).fetchone()
     if not row:
         return None, 'not_found'
+    old_hash = dict(row)['password']
+    if old_hash:
+        # 旧密码入档（含历史兼容格式，login_user 三种格式都能验证）
+        conn.execute('INSERT INTO user_password_history (username, password) VALUES (?,?)',
+                     (username, old_hash))
+        # 只保留最近 3 条
+        conn.execute('''DELETE FROM user_password_history WHERE username=? AND id NOT IN (
+            SELECT id FROM user_password_history WHERE username=? ORDER BY id DESC LIMIT 3)''',
+            (username, username))
     pw_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     conn.execute('UPDATE users SET password=? WHERE username=?', (pw_hash, username))
+    conn.commit()
+    return True, None
+
+def rollback_user_password(username):
+    """回退到最近一次历史密码（消费一条历史；最多可回退 3 次）"""
+    conn = get_connection()
+    row = conn.execute(
+        'SELECT id, password FROM user_password_history WHERE username=? ORDER BY id DESC LIMIT 1',
+        (username,)).fetchone()
+    if not row:
+        return None, 'no_history'
+    conn.execute('UPDATE users SET password=? WHERE username=?', (dict(row)['password'], username))
+    conn.execute('DELETE FROM user_password_history WHERE id=?', (dict(row)['id'],))
     conn.commit()
     return True, None
 
@@ -276,7 +298,8 @@ def get_admin_users():
     rows = conn.execute('''SELECT u.username, u.session_id, u.created_at,
         (SELECT COUNT(*) FROM user_progress WHERE session_id=u.session_id) as answered,
         (SELECT COUNT(*) FROM user_progress WHERE session_id=u.session_id AND is_correct=1) as correct,
-        (SELECT MAX(answered_at) FROM user_progress WHERE session_id=u.session_id) as last_active
+        (SELECT MAX(answered_at) FROM user_progress WHERE session_id=u.session_id) as last_active,
+        (SELECT COUNT(*) FROM user_password_history WHERE username=u.username) as rollback_count
         FROM users u ORDER BY u.created_at DESC''').fetchall()
     users = []
     for r in rows:

@@ -151,6 +151,53 @@ class TestAdminAccount:
             headers={'Authorization': 'Bearer test-admin-token'})
         assert r.status_code == 404
 
+    def test_password_rollback_restores_old_password(self, client):
+        H = {'Authorization': 'Bearer test-admin-token'}
+        client.post('/api/register', json={'username': 'stu_rb', 'password': 'PassOld1'})
+        # 重置 → 历史 +1，回退按钮应出现
+        client.post('/api/admin/user-reset', json={
+            'username': 'stu_rb', 'new_password': 'PassNew1'}, headers=H)
+        users = client.get('/api/admin/users', headers=H).get_json()
+        u = next(x for x in users if x['username'] == 'stu_rb')
+        assert u['rollback_count'] == 1
+        # 回退 → 旧密码恢复
+        r = client.post('/api/admin/password-rollback', json={'username': 'stu_rb'}, headers=H)
+        assert r.status_code == 200
+        assert client.post('/api/login', json={
+            'username': 'stu_rb', 'password': 'PassOld1'}).status_code == 200
+        assert client.post('/api/login', json={
+            'username': 'stu_rb', 'password': 'PassNew1'}).status_code == 401
+        users = client.get('/api/admin/users', headers=H).get_json()
+        u = next(x for x in users if x['username'] == 'stu_rb')
+        assert u['rollback_count'] == 0
+
+    def test_password_rollback_max_three(self, client):
+        H = {'Authorization': 'Bearer test-admin-token'}
+        client.post('/api/register', json={'username': 'stu_rb3', 'password': 'PassA123'})
+        for pwd in ('PassB123', 'PassC123', 'PassD123', 'PassE123'):   # 4 次重置
+            assert client.post('/api/admin/user-reset', json={
+                'username': 'stu_rb3', 'new_password': pwd}, headers=H).status_code == 200
+        users = client.get('/api/admin/users', headers=H).get_json()
+        u = next(x for x in users if x['username'] == 'stu_rb3')
+        assert u['rollback_count'] == 3          # 历史只保留最近 3 条
+        # 回退 3 次成功（PassD123 → PassC123 → PassB123），第 4 次 409
+        for expect in ('PassD123', 'PassC123', 'PassB123'):
+            assert client.post('/api/admin/password-rollback', json={
+                'username': 'stu_rb3'}, headers=H).status_code == 200
+            assert client.post('/api/login', json={
+                'username': 'stu_rb3', 'password': expect}).status_code == 200
+        r = client.post('/api/admin/password-rollback', json={'username': 'stu_rb3'}, headers=H)
+        assert r.status_code == 409
+
+    def test_password_rollback_requires_token(self, client):
+        r = client.post('/api/admin/password-rollback', json={'username': 'x'})
+        assert r.status_code == 401
+
+    def test_password_rollback_no_history(self, client):
+        r = client.post('/api/admin/password-rollback', json={'username': 'nobody'},
+                        headers={'Authorization': 'Bearer test-admin-token'})
+        assert r.status_code == 409
+
     def test_admin_auth_pages_served(self, client):
         assert client.get('/admin-auth').status_code == 200
         assert client.get('/admin-panel').status_code == 200

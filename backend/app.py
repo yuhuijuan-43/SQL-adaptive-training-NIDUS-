@@ -10,7 +10,7 @@ from repositories import (get_all_questions, get_exam_questions, get_question_by
     get_or_create_derived_question, get_derived_question_by_id,
     get_questions_by_node_and_type, get_node_id_for_question, is_mcq,
     get_diagnostic_questions, get_admin_stats, get_admin_users, get_progress_summary,
-    reset_user_password)
+    reset_user_password, rollback_user_password)
 from auth import (login_user, register_user, login_or_register, check_username_exists,
     _is_authenticated, register_admin, login_admin, check_admin_username_exists,
     get_admin_colleagues, REFERRAL_CODE)
@@ -77,7 +77,8 @@ _PUBLIC_API_PATHS = {'/api/login', '/api/register', '/api/check-username',
                      '/api/graph', '/api/admin/login', '/api/admin/auth-register',
                      '/api/admin/auth-login', '/api/admin/auth-check-username',
                      '/api/admin/stats', '/api/admin/users', '/api/admin/user-progress',
-                     '/api/admin/colleagues', '/api/admin/user-reset'}
+                     '/api/admin/colleagues', '/api/admin/user-reset',
+                     '/api/admin/password-rollback'}
 
 def _request_session_id():
     """从请求体 / 查询参数 / 路径参数中提取 session_id"""
@@ -598,6 +599,21 @@ def admin_user_reset():
     ok, reason = reset_user_password(username, new_password)
     if not ok:
         return jsonify({"error": "用户不存在"}), 404
+    return jsonify({"ok": True})
+
+@app.route('/api/admin/password-rollback', methods=['POST'])
+@limiter.limit("10 per minute")
+def admin_password_rollback():
+    """回退平台用户密码到上一个版本（历史保留 3 条 → 最多回退 3 次）"""
+    if not _check_admin_token():
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    if not username:
+        return jsonify({"error": "缺少参数"}), 400
+    ok, reason = rollback_user_password(username)
+    if not ok:
+        return jsonify({"error": "该用户没有可回退的历史密码（最多可回退 3 次）"}), 409
     return jsonify({"ok": True})
 
 if __name__ == '__main__':

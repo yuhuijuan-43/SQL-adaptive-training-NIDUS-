@@ -231,6 +231,21 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
   </div>
 </div>
 
+<!-- 回退密码确认弹窗 -->
+<div class="modal-mask" id="rollbackModal" onclick="if(event.target===this)closeRollback()">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" data-i18n="rollback_title">回退密码</span>
+      <button class="modal-close" onclick="closeRollback()">✕</button>
+    </div>
+    <div class="modal-tip" id="rollbackTip"></div>
+    <div class="modal-foot">
+      <button class="mini-btn" onclick="closeRollback()" data-i18n="cancel">取消</button>
+      <button class="btn-ok" id="rollbackOkBtn" onclick="confirmRollback()" data-i18n="rollback_confirm">确认回退</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
@@ -283,6 +298,15 @@ const I18N = {
   confirm_reset: { zh: '确认重置', en: 'Confirm Reset' },
   reset_ok: { zh: '密码已重置', en: 'Password reset' },
   reset_fail: { zh: '重置失败', en: 'Reset failed' },
+  rollback: { zh: '回退', en: 'Rollback' },
+  rollback_hint: { zh: '回退到上一个密码（最多可回退 3 次）', en: 'Restore the previous password (up to 3 rollbacks)' },
+  rollback_title: { zh: '回退密码', en: 'Rollback Password' },
+  rollback_tip: { zh: '将把「{0}」的密码回退到上一个版本，该版本立即生效。剩余可回退次数：{1}（最多 3 次）。',
+                  en: 'Password of "{0}" will be restored to the previous version and takes effect immediately. Rollbacks left: {1} (max 3).' },
+  rollback_confirm: { zh: '确认回退', en: 'Confirm Rollback' },
+  cancel: { zh: '取消', en: 'Cancel' },
+  rollback_ok: { zh: '已回退到上一个密码', en: 'Rolled back to the previous password' },
+  rollback_fail: { zh: '回退失败', en: 'Rollback failed' },
   copied: { zh: '已复制到剪贴板', en: 'Copied to clipboard' },
   copy_fail: { zh: '复制失败，请手动选择复制', en: 'Copy failed — please select manually' },
   bad_pwd: { zh: '密码需 8-64 位，且包含大小写字母和数字', en: 'Password needs 8-64 chars with upper, lower & digit' },
@@ -392,14 +416,51 @@ function loadUsers() {
       for (let i = 0; i < users.length; i++) {
         const u = users[i];
         const lastActive = u.last_active ? fmtTime(u.last_active) : t('never');
+        var opBtn = '<button class="mini-btn danger" onclick="openReset(\'' + escapeHtml(u.username) + '\')">' + t('reset') + '</button>';
+        if (u.rollback_count > 0) {
+          opBtn += ' <button class="mini-btn" title="' + t('rollback_hint') + '" onclick="openRollback(\'' +
+                   escapeHtml(u.username) + '\',' + u.rollback_count + ')">' + t('rollback') + '(' + u.rollback_count + ')</button>';
+        }
         html += '<tr><td><strong>' + escapeHtml(u.username) + '</strong></td>' +
                 '<td>' + u.answered + '</td>' +
                 '<td style="color:var(--text-2);font-size:12.5px">' + lastActive + '</td>' +
-                '<td><button class="mini-btn danger" onclick="openReset(\'' + escapeHtml(u.username) + '\')">' + t('reset') + '</button></td></tr>';
+                '<td>' + opBtn + '</td></tr>';
       }
       body.innerHTML = html;
     })
     .catch(function(e) { if (e.message !== '401') $('usersBody').innerHTML = '<tr><td colspan="4" class="empty" style="color:#b04a4a">' + t('net_error') + '</td></tr>'; });
+}
+
+/* ---- 回退密码（防止误操作，最多 3 次） ---- */
+let _rollbackTarget = '';
+function openRollback(username, count) {
+  _rollbackTarget = username;
+  $('rollbackTip').textContent = tf('rollback_tip', username, count);
+  $('rollbackModal').classList.add('show');
+}
+function closeRollback() {
+  $('rollbackModal').classList.remove('show');
+  _rollbackTarget = '';
+}
+function confirmRollback() {
+  const btn = $('rollbackOkBtn');
+  btn.disabled = true;
+  adminFetch('/admin/password-rollback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: _rollbackTarget })
+  })
+    .then(function(r) {
+      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      closeRollback();
+      toast('ok', t('rollback_ok') + '：' + _rollbackTarget);
+      renderAll();   // 刷新回退按钮/次数
+    })
+    .catch(function(e) {
+      if (e.message !== '401') toast('bad', t('rollback_fail'), 'bad');
+    })
+    .finally(function() { btn.disabled = false; });
 }
 
 /* ---- 重置密码 ---- */
