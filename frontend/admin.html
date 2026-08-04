@@ -62,6 +62,14 @@
   .btn-ok { height:38px; padding:0 22px; border-radius:10px; border:none; cursor:pointer; font-family:inherit; font-size:13px; font-weight:700; color:#fff; background:var(--accent-grad); box-shadow:0 4px 14px rgba(90,100,255,0.35); transition:all 0.2s; }
   .btn-ok:hover { transform:translateY(-1px); box-shadow:0 7px 22px rgba(90,100,255,0.5); }
   .btn-ok:disabled { opacity:0.5; cursor:not-allowed; }
+  .toast-wrap { position:fixed; top:80px; right:24px; z-index:1200; display:flex; flex-direction:column; gap:10px; }
+  .toast { min-width:260px; max-width:360px; padding:13px 17px; border-radius:13px; font-size:13px; background:rgba(255,255,255,0.92); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border:1px solid var(--border); box-shadow:0 10px 34px rgba(58,82,148,0.18); display:flex; gap:11px; align-items:center; color:var(--text); animation:toastIn 0.3s cubic-bezier(0.2,0.8,0.3,1); }
+  .toast.ok { border-color:rgba(14,166,120,0.35); } .toast.ok .tdot { background:var(--success); box-shadow:0 0 8px rgba(14,166,120,0.5); }
+  .toast.bad { border-color:rgba(224,74,85,0.35); } .toast.bad .tdot { background:var(--error); box-shadow:0 0 8px rgba(224,74,85,0.5); }
+  .toast .tdot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .toast.out { animation:toastOut 0.3s ease forwards; }
+  @keyframes toastIn { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }
+  @keyframes toastOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(30px); } }
   .accent { color: var(--accent); }
   .grad-text { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .num-oswald { font-weight:600; }
@@ -106,7 +114,10 @@
   <div class="card" style="padding:0.75rem 1rem;">
     <div class="flex justify-between items-center">
       <div><span style="font-weight:700;font-size:1.5rem;letter-spacing:0.02em;">SQL</span><span class="grad-text" style="font-weight:700;font-size:1.5rem;letter-spacing:0.02em;">管理后台</span><span style="font-size:0.6rem;color:var(--text2);margin-left:0.5rem;">ADMIN · DASHBOARD</span></div>
-      <span style="font-size:0.65rem;color:var(--text2);" id="refreshTime">-</span>
+      <span style="display:inline-flex;gap:10px;align-items:center">
+        <button class="mini-btn" onclick="window.location.href='index_glass.html'">← 返回首页</button>
+        <span style="font-size:0.65rem;color:var(--text2);" id="refreshTime">-</span>
+      </span>
     </div>
   </div>
 
@@ -118,14 +129,8 @@
     <div class="card p-3 text-center"><div class="stat-num" style="color:var(--accent)" id="statAccuracy">-</div><div class="stat-label">正确率</div></div>
   </div>
 
-  <!-- CHARTS ROW -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
-
-    <!-- Donut chart: correct vs wrong -->
-    <div class="card p-3">
-      <div class="num-oswald text-xs tracking-wider opacity-60 mb-1">正确 / 错误 比例</div>
-      <svg id="donutChart" viewBox="0 0 240 160" style="width:100%;height:auto"></svg>
-    </div>
+  <!-- CHARTS ROW（正确/错误比例已移除，剩余两模块等比例填充） -->
+  <div class="grid grid-cols-1 gap-3 mt-3" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr))">
 
     <!-- Bar chart: difficulty distribution -->
     <div class="card p-3">
@@ -134,7 +139,7 @@
     </div>
 
     <!-- Bar chart: user performance -->
-    <div class="card p-3 md:col-span-2">
+    <div class="card p-3">
       <div class="num-oswald text-xs tracking-wider opacity-60 mb-1"><span id="rankLabel">用户答题排行</span></div>
       <svg id="userChart" viewBox="0 0 460 140" style="width:100%;height:auto"></svg>
     </div>
@@ -224,31 +229,6 @@ function adminFetch(path) {
   var headers = {};
   if (ADMIN_TOKEN) headers['Authorization'] = 'Bearer ' + ADMIN_TOKEN;
   return fetch(API_BASE + path, { headers: headers });
-}
-
-function drawDonut(correct, wrong) {
-  var total = correct + wrong;
-  if (total === 0) { document.getElementById('donutChart').innerHTML = '<text x="120" y="80" text-anchor="middle" fill="#87867f" font-size="12">暂无数据</text>'; return; }
-  var pct = correct / total;
-  var r = 50, cx = 80, cy = 80;
-  var end = pct * 360;
-  var rad = function(d) { return d * Math.PI / 180; };
-  var desc = function(a1, a2) {
-    var x1 = cx + r * Math.sin(rad(a1)), y1 = cy - r * Math.cos(rad(a1));
-    var x2 = cx + r * Math.sin(rad(a2)), y2 = cy - r * Math.cos(rad(a2));
-    var large = (a2 - a1) > 180 ? 1 : 0;
-    return 'M ' + cx + ' ' + cy + ' L ' + x1 + ' ' + y1 + ' A ' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ' ' + y2 + ' Z';
-  };
-  var html = '';
-  if (end > 0) html += '<path d="' + desc(0, end) + '" fill="#788c5d" opacity="0.85"/>';
-  if (end < 360) html += '<path d="' + desc(end, 360) + '" fill="#dcd6ce" opacity="0.6"/>';
-  html += '<text x="80" y="75" text-anchor="middle" fill="#2c241b" font-family="Oswald" font-size="22" font-weight="700">' + Math.round(pct * 100) + '%</text>';
-  html += '<text x="80" y="90" text-anchor="middle" fill="#87867f" font-size="9">正确率</text>';
-  html += '<text x="155" y="65" fill="#788c5d" font-family="Oswald" font-size="13" font-weight="700">' + correct + '</text>';
-  html += '<text x="155" y="78" fill="#87867f" font-size="8">正确</text>';
-  html += '<text x="155" y="95" fill="#b04a4a" font-family="Oswald" font-size="13" font-weight="700">' + wrong + '</text>';
-  html += '<text x="155" y="108" fill="#87867f" font-size="8">错误</text>';
-  document.getElementById('donutChart').innerHTML = html;
 }
 
 function drawDiffBars(easy, medium, hard) {
@@ -419,6 +399,17 @@ function userPage(delta) {
   renderUserTable();
 }
 
+/* ---- Toast（密码管理反馈） ---- */
+function toast(msg, type) {
+  var wrap = document.getElementById('toastWrap');
+  if (!wrap) return;
+  var t = document.createElement('div');
+  t.className = 'toast ' + (type || '');
+  t.innerHTML = '<span class="tdot"></span><span>' + msg + '</span>';
+  wrap.appendChild(t);
+  setTimeout(function() { t.classList.add('out'); setTimeout(function() { t.remove(); }, 300); }, 3400);
+}
+
 /* ============ 用户与管理员密码管理（迁移自管理员面板） ============ */
 function fmtTime(ts) {
   if (!ts) return '从未';
@@ -549,7 +540,6 @@ async function loadAdmin() {
     document.getElementById('statAnswers').textContent = stats.total_answers;
     document.getElementById('statCorrect').textContent = stats.total_correct;
     document.getElementById('statAccuracy').textContent = stats.accuracy + '%';
-    drawDonut(stats.total_correct, stats.total_answers - stats.total_correct);
     drawDiffBars(stats.by_difficulty.easy || 0, stats.by_difficulty.medium || 0, stats.by_difficulty.hard || 0);
 
     var usersRes = await adminFetch('/admin/users');
@@ -571,5 +561,6 @@ async function loadAdmin() {
 loadAdmin();
 setInterval(loadAdmin, 10000);
 </script>
+<div class="toast-wrap" id="toastWrap"></div>
 </body>
 </html>
