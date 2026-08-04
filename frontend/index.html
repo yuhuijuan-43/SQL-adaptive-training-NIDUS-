@@ -627,12 +627,18 @@ if (sqlUser && sqlUser.session_id) {
     .catch(function() {});
 }
 
+// 切换用户：先清除本地会话再进登录页，避免登录页的"已登录自动跳回"逻辑误触发
+function switchUser() {
+  sessionStorage.removeItem('sql_user');
+  window.location.href = '/login';
+}
+
 function updateUserUI() {
   var headerEl = document.getElementById('headerUserInfo');
   var loginCenter = document.getElementById('loginCenterArea');
   var cbToggle = document.getElementById('cbToggle');
   if (sqlUser) {
-    if (headerEl) headerEl.innerHTML = '<i class="fas fa-user mr-1"></i>' + sqlUser.name + ' · V1.0 <a href="/login" style="color:var(--text2);font-size:0.65rem;margin-left:6px;text-decoration:none;" title="切换用户"><i class="fas fa-exchange-alt"></i></a>';
+    if (headerEl) headerEl.innerHTML = '<i class="fas fa-user mr-1"></i>' + sqlUser.name + ' · V1.0 <a href="#" onclick="event.preventDefault();switchUser()" style="color:var(--text2);font-size:0.65rem;margin-left:6px;text-decoration:none;" title="切换用户"><i class="fas fa-exchange-alt"></i></a>';
     if (loginCenter) loginCenter.style.display = 'none';
   } else {
     if (headerEl) headerEl.innerHTML = 'V1.0';
