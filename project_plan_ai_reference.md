@@ -87,7 +87,7 @@
 | 密码存储 | bcrypt | 兼容旧 SHA-256 格式自动升级 |
 | 部署 | `start_server.bat` + ngrok | Waitress WSGI（生产）或 Flask dev server |
 
-### 3.2 数据库表结构（10 张表，SQLite）
+### 3.2 数据库表结构（12 张表，SQLite）
 
 | 表名 | 存什么 | 重要度 |
 |---|---|---|
@@ -102,6 +102,8 @@
 | `journey_state` | 用户自适应旅程的当前状态（阶段、当前节点、队列等） | ⭐⭐ |
 | `users` | 用户注册信息（用户名 + bcrypt 密码哈希） | ⭐ |
 | `diagnostic_results` | 摸底测试结果 | ⭐ |
+| `admin_users` | 管理员账号（内推码注册，用户名全局唯一，last_login_at） | ⭐⭐ |
+| `user_password_history` | 密码历史（重置前入档，每账号最多 3 条，kind 区分用户/管理员） | ⭐⭐ |
 
 ### 3.3 知识图谱（已重构）
 
@@ -210,7 +212,10 @@ root [SQL知识图谱]
 | `/about` `/about.html` | 了解我们（更新动态 + 详情弹窗） |
 | `/index_glass.html` | 门户页直接访问 |
 | `/nidus_logo.png` | 品牌 logo（透明底 PNG） |
-| `/admin` | 管理后台 |
+| `/admin` | 管理后台（统计 + 用户明细含密码管理） |
+| `/admin-gate` | 管理后台登录门（双重验证：管理员账号密码 + 统一密钥） |
+| `/admin-auth` | 管理员账号登录/注册（内推码，页面不显示码值） |
+| `/admin-panel` | 管理员自身页面（统一密钥 + 我的同事） |
 | `/knowledge-map` | 知识图谱可视化页 |
 | `/diagnostic-page` | 摸底诊断页（前端入口已移除，路由保留） |
 | `/basic-select` | 基础选择题练习页 |
@@ -239,7 +244,17 @@ root [SQL知识图谱]
 | `/api/check-username` | GET | 检查用户名是否已存在 |
 | `/api/progress/<session_id>` | GET | 用户答题历史与正确率 |
 | `/api/admin/stats` | GET | 后台统计（用户数、答题数、正确率、难度分布） |
-| `/api/admin/users` | GET | 后台用户列表 |
+| `/api/admin/users` | GET | 后台用户列表（仅平台用户，不含管理员） |
+| `/api/admin/accounts` | GET | 用户+管理员合并列表（role 区分，密码管理用） |
+| `/api/admin/user-progress` | GET | 单用户答题记录摘要（?session_id=） |
+| `/api/admin/colleagues` | GET | 我的同事（管理员用户名 + 最后上线时间，?me= 排除自己） |
+| `/api/admin/key` | GET | 当前统一管理员密钥（面板展示/复制） |
+| `/api/admin/login` | POST | 管理后台登录门：账号密码 + 统一密钥双重验证 |
+| `/api/admin/auth-register` | POST | 管理员内推码注册（403 错码 / 409 重名 / 400 弱密码） |
+| `/api/admin/auth-login` | POST | 管理员账号登录（更新最后上线时间） |
+| `/api/admin/auth-check-username` | GET | 管理员用户名预检（含平台用户同名） |
+| `/api/admin/user-reset` | POST | 重置密码（用户/管理员自动识别，旧密码入历史） |
+| `/api/admin/password-rollback` | POST | 回退密码（最多 3 次，kind 隔离） |
 
 ---
 
@@ -411,15 +426,25 @@ SQL自适应训练/
 | Thompson 采样选题 | ✅ 完成 | `database.py` → `_thompson_score()` |
 | 深度模式（MCQ→填空验证） | ✅ 完成 | `database.py` → `_check_fillin_mode()` |
 | 前端刷题页（双模式） | ✅ 完成 | `frontend/index.html` |
-| 登录系统（bcrypt + 强度检测） | ✅ 完成 | `frontend/login.html` + `/api/login` `/api/register` |
+| 登录系统（bcrypt + 强度检测 + 记住输入） | ✅ 完成 | `frontend/login_glass.html` + `/api/login` `/api/register` |
+| 登录保护（游客禁止读题） | ✅ 完成 | `app.py` before_request 守卫 |
 | 摸底诊断测试 | ✅ 完成 | `frontend/diagnostic.html` + `/api/diagnostic` |
-| 管理后台 | ✅ 完成 | `frontend/admin.html` + `/api/admin/*` |
+| 管理后台（玻璃拟态） | ✅ 完成 | `frontend/admin.html` + `/api/admin/*` |
+| 管理后台登录门（双重验证） | ✅ 完成 | `frontend/admin_gate.html` + `/api/admin/login` |
+| 管理员账号体系（内推码注册） | ✅ 完成 | `frontend/admin_auth.html` + `/api/admin/auth-*` |
+| 管理员自身页面（密钥 + 同事） | ✅ 完成 | `frontend/admin_panel.html` + `/api/admin/colleagues` `/key` |
+| 密码管理（重置 + 回退 3 次 + 复制） | ✅ 完成 | `/api/admin/user-reset` `/password-rollback` + 历史表 |
+| **真实 SQL 判题引擎** | ✅ 完成 | `backend/sql_judge.py`（内存库真实执行 + 结果集比对） |
+| 后端分层架构 | ✅ 完成 | `db.py` / `repositories.py` / `auth.py` / `engine.py` / `seeding.py` |
+| 中英双语（4 组页面） | ✅ 完成 | 轻量 i18n 引擎 + 右上角切换 |
 | 知识图谱可视化 | ✅ 完成 | `frontend/knowledge_map.html`（ECharts） |
 | CodeMirror 语法高亮 + 色觉辅助 | ✅ 完成 | `frontend/index.html` |
 | 数据表格 + 预期输出渲染 | ✅ 完成 | `frontend/index.html` |
-| 题库（356 题，含答案+预期输出） | ✅ 完成 | `questions.py` + `exam_questions.json` |
+| 题库（457 练习 + 50 真题，含答案） | ✅ 完成 | `questions.json` + `exam_questions.json` |
 | MySQL→SQLite 翻译层 | ✅ 完成 | 批量生成预期输出脚本 |
-| 选择题 + 填空题混合 | ✅ 完成 | 61 MCQs + 295 fill-in |
+| 选择题 + 填空题混合 | ✅ 完成 | 457 practice + 50 exam |
+| **单元测试 / 集成测试** | ✅ 完成 | `backend/tests/`（pytest 67 用例，临时 SQLite 隔离） |
+| **git 版本控制** | ✅ 完成 | 基线快照 + 按功能拆分提交 |
 
 ### ❌ 未实现（设计文档中规划）
 
@@ -435,7 +460,6 @@ SQL自适应训练/
 | **Celery 异步任务队列** | ❌ 未实现 | 无异步任务 |
 | **gunicorn/nginx 生产部署** | ❌ 未实现 | 当前是 Waitress/Flask dev server 裸跑 |
 | **牛客/Kaggle 全量入库** | ❌ 部分未做 | 原始文件存在但未全部导入 |
-| **单元测试 / 集成测试** | ❌ 无 | 项目中没有测试代码 |
 
 ---
 
@@ -461,6 +485,7 @@ SQL自适应训练/
 | M3 核心引擎可运行 | ✅ 已完成 | BKT 引擎 · Thompson 采样 · 三阶段递进 · 前端刷题页 |
 | M4 题库建设 | ✅ 已完成 | 356 题（61 MCQs + 295 fill-in），含标准答案 + 预期输出 |
 | M5 联调 & 内测 | 🔄 进行中 | 深度模式验证 · 知识图谱重构 · 数据质量修复 |
+| M5.1 工程化 + 管理后台体系 | ✅ 已完成 | 后端分层重构 · 真实判题引擎 · 登录保护 · 管理员体系（双重验证/内推码注册/密码管理）· 中英双语 · pytest 67 用例 · git 版本控制 |
 | M6 LLM 集成 | ⏳ 未开始 | LLM 变式题生成 · 错误诊断 |
 | M7 正式上线 | ⏳ 未开始 | 生产环境部署 · 灰度方案 · 监控告警 |
 
