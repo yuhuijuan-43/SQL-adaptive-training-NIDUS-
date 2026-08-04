@@ -19,23 +19,28 @@
   align-items: center;
   gap: 0.5rem;
   max-width: 44vw;
-  padding: 0.45rem 0.8rem;
-  border-radius: 0.55rem;
-  background: rgba(255, 255, 255, 0.4);
-  border: 1px solid rgba(88, 110, 170, 0.16);
-  box-shadow: 0 4px 16px rgba(58, 82, 148, 0.10);
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(88, 110, 170, 0.22);
+  box-shadow: 0 4px 16px rgba(58, 82, 148, 0.12);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   font-family: 'SF Mono', 'Consolas', 'Microsoft YaHei', monospace;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: rgba(50, 70, 120, 0.34);
+  color: rgba(45, 65, 115, 0.55);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  opacity: 0.24;
+  opacity: 0.55;
   will-change: transform, opacity;
+}
+/* 减少动态效果模式：静态卡片更淡、不打搅阅读 */
+.ambient-card.ambient-static {
+  opacity: 0.30;
+  background: rgba(255, 255, 255, 0.4);
 }
 .ambient-diff {
   flex: none;
@@ -48,8 +53,8 @@
 .ambient-diff.hard  { background: #d06060; }
 /* 深色页面（登录页等）下的提亮版本 */
 .ambient-dark .ambient-card {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.10);
-  color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.55);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
 }
