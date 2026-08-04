@@ -86,7 +86,7 @@
 
     <!-- Bar chart: user performance -->
     <div class="card p-3 md:col-span-2">
-      <div class="num-oswald text-xs tracking-wider opacity-60 mb-1">用户答题排行</div>
+      <div class="num-oswald text-xs tracking-wider opacity-60 mb-1"><span id="rankLabel">用户答题排行</span></div>
       <svg id="userChart" viewBox="0 0 460 140" style="width:100%;height:auto"></svg>
     </div>
 
@@ -100,6 +100,14 @@
         <thead><tr><th>用户名</th><th>答题数</th><th>正确数</th><th>正确率</th><th>最后活跃</th></tr></thead>
         <tbody id="userTableBody"><tr><td colspan="5" class="text-center opacity-50 py-4">加载中...</td></tr></tbody>
       </table>
+    </div>
+    <!-- 用户明细分页（每页 5 条） -->
+    <div class="flex justify-between items-center mt-2" id="userPager" style="display:none">
+      <span class="text-xs opacity-60" id="pagerInfo"></span>
+      <span style="display:inline-flex;gap:6px">
+        <button id="pagerPrev" onclick="userPage(-1)" style="padding:3px 10px;font-size:0.7rem;border:1px solid var(--border);border-radius:0.25rem;background:var(--card);color:var(--text2);cursor:pointer;">上一页</button>
+        <button id="pagerNext" onclick="userPage(1)" style="padding:3px 10px;font-size:0.7rem;border:1px solid var(--border);border-radius:0.25rem;background:var(--card);color:var(--text2);cursor:pointer;">下一页</button>
+      </span>
     </div>
   </div>
 
@@ -193,6 +201,56 @@ function adminErrorMsg(e) {
          '若刚更新过后端代码，请重启服务（CORS 配置需重启生效）</td></tr>';
 }
 
+// ---- 用户明细分页（每页 5 条） ----
+var _allUsers = [];
+var _userPage = 1;
+var _PAGE_SIZE = 5;
+
+function renderUserTable() {
+  var total = _allUsers.length;
+  var pages = Math.max(1, Math.ceil(total / _PAGE_SIZE));
+  if (_userPage > pages) _userPage = pages;
+  if (_userPage < 1) _userPage = 1;
+  var start = (_userPage - 1) * _PAGE_SIZE;
+  var pageUsers = _allUsers.slice(start, start + _PAGE_SIZE);
+
+  var html = '';
+  for (var i = 0; i < pageUsers.length; i++) {
+    var u = pageUsers[i];
+    var lastActive = u.last_active ? new Date(u.last_active + ' UTC').toLocaleString() : '从未作答';
+    var accClass = u.accuracy >= 60 ? '' : (u.accuracy > 0 ? 'style="color:var(--accent)"' : 'style="color:var(--error)"');
+    html += '<tr><td><strong>' + u.username + '</strong></td>';
+    html += '<td class="num-oswald">' + u.answered + '</td>';
+    html += '<td style="color:var(--text)">' + u.correct + '</td>';
+    html += '<td class="num-oswald" ' + accClass + '>' + (u.answered > 0 ? u.accuracy + '%' : '-') + '</td>';
+    html += '<td style="font-size:0.65rem;color:#87867f">' + lastActive + '</td></tr>';
+  }
+  if (total === 0) html = '<tr><td colspan="5" class="text-center opacity-50 py-4">暂无用户数据</td></tr>';
+  document.getElementById('userTableBody').innerHTML = html;
+
+  // 分页控件
+  var pager = document.getElementById('userPager');
+  var info = document.getElementById('pagerInfo');
+  var prevBtn = document.getElementById('pagerPrev');
+  var nextBtn = document.getElementById('pagerNext');
+  if (total > _PAGE_SIZE) {
+    pager.style.display = 'flex';
+    info.textContent = '第 ' + _userPage + ' / ' + pages + ' 页 · 共 ' + total + ' 人';
+    prevBtn.style.opacity = _userPage <= 1 ? '0.4' : '1';
+    prevBtn.style.pointerEvents = _userPage <= 1 ? 'none' : 'auto';
+    nextBtn.style.opacity = _userPage >= pages ? '0.4' : '1';
+    nextBtn.style.pointerEvents = _userPage >= pages ? 'none' : 'auto';
+  } else {
+    pager.style.display = 'none';
+  }
+}
+
+function userPage(delta) {
+  var pages = Math.max(1, Math.ceil(_allUsers.length / _PAGE_SIZE));
+  _userPage = Math.min(pages, Math.max(1, _userPage + delta));
+  renderUserTable();
+}
+
 async function loadAdmin() {
   document.getElementById('refreshTime').textContent = new Date().toLocaleTimeString();
   try {
@@ -201,6 +259,7 @@ async function loadAdmin() {
       sessionStorage.removeItem('admin_token');
       document.getElementById('userTableBody').innerHTML =
         '<tr><td colspan="5" class="text-center" style="color:#b04a4a">管理员 Token 无效，请刷新页面重新输入</td></tr>';
+      document.getElementById('userPager').style.display = 'none';
       return;
     }
     if (!statsRes.ok) throw new Error('HTTP ' + statsRes.status);
@@ -215,22 +274,16 @@ async function loadAdmin() {
     var usersRes = await adminFetch('/admin/users');
     if (!usersRes.ok) throw new Error('HTTP ' + usersRes.status);
     var users = await usersRes.json();
-    drawUserBars(users);
-    var html = '';
-    for (var i = 0; i < users.length; i++) {
-      var u = users[i];
-      var lastActive = u.last_active ? new Date(u.last_active + ' UTC').toLocaleString() : '从未作答';
-      var accClass = u.accuracy >= 60 ? '' : (u.accuracy > 0 ? 'style="color:var(--accent)"' : 'style="color:var(--error)"');
-      html += '<tr><td><strong>' + u.username + '</strong></td>';
-      html += '<td class="num-oswald">' + u.answered + '</td>';
-      html += '<td style="color:var(--text)">' + u.correct + '</td>';
-      html += '<td class="num-oswald" ' + accClass + '>' + (u.answered > 0 ? u.accuracy + '%' : '-') + '</td>';
-      html += '<td style="font-size:0.65rem;color:#87867f">' + lastActive + '</td></tr>';
-    }
-    if (users.length === 0) html = '<tr><td colspan="5" class="text-center opacity-50 py-4">暂无用户数据</td></tr>';
-    document.getElementById('userTableBody').innerHTML = html;
+    // 用户答题排行：按答题数降序取前 5
+    var rank = users.slice().sort(function(a, b) { return b.answered - a.answered; }).slice(0, 5);
+    document.getElementById('rankLabel').textContent = '用户答题排行 · 前 ' + rank.length + ' 名';
+    drawUserBars(rank);
+    // 用户明细：分页渲染（每页 5 条）
+    _allUsers = users;
+    renderUserTable();
   } catch(e) {
     document.getElementById('userTableBody').innerHTML = adminErrorMsg(e);
+    document.getElementById('userPager').style.display = 'none';
   }
 }
 
