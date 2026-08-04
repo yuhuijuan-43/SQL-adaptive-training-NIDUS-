@@ -78,7 +78,7 @@ _PUBLIC_API_PATHS = {'/api/login', '/api/register', '/api/check-username',
                      '/api/admin/auth-login', '/api/admin/auth-check-username',
                      '/api/admin/stats', '/api/admin/users', '/api/admin/user-progress',
                      '/api/admin/colleagues', '/api/admin/user-reset',
-                     '/api/admin/password-rollback'}
+                     '/api/admin/password-rollback', '/api/admin/key'}
 
 def _request_session_id():
     """从请求体 / 查询参数 / 路径参数中提取 session_id"""
@@ -600,6 +600,14 @@ def admin_user_reset():
     if not ok:
         return jsonify({"error": "用户不存在"}), 404
     return jsonify({"ok": True})
+
+@app.route('/api/admin/key')
+@limiter.limit("30 per minute")
+def admin_key():
+    """返回当前统一管理员密钥（面板展示/复制用；与 env 配置实时一致）"""
+    if not _check_admin_token():
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    return jsonify({"key": ADMIN_TOKEN})
 
 @app.route('/api/admin/password-rollback', methods=['POST'])
 @limiter.limit("10 per minute")

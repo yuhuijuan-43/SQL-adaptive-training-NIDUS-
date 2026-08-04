@@ -189,6 +189,14 @@ class TestAdminAccount:
         r = client.post('/api/admin/password-rollback', json={'username': 'stu_rb3'}, headers=H)
         assert r.status_code == 409
 
+    def test_admin_key_requires_token(self, client):
+        assert client.get('/api/admin/key').status_code == 401
+
+    def test_admin_key_returns_current_key(self, client):
+        r = client.get('/api/admin/key', headers={'Authorization': 'Bearer test-admin-token'})
+        assert r.status_code == 200
+        assert r.get_json()['key'] == 'test-admin-token'   # 复制值 = 实际配置值
+
     def test_password_rollback_requires_token(self, client):
         r = client.post('/api/admin/password-rollback', json={'username': 'x'})
         assert r.status_code == 401

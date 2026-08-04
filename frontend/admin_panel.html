@@ -83,6 +83,15 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
 .mini-btn.copy:hover { color: var(--success); border-color: var(--success); }
 .empty { text-align: center; color: var(--text-3); padding: 22px 0; font-size: 13px; }
 .sec-tip { font-size: 12px; color: var(--text-3); margin-top: 10px; }
+.key-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.key-masked {
+  font-family: var(--mono, 'SF Mono', Consolas, monospace);
+  font-size: 14px; font-weight: 700; letter-spacing: 0.08em;
+  padding: 8px 16px; border-radius: 10px;
+  background: rgba(255, 255, 255, 0.75); border: 1px solid var(--glass-border);
+  color: var(--text-1); user-select: all;
+}
+.key-masked.revealed { color: var(--accent); background: rgba(74, 125, 255, 0.06); border-color: rgba(74, 125, 255, 0.3); }
 .footer {
   border-top: 1px solid rgba(88, 110, 170, 0.14); padding: 20px 0 26px; text-align: center;
   font-size: 12px; color: var(--text-3); position: relative; z-index: 1;
@@ -183,6 +192,17 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
         <button class="mini-btn danger" onclick="logout()" data-i18n="logout">退出登录</button>
       </div>
     </div>
+  </div>
+
+  <!-- 统一管理员密钥 -->
+  <div class="card glass">
+    <div class="card-title"><span class="ct-dot"></span><span data-i18n="key_title">统一管理员密钥</span></div>
+    <div class="key-row">
+      <code class="key-masked" id="adminKeyText">••••••••••••••••••</code>
+      <button class="mini-btn" id="keyEyeBtn" onclick="toggleKeyShow()" data-i18n="key_show">显示</button>
+      <button class="mini-btn copy" onclick="copyAdminKey()" data-i18n="key_copy">复制密钥</button>
+    </div>
+    <div class="sec-tip" data-i18n="key_hint">此密钥用于登录「管理后台」（门户导航 → 管理后台），请勿泄露给非管理员</div>
   </div>
 
   <!-- 我的同事 -->
@@ -296,6 +316,12 @@ const I18N = {
   gen_pwd: { zh: '生成', en: 'Generate' },
   copy: { zh: '复制', en: 'Copy' },
   confirm_reset: { zh: '确认重置', en: 'Confirm Reset' },
+  key_title: { zh: '统一管理员密钥', en: 'Unified Admin Key' },
+  key_show: { zh: '显示', en: 'Show' },
+  key_hide: { zh: '隐藏', en: 'Hide' },
+  key_copy: { zh: '复制密钥', en: 'Copy Key' },
+  key_hint: { zh: '此密钥用于登录「管理后台」（门户导航 → 管理后台），请勿泄露给非管理员',
+              en: 'Use this key to enter the Admin Dashboard (Portal nav → Admin). Do not share it with non-admins.' },
   reset_ok: { zh: '密码已重置', en: 'Password reset' },
   reset_fail: { zh: '重置失败', en: 'Reset failed' },
   rollback: { zh: '回退', en: 'Rollback' },
@@ -378,9 +404,54 @@ function copyText(text) {
   return Promise.resolve(ok);
 }
 
+/* ---- 统一管理员密钥（掩码显示，复制为真实值） ---- */
+var _adminKey = '';
+var _keyShown = false;
+var KEY_MASK = '••••••••••••••••••';
+
+function loadAdminKey() {
+  adminFetch('/admin/key')
+    .then(function(r) {
+      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
+      return r.json();
+    })
+    .then(function(d) {
+      _adminKey = d.key || sessionStorage.getItem('admin_token') || '';
+      if (_adminKey) sessionStorage.setItem('admin_token', _adminKey);   // 与服务端实时对齐
+      renderKey();
+    })
+    .catch(function(e) {
+      if (e.message !== '401') {
+        _adminKey = sessionStorage.getItem('admin_token') || '';          // 兜底用本地值
+        renderKey();
+      }
+    });
+}
+function renderKey() {
+  const el = $('adminKeyText');
+  if (_keyShown && _adminKey) {
+    el.textContent = _adminKey;
+    el.classList.add('revealed');
+    $('keyEyeBtn').textContent = t('key_hide');
+  } else {
+    el.textContent = _adminKey ? KEY_MASK : t('loading');
+    el.classList.remove('revealed');
+    $('keyEyeBtn').textContent = t('key_show');
+  }
+}
+function toggleKeyShow() {
+  _keyShown = !_keyShown;
+  renderKey();
+}
+function copyAdminKey() {
+  if (!_adminKey) return;
+  copyText(_adminKey).then(ok => toast(ok ? t('copied') : t('copy_fail'), ok ? 'ok' : 'bad'));
+}
+
 /* ---- 数据加载 ---- */
 function renderAll() {
   $('meName').textContent = ADMIN_USER;
+  loadAdminKey();
   loadColleagues();
   loadUsers();
 }
