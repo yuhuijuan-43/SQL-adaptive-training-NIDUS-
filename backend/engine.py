@@ -174,7 +174,7 @@ def _check_fillin_mode(state, just_answered_qid, deep_mode):
     return False, '', '', None
 
 def _select_candidate_node(session_id, unlocked, mastery, total_answered, phase, state,
-                           is_fast, was_correct, recent_modules_raw, skipped_raw):
+                           is_fast, was_correct, recent_modules_raw, skipped_raw, progress=None):
     """Thompson采样选择下一个知识点节点"""
     recent_modules = list(recent_modules_raw)
     skipped = list(skipped_raw)
@@ -206,7 +206,7 @@ def _select_candidate_node(session_id, unlocked, mastery, total_answered, phase,
         candidates = unlocked
 
     # Difficulty damping
-    recent_progress = get_progress(session_id)[-10:]
+    recent_progress = (progress if progress is not None else get_progress(session_id))[-10:]
     recent_correct = sum(1 for p in recent_progress if p['is_correct'])
     difficulty_damping = (len(recent_progress) >= 5 and recent_correct / max(len(recent_progress), 1) > 0.8)
     if difficulty_damping and phase != 'cold':
@@ -251,7 +251,7 @@ def _select_candidate_node(session_id, unlocked, mastery, total_answered, phase,
     conn.commit()
     return recommend_node, action
 
-def _select_question_for_node(recommend_node, fillin_mode, session_id, just_answered_qid):
+def _select_question_for_node(recommend_node, fillin_mode, session_id, just_answered_qid, progress=None):
     """为指定知识点节点选择一道合适的题目，返回 (question, fillin_mode, action, hint)"""
     action = ''
     hint = ''
@@ -263,7 +263,8 @@ def _select_question_for_node(recommend_node, fillin_mode, session_id, just_answ
         if mcq:
             node_qs = mcq
 
-    progress = get_progress(session_id)
+    if progress is None:
+        progress = get_progress(session_id)
     answered_ids = set(p['question_id'] for p in progress)
     correct_ids = set(p['question_id'] for p in progress if p['is_correct'])
 
@@ -341,6 +342,11 @@ def journey_next(session_id, just_answered_qid=None, was_correct=None, duration=
     # 3. 阶段切换
     phase = _determine_phase(session_id, phase, total_answered, was_correct, state)
 
+    # 3.5 一次性加载本请求所需数据（避免重复全表查询）
+    progress = get_progress(session_id)
+    mastery = get_mastery(session_id)
+    unlocked = _get_unlocked_nodes(session_id)
+
     # 4. 检查填空模式触发
     is_fast = duration is not None and duration < 10
     fillin_mode, hint, fillin_action, recommend_node = _check_fillin_mode(
@@ -348,17 +354,13 @@ def journey_next(session_id, just_answered_qid=None, was_correct=None, duration=
 
     # 5. 非填空模式：Thompson采样选节点
     if not fillin_mode:
-        unlocked = _get_unlocked_nodes(session_id)
-        mastery = get_mastery(session_id)
         recent_modules = json.loads(state.get('recent_modules', '[]'))
         skipped = json.loads(state.get('skipped_nodes', '[]'))
         recommend_node, action = _select_candidate_node(
             session_id, unlocked, mastery, total_answered, phase, state,
-            is_fast, was_correct, recent_modules, skipped)
+            is_fast, was_correct, recent_modules, skipped, progress=progress)
     else:
         action = fillin_action
-        unlocked = _get_unlocked_nodes(session_id)
-        mastery = get_mastery(session_id)
 
     # 6. 持久化当前节点
     conn = get_connection()
@@ -367,16 +369,15 @@ def journey_next(session_id, just_answered_qid=None, was_correct=None, duration=
 
     # 7. 选题
     question, fillin_mode, returned_action, returned_hint = _select_question_for_node(
-        recommend_node, fillin_mode, session_id, just_answered_qid)
+        recommend_node, fillin_mode, session_id, just_answered_qid, progress=progress)
     if returned_action:
         action = returned_action
     if returned_hint:
         hint = returned_hint
 
     # 8. 组装响应
-    progress = get_progress(session_id)
     graph_data = get_graph()
-    mastery_data = get_mastery(session_id)
+    mastery_data = mastery
 
     return {
         'action': action,
@@ -384,10 +385,11 @@ def journey_next(session_id, just_answered_qid=None, was_correct=None, duration=
         'question': question,
         'graph': graph_data,
         'mastery': mastery_data,
-        'unlocked_nodes': _get_unlocked_nodes(session_id),
+        'unlocked_nodes': unlocked,
         'wrong_streak': wrong_streak,
         'total_answered': total_answered,
-        'total_correct': sum(1 for p in progress if p['is_correct']) + (1 if was_correct else 0),
+        # progress 已包含本次提交的答案（调用方先 save_answer 再进引擎），不再重复 +1
+        'total_correct': sum(1 for p in progress if p['is_correct']),
         'fillin_mode': fillin_mode,
         'deep_mode': deep_mode,
         'hint': hint,
