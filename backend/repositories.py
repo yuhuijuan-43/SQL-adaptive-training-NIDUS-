@@ -333,7 +333,7 @@ def get_admin_accounts():
     admins = conn.execute('''SELECT a.username, '' as session_id, a.created_at,
         0 as answered, 0 as correct, a.last_login_at as last_active,
         (SELECT COUNT(*) FROM user_password_history h WHERE h.username=a.username AND h.kind='admin') as rollback_count,
-        'admin' as role
+        a.is_primary, 'admin' as role
         FROM admin_users a ORDER BY a.created_at DESC''').fetchall()
     users = []
     for r in list(rows) + list(admins):
@@ -341,6 +341,46 @@ def get_admin_accounts():
         u['accuracy'] = round(u['correct'] / u['answered'] * 100, 1) if u['answered'] > 0 else 0
         users.append(u)
     return users
+
+def delete_user(username):
+    """删除平台用户及其全部关联数据（答题记录/掌握度/旅程/诊断结果/密码历史），单事务同步生效。
+    仅支持平台用户；管理员账号返回 is_admin 错误（用户名全局唯一，需先查管理员表拦截）"""
+    conn = get_connection()
+    if conn.execute('SELECT id FROM admin_users WHERE username=?', (username,)).fetchone():
+        return None, 'is_admin'
+    row = conn.execute('SELECT id, session_id FROM users WHERE username=?', (username,)).fetchone()
+    if not row:
+        return None, 'not_found'
+    sid = row['session_id']
+    conn.execute('DELETE FROM user_progress WHERE session_id=?', (sid,))
+    conn.execute('DELETE FROM user_mastery WHERE session_id=?', (sid,))
+    conn.execute('DELETE FROM journey_state WHERE session_id=?', (sid,))
+    conn.execute('DELETE FROM diagnostic_results WHERE session_id=?', (sid,))
+    conn.execute("DELETE FROM user_password_history WHERE username=? AND kind='user'", (username,))
+    conn.execute('DELETE FROM users WHERE id=?', (row['id'],))
+    conn.commit()
+    return True, None
+
+def delete_admin(username, operator):
+    """删除管理员账号（仅主管理员可删除其他管理员）。
+    防护：操作者须为主管理员；不能删除自己；主管理员账号不可删除（唯一主管理员保护）。
+    同步删除该管理员的密码修改历史（kind='admin'），删除后其无法再登录管理后台。"""
+    from auth import get_admin_profile
+    profile = get_admin_profile(operator)
+    if not profile or not profile.get('is_primary'):
+        return None, 'not_primary'
+    if username == operator:
+        return None, 'self'
+    conn = get_connection()
+    row = conn.execute('SELECT id, is_primary FROM admin_users WHERE username=?', (username,)).fetchone()
+    if not row:
+        return None, 'not_found'
+    if row['is_primary']:
+        return None, 'is_primary'
+    conn.execute('DELETE FROM admin_users WHERE id=?', (row['id'],))
+    conn.execute("DELETE FROM user_password_history WHERE username=? AND kind='admin'", (username,))
+    conn.commit()
+    return True, None
 
 def save_diagnostic_result(session_id, data):
     conn = get_connection()

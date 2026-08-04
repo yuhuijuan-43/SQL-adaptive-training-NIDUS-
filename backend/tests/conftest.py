@@ -45,6 +45,7 @@ def client(test_db, monkeypatch):
     import app as app_mod
     app_mod.app.config['TESTING'] = True
     app_mod.limiter.enabled = False          # flask-limiter 3.x: enabled 是实例属性
-    monkeypatch.setattr(app_mod, 'ADMIN_TOKEN', 'test-admin-token')
+    # 统一管理员密钥：统一密钥从 DB 读（未设置时回退 env），测试注入 env 即可生效
+    monkeypatch.setenv('ADMIN_TOKEN', 'test-admin-token')
     with app_mod.app.test_client() as c:
         yield c

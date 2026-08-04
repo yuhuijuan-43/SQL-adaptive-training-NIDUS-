@@ -54,14 +54,22 @@ def init_journey(session_id, diagnostic_data=None):
     conn.commit()
     return get_journey_state(session_id)
 
+def _node_has_questions(node_id):
+    """节点是否挂有题目（官方图谱的大分类/根节点无题，视为自动掌握）"""
+    conn = get_connection()
+    return conn.execute('SELECT COUNT(*) FROM question_knowledge WHERE node_id=?', (node_id,)).fetchone()[0] > 0
+
 def _get_unlocked_nodes(session_id):
-    """Return node_ids the user has unlocked based on mastery of prerequisites."""
+    """Return node_ids the user has unlocked based on mastery of prerequisites.
+    无题目的节点（根/大分类）自动视为已掌握，保证其下标签可解锁。"""
     conn = get_connection()
     graph = [dict(r) for r in conn.execute('SELECT * FROM knowledge_edges').fetchall()]
     mastery = {r['node_id']: dict(r) for r in conn.execute('SELECT * FROM user_mastery WHERE session_id=?', (session_id,)).fetchall()}
     all_nodes = [dict(r)['id'] for r in conn.execute('SELECT id FROM knowledge_nodes ORDER BY level').fetchall()]
 
     def is_mastered(nid):
+        if not _node_has_questions(nid):
+            return True
         return _mastery_prob(mastery.get(nid)) >= 0.7
 
     def node_has_unlocked_prereqs(nid):
@@ -79,6 +87,8 @@ def _recommend_weak_prereq(session_id, node_id):
     mastery = {r['node_id']: dict(r) for r in conn.execute('SELECT * FROM user_mastery WHERE session_id=?', (session_id,)).fetchall()}
     weakest = None; weakest_prob = 1.0
     for pid in prereqs:
+        if not _node_has_questions(pid):
+            continue   # 无题的大分类节点跳过
         prob = _mastery_prob(mastery.get(pid))
         if prob < weakest_prob:
             weakest_prob = prob
@@ -101,7 +111,9 @@ def _mastery_uncertainty(m):
     return (a * b) / (s * s * (s + 1))
 
 def _is_mastered(node_id, mastery):
-    """Mastered if mastery probability >= 0.7."""
+    """Mastered if mastery probability >= 0.7. 无题节点（根/大分类）自动视为已掌握，不会成为候选"""
+    if not _node_has_questions(node_id):
+        return True
     m = mastery.get(node_id)
     return _mastery_prob(m) >= 0.7
 

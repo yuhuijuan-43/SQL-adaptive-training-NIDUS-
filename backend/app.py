@@ -10,10 +10,12 @@ from repositories import (get_all_questions, get_exam_questions, get_question_by
     get_or_create_derived_question, get_derived_question_by_id,
     get_questions_by_node_and_type, get_node_id_for_question, is_mcq,
     get_diagnostic_questions, get_admin_stats, get_admin_users, get_admin_accounts,
-    get_progress_summary, reset_user_password, rollback_user_password)
+    get_progress_summary, reset_user_password, rollback_user_password, delete_user,
+    delete_admin, _account_kind)
 from auth import (login_user, register_user, login_or_register, check_username_exists,
     _is_authenticated, register_admin, login_admin, check_admin_username_exists,
-    get_admin_colleagues, REFERRAL_CODE)
+    get_admin_colleagues, get_admin_profile, get_admin_key, set_admin_key,
+    get_referral_codes, add_referral_code, delete_referral_code)
 from engine import init_journey, journey_next, get_journey_state, _get_unlocked_nodes
 from seeding import seed_questions, seed_exam_questions, seed_knowledge_graph
 
@@ -61,12 +63,17 @@ except ImportError:
             return decorator
     limiter = _NoopLimiter()
 
-# ---- Admin 鉴权：Bearer token（可通过环境变量覆盖） ----
-ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN', 'change-me-admin-token-2024')
+# ---- Admin 鉴权：Bearer token（统一管理员密钥，DB 存储，主管理员可更换；env 兜底） ----
 
 def _check_admin_token():
     """校验 Authorization: Bearer <token> 头"""
-    return request.headers.get('Authorization', '') == f'Bearer {ADMIN_TOKEN}'
+    return request.headers.get('Authorization', '') == f'Bearer {get_admin_key()}'
+
+def _is_primary_operator(data):
+    """请求操作者是否为主管理员（operator 参数声明操作者身份，防普通管理员改管理员密码）"""
+    operator = (data.get('operator') or '').strip()
+    profile = get_admin_profile(operator)
+    return bool(profile and profile.get('is_primary'))
 
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
 
@@ -77,7 +84,10 @@ _PUBLIC_API_PATHS = {'/api/login', '/api/register', '/api/check-username',
                      '/api/admin/auth-login', '/api/admin/auth-check-username',
                      '/api/admin/stats', '/api/admin/users', '/api/admin/accounts',
                      '/api/admin/user-progress', '/api/admin/colleagues',
-                     '/api/admin/user-reset', '/api/admin/password-rollback', '/api/admin/key'}
+                     '/api/admin/user-reset', '/api/admin/password-rollback', '/api/admin/key',
+                     '/api/admin/user-delete', '/api/admin/admin-delete',
+                     '/api/admin/key-update', '/api/admin/referral-codes',
+                     '/api/admin/referral-add', '/api/admin/referral-delete'}
 
 def _request_session_id():
     """从请求体 / 查询参数 / 路径参数中提取 session_id"""
@@ -510,10 +520,10 @@ def admin_login():
         if reason == 'not_found':
             return jsonify({"error": "管理员不存在，请先凭内推码注册"}), 404
         return jsonify({"error": "账号或密钥不正确"}), 401
-    # 第二重：统一管理员密钥（常量时间比较，防时序攻击）
-    if not key or not hmac.compare_digest(key, ADMIN_TOKEN):
+    # 第二重：统一管理员密钥（常量时间比较，防时序攻击；DB 存储，主管理员可更换）
+    if not key or not hmac.compare_digest(key, get_admin_key()):
         return jsonify({"error": "账号或密钥不正确"}), 401
-    return jsonify({"ok": True, "token": ADMIN_TOKEN})
+    return jsonify({"ok": True, "token": get_admin_key()})
 
 @app.route('/api/admin/stats')
 @limiter.limit("20 per minute")
@@ -562,14 +572,15 @@ def admin_auth_register():
         return jsonify({"error": "请输入用户名"}), 400
     if not password or len(password) < 8 or len(password) > 64:
         return jsonify({"error": "密码需为8-64个字符"}), 400
-    if referral != REFERRAL_CODE:
+    valid_codes = [c['code'] for c in get_referral_codes()]
+    if referral not in valid_codes:
         return jsonify({"error": "内推码不正确"}), 403
     ok, reason = register_admin(username, password, referral)
     if not ok:
         if reason == 'exists':
             return jsonify({"error": "用户名已存在"}), 409
         return jsonify({"error": "注册失败，请重试"}), 500
-    return jsonify({"ok": True, "token": ADMIN_TOKEN, "username": username})
+    return jsonify({"ok": True, "token": get_admin_key(), "username": username})
 
 @app.route('/api/admin/auth-login', methods=['POST'])
 @limiter.limit("8 per minute")
@@ -585,7 +596,7 @@ def admin_auth_login():
         if reason == 'not_found':
             return jsonify({"error": "管理员不存在"}), 404
         return jsonify({"error": "密码错误"}), 401
-    return jsonify({"ok": True, "token": ADMIN_TOKEN, "username": username})
+    return jsonify({"ok": True, "token": get_admin_key(), "username": username})
 
 @app.route('/api/admin/auth-check-username')
 @limiter.limit("20 per minute")
@@ -597,16 +608,21 @@ def admin_auth_check_username():
 @app.route('/api/admin/colleagues')
 @limiter.limit("30 per minute")
 def admin_colleagues():
-    """我的同事：其他管理员的用户名与最后上线时间（?me=排除自己）"""
+    """我的同事：其他管理员的用户名、最后上线时间与是否主管理员（?me=排除自己）
+    响应同时携带 me（当前管理员个人资料），前端据此判断是否为主管理员"""
     if not _check_admin_token():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     me = request.args.get('me', '').strip()
-    return jsonify({"colleagues": get_admin_colleagues(exclude_username=me or None)})
+    return jsonify({
+        "me": get_admin_profile(me) if me else None,
+        "colleagues": get_admin_colleagues(exclude_username=me or None)
+    })
 
 @app.route('/api/admin/user-reset', methods=['POST'])
 @limiter.limit("10 per minute")
 def admin_user_reset():
-    """管理员重置密码（平台用户/管理员通用，Bearer 鉴权）"""
+    """管理员重置密码（Bearer 鉴权）。平台用户：任意管理员可重置；管理员账号：仅主管理员可重置
+    （防互相改密，operator 参数声明操作者）"""
     if not _check_admin_token():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     data = request.get_json(silent=True) or {}
@@ -616,6 +632,8 @@ def admin_user_reset():
         return jsonify({"error": "缺少参数"}), 400
     if len(new_password) < 8 or len(new_password) > 64:
         return jsonify({"error": "密码需为8-64个字符"}), 400
+    if _account_kind(username) == 'admin' and not _is_primary_operator(data):
+        return jsonify({"error": "仅主管理员可修改管理员密码"}), 403
     ok, reason = reset_user_password(username, new_password)
     if not ok:
         return jsonify({"error": "用户不存在"}), 404
@@ -624,24 +642,138 @@ def admin_user_reset():
 @app.route('/api/admin/key')
 @limiter.limit("30 per minute")
 def admin_key():
-    """返回当前统一管理员密钥（面板展示/复制用；与 env 配置实时一致）"""
+    """返回当前统一管理员密钥（面板展示/复制用；DB 实时一致）"""
     if not _check_admin_token():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
-    return jsonify({"key": ADMIN_TOKEN})
+    return jsonify({"key": get_admin_key()})
+
+@app.route('/api/admin/key-update', methods=['POST'])
+@limiter.limit("10 per minute")
+def admin_key_update():
+    """主管理员更换统一管理员密钥：新密钥立即对全部管理员（子管理员）生效"""
+    if not _check_admin_token():
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    data = request.get_json(silent=True) or {}
+    if not _is_primary_operator(data):
+        return jsonify({"error": "仅主管理员可更换统一密钥"}), 403
+    new_key = (data.get('new_key') or '').strip()
+    if len(new_key) < 8 or len(new_key) > 64:
+        return jsonify({"error": "密钥需为8-64个字符"}), 400
+    if new_key == get_admin_key():
+        return jsonify({"error": "新密钥与当前密钥相同"}), 400
+    set_admin_key(new_key)
+    return jsonify({"ok": True, "key": new_key})
+
+@app.route('/api/admin/referral-codes')
+@limiter.limit("20 per minute")
+def admin_referral_codes():
+    """主管理员查看全部内推码（?me= 声明操作者；与注册校验实时同步）"""
+    if not _check_admin_token():
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    me = request.args.get('me', '').strip()
+    profile = get_admin_profile(me)
+    if not profile or not profile.get('is_primary'):
+        return jsonify({"error": "仅主管理员可查看内推码"}), 403
+    return jsonify({"codes": get_referral_codes()})
+
+@app.route('/api/admin/referral-add', methods=['POST'])
+@limiter.limit("10 per minute")
+def admin_referral_add():
+    """主管理员新增内推码（注册校验即时生效）"""
+    if not _check_admin_token():
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    data = request.get_json(silent=True) or {}
+    if not _is_primary_operator(data):
+        return jsonify({"error": "仅主管理员可新增内推码"}), 403
+    code = (data.get('code') or '').strip()
+    note = (data.get('note') or '').strip()
+    ok, reason = add_referral_code(code, note)
+    if not ok:
+        if reason == 'exists':
+            return jsonify({"error": "该内推码已存在"}), 409
+        return jsonify({"error": "内推码需为1-32个字符"}), 400
+    return jsonify({"ok": True, "codes": get_referral_codes()})
+
+@app.route('/api/admin/referral-delete', methods=['POST'])
+@limiter.limit("10 per minute")
+def admin_referral_delete():
+    """主管理员删除内推码（最后一个不允许删除，保证注册入口存在）"""
+    if not _check_admin_token():
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    data = request.get_json(silent=True) or {}
+    if not _is_primary_operator(data):
+        return jsonify({"error": "仅主管理员可删除内推码"}), 403
+    code = (data.get('code') or '').strip()
+    if not code:
+        return jsonify({"error": "缺少参数"}), 400
+    ok, reason = delete_referral_code(code)
+    if not ok:
+        if reason == 'last_one':
+            return jsonify({"error": "至少保留一个内推码"}), 409
+        return jsonify({"error": "内推码不存在"}), 404
+    return jsonify({"ok": True, "codes": get_referral_codes()})
 
 @app.route('/api/admin/password-rollback', methods=['POST'])
 @limiter.limit("10 per minute")
 def admin_password_rollback():
-    """回退密码到上一个版本（历史保留 3 条 → 最多回退 3 次；Bearer 鉴权）"""
+    """回退密码到上一个版本（历史保留 3 条 → 最多回退 3 次；Bearer 鉴权）。
+    管理员账号回退同样仅限主管理员（与 user-reset 一致）"""
     if not _check_admin_token():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     data = request.get_json(silent=True) or {}
     username = (data.get('username') or '').strip()
     if not username:
         return jsonify({"error": "缺少参数"}), 400
+    if _account_kind(username) == 'admin' and not _is_primary_operator(data):
+        return jsonify({"error": "仅主管理员可回退管理员密码"}), 403
     ok, reason = rollback_user_password(username)
     if not ok:
         return jsonify({"error": "该账号没有可回退的历史密码（最多可回退 3 次）"}), 409
+    return jsonify({"ok": True})
+
+@app.route('/api/admin/user-delete', methods=['POST'])
+@limiter.limit("10 per minute")
+def admin_user_delete():
+    """删除平台用户（Bearer 鉴权 + confirm 显式确认）。
+    同步删除该用户的答题记录/掌握度/旅程/诊断结果/密码历史；管理员账号不允许删除"""
+    if not _check_admin_token():
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    if not username:
+        return jsonify({"error": "缺少参数"}), 400
+    if not data.get('confirm'):
+        return jsonify({"error": "删除操作需显式确认（confirm=true）"}), 400
+    ok, reason = delete_user(username)
+    if not ok:
+        if reason == 'is_admin':
+            return jsonify({"error": "管理员账号不允许删除"}), 400
+        return jsonify({"error": "用户不存在"}), 404
+    return jsonify({"ok": True})
+
+@app.route('/api/admin/admin-delete', methods=['POST'])
+@limiter.limit("10 per minute")
+def admin_admin_delete():
+    """删除管理员账号（Bearer 鉴权 + confirm 显式确认 + 仅主管理员可删其他管理员）。
+    同步删除该管理员的密码修改历史；删除后其无法再登录管理后台"""
+    if not _check_admin_token():
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    operator = (data.get('operator') or '').strip()
+    if not username:
+        return jsonify({"error": "缺少参数"}), 400
+    if not data.get('confirm'):
+        return jsonify({"error": "删除操作需显式确认（confirm=true）"}), 400
+    ok, reason = delete_admin(username, operator)
+    if not ok:
+        if reason == 'not_primary':
+            return jsonify({"error": "仅主管理员可删除管理员账号"}), 403
+        if reason == 'self':
+            return jsonify({"error": "不能删除自己的账号"}), 400
+        if reason == 'is_primary':
+            return jsonify({"error": "主管理员账号不可删除"}), 400
+        return jsonify({"error": "管理员不存在"}), 404
     return jsonify({"ok": True})
 
 if __name__ == '__main__':

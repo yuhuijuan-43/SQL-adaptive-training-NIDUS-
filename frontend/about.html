@@ -395,6 +395,32 @@ const VISION = {
 
 const UPDATES = [
   {
+    date: '2026-08-04', tag: 'opt', tagText: '优化',
+    title: '官方知识图谱分类体系上线',
+    desc: '做题页分类全面对齐官方设计：7 大分类 × 29 个子标签，题干直接显示子标签名，全库题目难度按官方星级统一校准（1 星简单 / 2 星中等 / 3 星困难）。',
+    overview: '分类是题库的地基。这次把做题页的分类筛选与题目标签整体对齐到团队设计的官方知识图谱：7 大分类（增删改、表定义、函数、表连接、约束、子查询、查询）下挂 29 个子标签；题干上的分类标签从内部代号改为官方子标签名（如「内连接」「窗口函数」），一眼看懂题目考什么；同时全库难度按官方星级口径统一，筛选与排序从此有了一致的标尺。',
+    points: [
+      '<b>官方 29 子标签</b>：7 大分类下挂 29 个子标签（内连接、窗口函数、标量子查询……），筛选逐级下钻。',
+      '<b>题干显示子标签</b>：每道题卡上的分类标签显示官方子标签名，不再出现技术代号。',
+      '<b>星级难度统一</b>：1 星 = 简单、2 星 = 中等、3 星 = 困难，全库 457+ 题难度按标签星级重新校准。'
+    ],
+    thinking: '分类标签是用户读题库的第一层索引。之前题干上显示的是内部代号，用户认不出；这次按团队设计的官方图谱统一——层级可下钻、标签可读、难度有标尺。分类体系的稳定，是后续个性化推荐与学习统计能说清楚「你在学什么」的前提。',
+    stats: [['7', '大分类', 'DML · DDL · 函数 · 表连接 · 约束 · 子查询 · SELECT'], ['29', '官方子标签'], ['457+', '题目难度按星级校准', '1 星简单 / 2 星中等 / 3 星困难']]
+  },
+  {
+    date: '2026-08-04', tag: 'new', tagText: '新功能',
+    title: '忘记密码？团队协助找回',
+    desc: '密码忘了不再需要重新注册——联系团队管理员即可重置，新密码立即生效；每次重置自动留档，支持逐次回退防误操作。',
+    overview: '以前忘记密码只能重新注册，账号与学习记录一并丢失。现在平台支持团队协助找回：联系管理员验证身份后即可重置密码，新密码立即生效，账号与学习数据原样保留；每次重置都会自动保留旧密码留档，可逐次回退，避免误操作造成损失。',
+    points: [
+      '<b>忘记密码可找回</b>：联系团队管理员即可重置，新密码立即生效，无需重新注册、数据不丢失。',
+      '<b>留档可回退</b>：重置前旧密码自动留档，最多可回退 3 次，误操作也能复原。',
+      '<b>管理员双重验证</b>：找回操作需管理员账号密码 + 统一密钥双重校验，密码只能交给可信的人。'
+    ],
+    thinking: '密码忘了最怕的是「账号从此找不回来」。找回密码的本质是「有人能证明你是你」——我们把这件事交给团队管理员：验证身份后协助重置，重置过程留档可回退，让找回既顺畅又可逆。',
+    stats: [['1 步', '联系管理员重置', '验证身份后新密码立即生效'], ['3 次', '回退保护上限', '每次重置自动留档，可逐次回退'], ['2 重', '管理员操作验证', '账号密码 + 统一密钥']]
+  },
+  {
     date: '2026-08-04', tag: 'new', tagText: '新功能',
     title: '真实 SQL 判题引擎上线',
     desc: '填空题不再比对文本——答案放进真实数据库执行，与标准答案的结果集逐行比对；答错时给出「表不存在」「语法错误」等具体提示。',
@@ -572,6 +598,32 @@ const VISION_EN = {
 };
 
 const UPDATES_EN = [
+  {
+    date: '2026-08-04', tag: 'opt', tagText: 'Optimization',
+    title: 'Official knowledge-graph taxonomy launched',
+    desc: 'Practice-page categories now follow the official design: 7 top categories × 29 sub-tags, with question cards showing the sub-tag name directly and every question\'s difficulty recalibrated by the official star rating (1★ easy / 2★ medium / 3★ hard).',
+    overview: 'Categories are the foundation of the question bank. This update aligns the practice page\'s filters and question tags with the official knowledge graph designed by the team: 7 top categories (DML, DDL, functions, joins, constraints, subqueries, SELECT) hold 29 sub-tags; the tag on each question card changed from an internal code to the official sub-tag name (e.g. "INNER JOIN", "window functions"), so you can tell at a glance what a question is about; and all difficulties were recalibrated against the official star scale, giving filters and sorting one consistent measure.',
+    points: [
+      '<b>Official 29 sub-tags</b>: 7 top categories hold 29 sub-tags (inner join, window functions, scalar subquery...), with drill-down filtering.',
+      '<b>Sub-tags on question cards</b>: the tag on every card shows the official sub-tag name, no more internal codes.',
+      '<b>Unified star difficulty</b>: 1★ = easy, 2★ = medium, 3★ = hard — 457+ questions recalibrated by their tag\'s star rating.'
+    ],
+    thinking: 'Category tags are the first index a learner uses to navigate the bank. Cards used to show internal codes nobody recognized; now everything follows the team\'s official taxonomy — drillable hierarchy, readable tags, a consistent difficulty scale. A stable taxonomy is the precondition for future personalization and analytics to say clearly "what you are learning".',
+    stats: [['7', 'top categories', 'DML · DDL · Functions · Joins · Constraints · Subqueries · SELECT'], ['29', 'official sub-tags'], ['457+', 'difficulties recalibrated', '1★ easy / 2★ medium / 3★ hard']]
+  },
+  {
+    date: '2026-08-04', tag: 'new', tagText: 'New Feature',
+    title: 'Forgot your password? The team can help',
+    desc: 'No more re-registering when you forget your password — contact a team admin to reset it, effective immediately; every reset is archived so you can roll back step by step.',
+    overview: 'Previously, forgetting your password meant re-registering and losing your account and learning records. The platform now supports team-assisted recovery: after verifying your identity, an admin can reset your password — it takes effect immediately and your account and data stay intact. Every reset automatically archives the previous password, so mistakes can be rolled back step by step.',
+    points: [
+      '<b>Passwords recoverable</b>: contact a team admin to reset — effective immediately, no re-registration, no data loss.',
+      '<b>Archived & reversible</b>: the previous password is archived before each reset, with up to 3 rollbacks to undo mistakes.',
+      '<b>Admin double verification</b>: recovery operations require both the admin account password and a unified key — passwords are only entrusted to trusted people.'
+    ],
+    thinking: 'The worst thing about forgetting a password is "my account is gone forever". Password recovery is really about "someone can prove you are you" — we entrust that to the team admin: identity is verified, the reset is assisted, and the whole process is archived and reversible, making recovery both smooth and safe.',
+    stats: [['1 step', 'contact admin to reset', 'identity verified, new password effective immediately'], ['3', 'rollback protection max', 'each reset is archived, roll back step by step'], ['2x', 'admin verification', 'account password + unified key']]
+  },
   {
     date: '2026-08-04', tag: 'new', tagText: 'New Feature',
     title: 'Real SQL judging engine launched',

@@ -104,13 +104,10 @@
   .nav-btn { transform: translateY(0.75em); }
   /* 导航下方三个模块（自适应进阶/自主练习/真题/错题集页面）下移 0.5 字符高度 */
   #page-journey, #page-practice, #page-wrongset { transform: translateY(0.5em); }
-  .graph-node { display:inline-flex; align-items:center; gap:3px; padding:3px 7px; border-radius:4px; font-size:0.6rem; font-weight:600; border:1px solid var(--border); background:var(--card); color:var(--text2); transition:all 0.15s; font-family:'SF Mono','Consolas',monospace; }
-  .graph-node i { font-size: 0.55rem; }
+  /* 知识图谱可视化面板下移 0.75 字符高度 */
+  #journeyVizPanel { transform: translateY(0.75em); }
   .opt-explain { font-size: 0.7rem; padding: 0.4rem 0.6rem; border-radius: 0.375rem; margin-bottom: 2px; display: flex; align-items: flex-start; gap: 6px; }
   .opt-explain .mark { flex-shrink: 0; font-weight: 700; font-size: 0.85rem; }
-  .graph-node.mastered { border-color:var(--success); background:#EBF2FA; color:#1E5BA8; }
-  .graph-node.current { border-color:var(--accent); background:#edf2f7; color:var(--accent); }
-  .graph-node.locked { opacity:0.4; }
   .data-table { margin:0 0 0.5rem 0; border-collapse:collapse; font-size:0.7rem; font-family:'SF Mono','Consolas',monospace; }
   .data-table th { background:var(--text); color:#fff; padding:0.3rem 0.5rem; text-align:left; font-weight:600; }
   .data-table td { padding:0.25rem 0.5rem; border-bottom:1px solid var(--border); color:var(--text); }
@@ -261,9 +258,10 @@
   <!-- HEADER -->
   <div class="card" style="padding:0.75rem 1rem;">
     <div class="flex justify-between items-center">
-      <div><span style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;">SQL</span><span style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;color:var(--accent);"> 自适应训练</span><span style="font-size:0.6rem;color:var(--text2);margin-left:0.5rem;">ADAPTIVE PRACTICE</span></div>
+      <div><span style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;">SQL</span><span data-i18n="自适应训练" style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;color:var(--accent);"> 自适应训练</span><span style="font-size:0.6rem;color:var(--text2);margin-left:0.5rem;">ADAPTIVE PRACTICE</span></div>
       <span style="display:flex;align-items:center;gap:8px;">
         <span id="cbToggle" title="色觉辅助模式" style="cursor:pointer;font-size:1rem;color:var(--text2);opacity:0.5;transition:opacity 0.15s;display:none;" onclick="toggleColorblind()"><i class="fas fa-eye"></i></span>
+        <span id="langBtn" onclick="toggleLang()" style="cursor:pointer;font-size:0.65rem;color:var(--text2);border:1px solid var(--border);padding:2px 9px;border-radius:999px;user-select:none;transition:all 0.15s;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--text2)';this.style.borderColor='var(--border)'">English</span>
         <span style="font-size:0.65rem;color:var(--text2);" id="headerUserInfo">V1.0</span>
       </span>
     </div>
@@ -274,25 +272,25 @@
 
   <!-- NAV -->
   <div class="flex gap-1 mt-4 mb-3">
-    <button class="nav-btn active" data-page="journey" onclick="showPage('journey')"><i class="fas fa-route mr-1"></i> 自适应进阶</button>
-    <button class="nav-btn" data-page="practice" onclick="currentPool='practice';showPage('practice')"><i class="fas fa-code mr-1"></i> 自主练习</button>
-    <button class="nav-btn" data-page="practice" onclick="currentPool='exam';showPage('practice')"><i class="fas fa-file-alt mr-1"></i> 真题测试</button>
-    <button class="nav-btn" data-page="wrongset" onclick="showPage('wrongset')"><i class="fas fa-exclamation-triangle mr-1"></i> 错题集</button>
+    <button class="nav-btn active" data-page="journey" data-i18n="自适应进阶" onclick="showPage('journey')"><i class="fas fa-route mr-1"></i> 自适应进阶</button>
+    <button class="nav-btn" data-page="practice" data-i18n="自主练习" onclick="currentPool='practice';showPage('practice')"><i class="fas fa-code mr-1"></i> 自主练习</button>
+    <button class="nav-btn" data-page="practice" data-i18n="真题测试" onclick="currentPool='exam';showPage('practice')"><i class="fas fa-file-alt mr-1"></i> 真题测试</button>
+    <button class="nav-btn" data-page="wrongset" data-i18n="错题集" onclick="showPage('wrongset')"><i class="fas fa-exclamation-triangle mr-1"></i> 错题集</button>
   </div>
 
   <!-- ============ 自适应进阶 Journey ============ -->
   <div id="page-journey" class="page">
     <div id="journeyStart" class="card p-4 md:p-5">
       <div class="highlight-box">
-        <p class="text-sm leading-relaxed"><strong>自适应进阶模式</strong> 基于知识图谱动态追踪你的掌握程度。答对自动进阶到更高阶知识点，答错溯源至薄弱前置知识点精准巩固。</p>
+        <p class="text-sm leading-relaxed" data-i18n="基于知识图谱动态追踪你的掌握程度。答对自动进阶到更高阶知识点，答错溯源至薄弱前置知识点精准巩固。"><strong>自适应进阶模式</strong> 基于知识图谱动态追踪你的掌握程度。答对自动进阶到更高阶知识点，答错溯源至薄弱前置知识点精准巩固。</p>
       </div>
       <div class="flex gap-2 mt-3 text-xs text-[#2c241b] opacity-60">
-        <span><i class="fas fa-check-circle accent mr-1"></i> 从 SELECT 基础出发</span>
-        <span><i class="fas fa-arrow-right accent mr-1"></i> 图谱递进</span>
-        <span><i class="fas fa-bolt accent mr-1"></i> 因错施教</span>
+        <span><i class="fas fa-check-circle accent mr-1"></i> <span data-i18n="从 SELECT 基础出发">从 SELECT 基础出发</span></span>
+        <span><i class="fas fa-arrow-right accent mr-1"></i> <span data-i18n="图谱递进">图谱递进</span></span>
+        <span><i class="fas fa-bolt accent mr-1"></i> <span data-i18n="因错施教">因错施教</span></span>
       </div>
       <div class="mt-3">
-        <button class="btn btn-accent" onclick="startJourney()"><i class="fas fa-play mr-1"></i> 开始进阶之旅</button>
+        <button class="btn btn-accent" data-i18n="开始进阶之旅" onclick="startJourney()"><i class="fas fa-play mr-1"></i> 开始进阶之旅</button>
       </div>
     </div>
 
@@ -303,7 +301,7 @@
           <span class="num-oswald text-sm accent" id="journeyNodeLabel">SELECT 基础查询</span>
           <span class="tag ml-2" id="journeyActionTag" style="display:none"></span>
           <label class="text-xs ml-auto" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
-            <span class="opacity-60">深度掌握</span>
+            <span class="opacity-60" data-i18n="深度掌握">深度掌握</span>
             <input type="checkbox" id="deepModeToggle" checked onchange="toggleDeepMode()" style="accent-color:#c17c4a;width:14px;height:14px">
           </label>
           </div>
@@ -312,19 +310,12 @@
         <div class="progress-track mb-1"><div class="fill" id="journeyProgress" style="width:0%"></div></div>
         <div id="journeyQuestion" class="fade-in"></div>
         <div class="text-center mt-3">
-          <button class="btn btn-accent" id="journeyNextBtn" onclick="nextJourney()" style="display:none"><i class="fas fa-arrow-right mr-1"></i> 继续进阶</button>
+          <button class="btn btn-accent" id="journeyNextBtn" data-i18n="继续进阶" onclick="nextJourney()" style="display:none"><i class="fas fa-arrow-right mr-1"></i> 继续进阶</button>
         </div>
       </div>
-      <div class="card p-3 md:p-4" id="journeyGraphPanel">
-        <div class="flex justify-between items-center mb-0" style="cursor:pointer;user-select:none" onclick="toggleJourneyMap()">
-          <span class="num-oswald text-xs tracking-wider opacity-60">KNOWLEDGE MAP</span>
-          <span><span id="unlockedCount">0</span>/27 <span id="journeyMapToggle"><i class="fas fa-chevron-down"></i></span></span>
-        </div>
-        <div id="journeyGraph" style="display:none;flex-wrap:wrap;gap:4px;margin-top:8px"></div>
-      </div>
-      <div class="card p-3 md:p-4" id="journeyVizPanel" style="margin-top:8px">
+      <div class="card p-3 md:p-4" id="journeyVizPanel">
         <div class="flex justify-between items-center mb-0" style="cursor:pointer;user-select:none" onclick="toggleJourneyViz()">
-          <span class="num-oswald text-xs tracking-wider opacity-60">📊 知识图谱可视化</span>
+          <span class="num-oswald text-xs tracking-wider opacity-60" data-i18n="📊 知识图谱可视化">📊 知识图谱可视化</span>
           <span id="journeyVizToggle"><i class="fas fa-chevron-down"></i></span>
         </div>
         <div id="journeyVizFrame" style="display:none;margin-top:8px">
@@ -340,27 +331,27 @@
   <div id="page-practice" class="page">
     <div class="card p-4 md:p-5">
       <div class="flex justify-between items-center mb-3">
-        <span class="tag" id="poolLabel" style="font-size:0.7rem;font-weight:700;">自主练习</span>
+        <span class="tag" id="poolLabel" data-i18n="自主练习" style="font-size:0.7rem;font-weight:700;">自主练习</span>
         <span class="text-xs opacity-50" id="poolCount"></span>
       </div>
       <div class="filter-bar flex gap-2 mb-3 flex-wrap" style="align-items:center">
         <input type="text" id="filterSearch" placeholder="🔍 搜索题目..." oninput="onFilterChange()" style="flex:1;min-width:140px;padding:0.4rem 0.75rem;border:1px solid var(--border);border-radius:0.375rem;font-size:0.8rem;outline:none;background:var(--card);color:var(--text);">
         <select id="filterType" onchange="onFilterChange()" style="height:34px;padding:0 0.65rem;border:1px solid var(--border);border-radius:0.375rem;font-size:0.75rem;background:var(--card);color:var(--text);min-width:90px;">
-          <option value="">全部题型</option>
-          <option value="mcq">选择题</option>
-          <option value="fillin">填空题</option>
+          <option value="" data-i18n="全部题型">全部题型</option>
+          <option value="mcq" data-i18n="选择题">选择题</option>
+          <option value="fillin" data-i18n="填空题">填空题</option>
         </select>
         <!-- 自定义级联分类筛选 -->
         <div class="cat-cascade" id="catCascade" style="position:relative;display:inline-flex;align-items:center;gap:0;min-height:34px;max-width:100%;">
-          <span id="catLabel" style="font-size:0.75rem;color:var(--text2);margin-right:4px;white-space:nowrap;">分类</span>
+          <span id="catLabel" data-i18n="分类" style="font-size:0.75rem;color:var(--text2);margin-right:4px;white-space:nowrap;">分类</span>
           <div id="catParents" style="display:flex;flex-wrap:wrap;gap:0;align-items:center;"></div>
           <div id="catSubPanel" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--card);border:1px solid var(--border);border-radius:0.375rem;padding:0.375rem 0;z-index:100;min-width:150px;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
         </div>
         <select id="filterDifficulty" onchange="onFilterChange()" style="height:34px;padding:0 0.65rem;border:1px solid var(--border);border-radius:0.375rem;font-size:0.75rem;background:var(--card);color:var(--text);min-width:90px;">
-          <option value="">全部难度</option>
-          <option value="easy">简单</option>
-          <option value="medium">中等</option>
-          <option value="hard">困难</option>
+          <option value="" data-i18n="全部难度">全部难度</option>
+          <option value="easy" data-i18n="简单">简单</option>
+          <option value="medium" data-i18n="中等">中等</option>
+          <option value="hard" data-i18n="困难">困难</option>
         </select>
         <span id="catActiveTag" style="display:none;font-size:0.65rem;padding:2px 8px;background:var(--tag-bg);border-radius:0.25rem;color:var(--accent);cursor:pointer" onclick="clearCatFilter()" title="点击清除分类筛选"></span>
       </div>
@@ -368,12 +359,12 @@
       <div id="practiceList" class="space-y-2"></div>
 
       <div id="questionDetail" class="fade-in">
-        <a class="back-link" onclick="backToPracticeList()"><i class="fas fa-arrow-left mr-1"></i> 返回题目列表</a>
+        <a class="back-link" data-i18n="返回题目列表" onclick="backToPracticeList()"><i class="fas fa-arrow-left mr-1"></i> 返回题目列表</a>
         <div id="practiceQuestion"></div>
       </div>
 
       <div id="deriveSection" style="display:none" class="fade-in">
-        <a class="back-link" onclick="exitDerivedPractice()"><i class="fas fa-arrow-left mr-1"></i> 返回题目列表</a>
+        <a class="back-link" data-i18n="返回题目列表" onclick="exitDerivedPractice()"><i class="fas fa-arrow-left mr-1"></i> 返回题目列表</a>
         <div id="deriveArea"></div>
       </div>
     </div>
@@ -383,12 +374,12 @@
   <div id="page-wrongset" class="page">
     <div class="card p-4 md:p-5">
       <div class="highlight-box">
-        <p class="text-sm leading-relaxed">记录你在自适应进阶和练习中答错的题目，方便集中复习巩固。</p>
+        <p class="text-sm leading-relaxed" data-i18n="记录你在自适应进阶和练习中答错的题目，方便集中复习巩固。">记录你在自适应进阶和练习中答错的题目，方便集中复习巩固。</p>
       </div>
       <!-- 近期综合数据 (collapsible) -->
       <div id="wrongSummary" class="mt-3" style="cursor:pointer;user-select:none" onclick="toggleSummary()">
         <div class="flex justify-between items-center p-2 rounded" style="background:var(--tag-bg)">
-          <span class="num-oswald text-xs tracking-wider">近期综合数据</span>
+          <span class="num-oswald text-xs tracking-wider" data-i18n="近期综合数据">近期综合数据</span>
           <span id="summaryToggle"><i class="fas fa-chevron-down"></i></span>
         </div>
         <div id="summaryBody" class="mt-2 flex justify-center gap-6" style="display:none"></div>
@@ -407,6 +398,136 @@
 <script>
 // 使用相对路径，同时支持本机、局域网和 ngrok 公网访问
 const API_BASE = '/api';
+
+// ===== 中英双语（原文即键：I18N 只存英文译文，中文为默认原文）=====
+const I18N = {
+  // 导航
+  '自适应训练': { en: 'Adaptive Training' },
+  '自适应进阶': { en: 'Adaptive Journey' },
+  '自主练习': { en: 'Practice' },
+  '真题测试': { en: 'Exam' },
+  '错题集': { en: 'Wrong Answers' },
+  // Journey
+  '自适应进阶模式': { en: 'Adaptive Journey Mode' },
+  '基于知识图谱动态追踪你的掌握程度。答对自动进阶到更高阶知识点，答错溯源至薄弱前置知识点精准巩固。': { en: 'Track your mastery through the knowledge graph. Correct answers advance you to higher nodes; wrong answers trace back to weak prerequisites for precise reinforcement.' },
+  '从 SELECT 基础出发': { en: 'Start from basic SELECT' },
+  '图谱递进': { en: 'Graph progression' },
+  '因错施教': { en: 'Learn from mistakes' },
+  '开始进阶之旅': { en: 'Start Journey' },
+  '深度掌握': { en: 'Deep mode' },
+  '继续进阶': { en: 'Continue' },
+  '📊 知识图谱可视化': { en: '📊 Knowledge Graph' },
+  '进阶': { en: 'Advance' }, '巩固': { en: 'Consolidate' }, '降难度': { en: 'Easier' },
+  '开始': { en: 'Start' }, '练习': { en: 'Practice' }, '跳级': { en: 'Skip' },
+  '复习': { en: 'Review' }, '填空题': { en: 'Fill-in' },
+  '加载失败，请确保后端已启动': { en: 'Load failed — make sure the backend is running' },
+  '所有知识点已掌握！🎉': { en: 'All knowledge points mastered! 🎉' },
+  // 筛选
+  '全部题型': { en: 'All types' },
+  '选择题': { en: 'MCQ' },
+  '填空题': { en: 'Fill-in' },
+  '分类': { en: 'Category' },
+  '全部难度': { en: 'All levels' },
+  '简单': { en: 'Easy' },
+  '中等': { en: 'Medium' },
+  '困难': { en: 'Hard' },
+  '全部': { en: 'All' },
+  // 题卡与答案
+  '提交答案': { en: 'Submit' },
+  '已提交': { en: 'Submitted' },
+  '手动输入你的 SQL 语句...': { en: 'Type your SQL here...' },
+  '请先输入或选择答案': { en: 'Please enter or select an answer first' },
+  '请先输入 SQL 语句': { en: 'Please type a SQL statement first' },
+  '提交失败': { en: 'Submit failed' },
+  '回答正确': { en: 'Correct!' },
+  '回答错误': { en: 'Wrong' },
+  '回答正确！': { en: 'Correct!' },
+  '正确答案：': { en: 'Correct answer: ' },
+  '这是正确答案': { en: 'This is the correct answer' },
+  '举一反三 →': { en: 'One more: fill-in →' },
+  '下一题': { en: 'Next question' },
+  '已掌握该选择题，进入举一反三': { en: 'MCQ mastered — go deeper with a fill-in' },
+  '预期输出': { en: 'Expected output' },
+  '题': { en: ' Qs' },
+  '暂无符合条件的题目': { en: 'No matching questions' },
+  '加载中...': { en: 'Loading...' },
+  '加载失败': { en: 'Load failed' },
+  '生成失败': { en: 'Generation failed' },
+  '你的答案：': { en: 'Your answer: ' },
+  '你的答案': { en: 'Your answer' },
+  '正确答案': { en: 'Correct answer' },
+  '✗ 答错': { en: '✗ Wrong' },
+  '暂无错题，继续保持！': { en: 'No wrong answers — keep it up!' },
+  '错题集为空': { en: 'No wrong answers yet' },
+  '近期综合数据': { en: 'Recent overview' },
+  '总答题数': { en: 'Total answered' },
+  '正确数': { en: 'Correct' },
+  '答错数': { en: 'Wrong' },
+  '正确率': { en: 'Accuracy' },
+  '返回题目列表': { en: 'Back to list' },
+  // CodeMirror 校验
+  '单引号未闭合，字符串值需用一对引号包裹': { en: 'Unclosed single quote — string values need a pair of quotes' },
+  '字符串值需加引号': { en: 'String value needs quotes' },
+  '中文字符串需加引号': { en: 'Chinese string needs quotes' },
+  '括号不匹配': { en: 'Unbalanced parentheses' },
+  // 用户区
+  '登录 / 注册': { en: 'Log in / Sign up' },
+  '切换用户': { en: 'Switch user' },
+  // 大分类（KG_GROUPS / 级联）
+  '函数': { en: 'Functions' },
+  '表连接': { en: 'Joins' },
+  '约束': { en: 'Constraints' },
+  '子查询': { en: 'Subqueries' },
+  '（全部）': { en: ' (all)' },
+  // 页脚
+  '千人千面的 SQL 学习平台': { en: 'A personalized SQL learning platform' },
+  'SQL 自适应练习': { en: 'SQL Adaptive Practice' },
+  // 补充
+  '🔍 搜索题目...': { en: '🔍 Search questions...' },
+  '记录你在自适应进阶和练习中答错的题目，方便集中复习巩固。': { en: 'Questions you answered wrong in the adaptive journey and practice are collected here for focused review.' },
+  '🎯 真题测试': { en: '🎯 Exam' },
+  '📝 自主练习': { en: '📝 Practice' },
+  '点击清除分类筛选': { en: 'Click to clear category filter' },
+  '展开 SQL': { en: 'Show SQL' },
+  '收起 SQL': { en: 'Hide SQL' },
+  '生成中...': { en: 'Generating...' },
+  '已掌握该知识点': { en: 'Node mastered' },
+  '推荐下一题': { en: 'Recommended next question' },
+  '返回错题列表': { en: 'Back to wrong answers' },
+  '共 {0} 行，仅显示前 {1} 行': { en: '{0} rows total, showing first {1}' },
+  '举一反三': { en: 'One More' },
+  '这是根据你刚做对的选择题生成的填空题，请手动编写 SQL 语句。': { en: 'A fill-in generated from the MCQ you just aced — write the SQL yourself.' },
+  '开始练习': { en: 'Start practicing' },
+  '该知识点已全部掌握，可返回列表选择其他题目': { en: 'This node is fully mastered — pick another question from the list' },
+  '总答题': { en: 'Answered' },
+  '正确': { en: 'Correct' },
+  '错误': { en: 'Wrong' },
+};
+let LANG = localStorage.getItem('lang') || 'zh';
+function t(text) {
+  if (LANG !== 'zh' && I18N[text]) return I18N[text].en || text;
+  return text;
+}
+function tf(text) {
+  const s = t(text);
+  const args = Array.prototype.slice.call(arguments, 1);
+  return s.replace(/\{(\d+)\}/g, function(m, i) { return args[+i] != null ? args[+i] : m; });
+}
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(function(el) { el.innerHTML = t(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
+  document.querySelectorAll('[data-i18n-title]').forEach(function(el) { el.title = t(el.getAttribute('data-i18n-title')); });
+  var btn = document.getElementById('langBtn');
+  if (btn) btn.textContent = LANG === 'zh' ? 'English' : '中文';
+  document.title = t('SQL 自适应练习');
+  document.documentElement.lang = LANG === 'zh' ? 'zh-CN' : 'en';
+}
+function toggleLang() {
+  LANG = LANG === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('lang', LANG);
+  // 全量重载：题目卡、分类标签等动态内容统一按新语言渲染
+  window.location.reload();
+}
 
 // ===== 性能指示器 =====
 var _perfEl = null;
@@ -534,7 +655,7 @@ function validateSQL(cm) {
         cm.markText(
           { line: i, ch: qPos },
           { line: i, ch: line.length },
-          { className: 'cm-sql-error', title: '单引号未闭合，字符串值需用一对引号包裹' }
+          { className: 'cm-sql-error', title: t('单引号未闭合，字符串值需用一对引号包裹') }
         );
       }
     }
@@ -550,7 +671,7 @@ function validateSQL(cm) {
         cm.markText(
           { line: i, ch: start },
           { line: i, ch: start + val.length },
-          { className: 'cm-sql-error', title: "字符串值需加引号: '" + val + "' → '" + val + "'" }
+          { className: 'cm-sql-error', title: t('字符串值需加引号') + ": '" + val + "'" }
         );
       }
     }
@@ -568,7 +689,7 @@ function validateSQL(cm) {
         cm.markText(
           { line: i, ch: start },
           { line: i, ch: start + cnVal.length },
-          { className: 'cm-sql-error', title: "中文字符串需加引号: '" + cnVal + "'" }
+          { className: 'cm-sql-error', title: t('中文字符串需加引号') + ": '" + cnVal + "'" }
         );
       }
     }
@@ -588,7 +709,7 @@ function validateSQL(cm) {
       cm.markText(
         { line: lastLine, ch: ch },
         { line: lastLine, ch: ch + 1 },
-        { className: 'cm-sql-error', title: '括号不匹配: ' + totalOpen + ' ( vs ' + totalClose + ' )' }
+        { className: 'cm-sql-error', title: t('括号不匹配') + ': ' + totalOpen + ' ( vs ' + totalClose + ' )' }
       );
     }
   }
@@ -648,13 +769,13 @@ function updateUserUI() {
   var loginCenter = document.getElementById('loginCenterArea');
   var cbToggle = document.getElementById('cbToggle');
   if (sqlUser) {
-    if (headerEl) headerEl.innerHTML = '<i class="fas fa-user mr-1"></i>' + sqlUser.name + ' · V1.0 <a href="#" onclick="event.preventDefault();switchUser()" style="color:var(--text2);font-size:0.65rem;margin-left:6px;text-decoration:none;" title="切换用户"><i class="fas fa-exchange-alt"></i></a>';
+    if (headerEl) headerEl.innerHTML = '<i class="fas fa-user mr-1"></i>' + sqlUser.name + ' · V1.0 <a href="#" onclick="event.preventDefault();switchUser()" style="color:var(--text2);font-size:0.65rem;margin-left:6px;text-decoration:none;" title="' + t('切换用户') + '"><i class="fas fa-exchange-alt"></i></a>';
     if (loginCenter) loginCenter.style.display = 'none';
   } else {
     if (headerEl) headerEl.innerHTML = 'V1.0';
     if (loginCenter) {
       loginCenter.style.display = 'block';
-      loginCenter.innerHTML = '<a href="/login" style="display:inline-flex;align-items:center;gap:6px;color:#fff;background:var(--accent);padding:6px 24px;border-radius:0.5rem;font-size:0.85rem;font-weight:600;text-decoration:none;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'var(--accent-hover)\'" onmouseout="this.style.background=\'var(--accent)\'"><i class="fas fa-sign-in-alt"></i> 登录 / 注册</a>';
+      loginCenter.innerHTML = '<a href="/login" style="display:inline-flex;align-items:center;gap:6px;color:#fff;background:var(--accent);padding:6px 24px;border-radius:0.5rem;font-size:0.85rem;font-weight:600;text-decoration:none;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'var(--accent-hover)\'" onmouseout="this.style.background=\'var(--accent)\'"><i class="fas fa-sign-in-alt"></i> ' + t('登录 / 注册') + '</a>';
     }
   }
   if (cbToggle) cbToggle.style.display = 'inline';
@@ -2178,44 +2299,66 @@ const STATIC_QUESTIONS = [
   }
 ];
 
-// ====== 知识图谱层级分类 ======
-// 层级树：key = 父节点ID, value = [子节点ID列表]
+// ====== 知识图谱层级分类（官方结构：7 大分类 × 29 标签，2026-08）======
+// 层级树：key = 大类ID, value = [标签ID列表]
 const KG_HIERARCHY = {
-  'select_basic': ['alias','distinct','where_basic','order_by','aggregate_basic','join_inner','subquery_basic'],
-  'where_basic':   ['where_andor','where_like','where_null','where_in','where_between'],
-  'order_by':      ['limit_offset'],
-  'aggregate_basic': ['group_by'],
-  'group_by':      ['having','avg','count_distinct','case_when'],
-  'join_inner':    ['join_left','join_self'],
-  'join_left':     ['join_multi','join_full'],
-  'subquery_basic':['subquery_exists','subquery_all','subquery_select'],
-  'subquery_select': ['cte']
+  'top_dml': ['dml_select','dml_insert','dml_update','dml_delete'],
+  'top_ddl': ['ddl_create','ddl_alter','ddl_drop','ddl_truncate','ddl_rename','ddl_comment'],
+  'top_func': ['string_func','numeric_func','aggregate_func','cast_func','window_func'],
+  'top_join': ['join_inner','join_outer','join_self','join_cross'],
+  'top_constraint': ['constraint_primary_key','constraint_foreign_key'],
+  'top_subquery': ['subquery_scalar','subquery_column','subquery_table','subquery_in'],
+  'top_select': ['select_basic','where_basic','group_by','having']
 };
-// 节点 → 中文显示名
+// 节点 → 官方中文显示名（knowledge map.md 第 2 层）
 const KG_LABELS = {
-  'select_basic':'SELECT 基础', 'alias':'别名 AS', 'distinct':'DISTINCT 去重',
-  'where_basic':'WHERE 条件', 'where_andor':'AND/OR 多条件', 'where_like':'LIKE 模糊',
-  'where_null':'NULL 判断', 'where_in':'IN 运算符', 'where_between':'BETWEEN 范围',
-  'order_by':'ORDER BY 排序', 'limit_offset':'LIMIT/OFFSET 分页',
-  'aggregate_basic':'聚合函数基础', 'group_by':'GROUP BY 分组', 'having':'HAVING 过滤',
-  'avg':'AVG 平均值', 'count_distinct':'COUNT DISTINCT', 'case_when':'CASE WHEN',
-  'join_inner':'INNER JOIN 内连接', 'join_left':'LEFT JOIN 左连接', 'join_self':'自连接',
-  'join_multi':'多表 JOIN', 'join_full':'FULL OUTER JOIN',
-  'subquery_basic':'子查询基础', 'subquery_exists':'EXISTS 子查询',
-  'subquery_all':'ALL/ANY 子查询', 'subquery_select':'SELECT 中子查询', 'cte':'CTE (WITH)',
-  'window':'窗口函数', 'dml':'DML (增删改)', 'date':'日期处理', 'string':'字符串处理',
-  'union':'UNION 合并'
+  'top_dml':'DML','top_ddl':'DDL','top_func':'函数','top_join':'表连接',
+  'top_constraint':'约束','top_subquery':'子查询','top_select':'SELECT',
+  'dml_select':'SELECT','dml_insert':'INSERT','dml_update':'UPDATE','dml_delete':'DELETE',
+  'ddl_create':'CREATE','ddl_alter':'ALTER','ddl_drop':'DROP','ddl_truncate':'TRUNCATE',
+  'ddl_rename':'RENAME','ddl_comment':'COMMENT',
+  'string_func':'字符串函数','numeric_func':'数字函数','aggregate_func':'聚合函数',
+  'cast_func':'转换函数','window_func':'窗口函数',
+  'join_inner':'内连接','join_outer':'外连接','join_self':'自连接','join_cross':'交叉连接',
+  'constraint_primary_key':'主键','constraint_foreign_key':'外键',
+  'subquery_scalar':'标量子查询','subquery_column':'列子查询',
+  'subquery_table':'表子查询','subquery_in':'IN 子查询',
+  'select_basic':'基本 SELECT：字段、别名、常量','where_basic':'WHERE 条件筛选',
+  'group_by':'聚合函数与 GROUP BY','having':'HAVING 子句'
 };
-// 大分类分组（第一个下拉框的选项）
+// 大分类分组（级联筛选第一行按钮）
 const KG_GROUPS = [
-  { label:'SELECT 基础', root:'select_basic', expand:true },
-  { label:'条件筛选',   root:'where_basic', expand:true },
-  { label:'排序与聚合', root:'aggregate_basic', expand:true, extraRoot:'order_by' },
-  { label:'多表连接',   root:'join_inner', expand:true },
-  { label:'子查询与CTE',root:'subquery_basic', expand:true },
+  { label:'DML',       root:'top_dml', expand:true },
+  { label:'DDL',       root:'top_ddl', expand:true },
+  { label:'函数',      root:'top_func', expand:true },
+  { label:'表连接',    root:'top_join', expand:true },
+  { label:'约束',      root:'top_constraint', expand:true },
+  { label:'子查询',    root:'top_subquery', expand:true },
+  { label:'SELECT',    root:'top_select', expand:true },
 ];
-// 无层级的叶节点（直接在第一框中作为独立选项）
-const KG_LEAF = ['window','dml','date','string','union'];
+// 无层级的叶节点（官方结构全部 29 标签均归属 7 大分类，无独立选项）
+const KG_LEAF = [];
+// 分类 ID → 官方英文子标签名（英语模式用）
+const KG_LABELS_EN = {
+  'top_dml':'DML','top_ddl':'DDL','top_func':'Functions','top_join':'Joins',
+  'top_constraint':'Constraints','top_subquery':'Subqueries','top_select':'SELECT',
+  'dml_select':'SELECT','dml_insert':'INSERT','dml_update':'UPDATE','dml_delete':'DELETE',
+  'ddl_create':'CREATE','ddl_alter':'ALTER','ddl_drop':'DROP','ddl_truncate':'TRUNCATE',
+  'ddl_rename':'RENAME','ddl_comment':'COMMENT',
+  'string_func':'String Functions','numeric_func':'Numeric Functions','aggregate_func':'Aggregate Functions',
+  'cast_func':'Conversion Functions','window_func':'Window Functions',
+  'join_inner':'Inner Join','join_outer':'Outer Join','join_self':'Self Join','join_cross':'Cross Join',
+  'constraint_primary_key':'Primary Key','constraint_foreign_key':'Foreign Key',
+  'subquery_scalar':'Scalar Subquery','subquery_column':'Column Subquery',
+  'subquery_table':'Table Subquery','subquery_in':'IN Subquery',
+  'select_basic':'Basic SELECT: columns, aliases, constants','where_basic':'WHERE conditions',
+  'group_by':'Aggregates & GROUP BY','having':'HAVING clause'
+};
+// 分类 ID → 官方中文/英文子标签名（题干标签显示用；未知 ID 原样回退）
+function catLabel(cat) {
+  if (LANG === 'en' && KG_LABELS_EN[cat]) return KG_LABELS_EN[cat];
+  return (KG_LABELS[cat] || cat);
+}
 // 预计算所有包含"全部子类"的根节点展开集合
 const KG_ROOT_EXPAND = {};
 function kgExpand(nodeId, collected) {
@@ -2255,17 +2398,19 @@ function buildCategorySelect() {
     var grp = KG_GROUPS[g];
     var btn = document.createElement('div');
     btn.className = 'cat-parent-btn';
-    btn.textContent = grp.label;
+    btn.textContent = t(grp.label);
     btn.setAttribute('data-root', grp.root);
     btn.setAttribute('data-expand', grp.expand ? '1' : '0');
     if (grp.extraRoot) btn.setAttribute('data-extra', grp.extraRoot);
     btn.addEventListener('mouseenter', onCatParentHover);
     parents.appendChild(btn);
   }
-  // 分隔
-  var sep = document.createElement('div');
-  sep.style.cssText = 'width:1px;height:18px;background:var(--border);margin:0 2px;align-self:center;';
-  parents.appendChild(sep);
+  // 分隔（仅当存在独立叶节点时才需要）
+  if (KG_LEAF.length > 0) {
+    var sep = document.createElement('div');
+    sep.style.cssText = 'width:1px;height:18px;background:var(--border);margin:0 2px;align-self:center;';
+    parents.appendChild(sep);
+  }
   // 独立叶节点
   for (var l = 0; l < KG_LEAF.length; l++) {
     var leaf = KG_LEAF[l];
@@ -2300,7 +2445,7 @@ function onCatParentHover(e) {
   // "全部"选项
   var allItem = document.createElement('div');
   allItem.className = 'cat-sub-item cat-sub-all';
-  allItem.textContent = '全部' + this.textContent;
+  allItem.textContent = t('全部') + this.textContent;
   allItem.addEventListener('click', function(){
     _catSelectedParent = root;
     _catSelectedNode = null;
@@ -2323,7 +2468,8 @@ function onCatParentHover(e) {
   panel.style.display = 'block';
 }
 function buildSubItems(panel, nodeId, depth) {
-  if (KG_LABELS[nodeId]) {
+  // 顶层大分类（top_*）不渲染为子项："全部XX"已覆盖其语义
+  if (KG_LABELS[nodeId] && nodeId.indexOf('top_') !== 0) {
     var item = document.createElement('div');
     item.className = 'cat-sub-item';
     item.style.paddingLeft = (8 + depth * 14) + 'px';
@@ -2369,7 +2515,7 @@ function highlightCatSelection() {
     for (var g = 0; g < KG_GROUPS.length; g++) {
       if (KG_GROUPS[g].root === _catSelectedParent) { label = KG_GROUPS[g].label; break; }
     }
-    tag.textContent = '✕ ' + (label || _catSelectedParent) + '（全部）';
+    tag.textContent = '✕ ' + t(label || _catSelectedParent) + t('（全部）');
   } else {
     tag.style.display = 'none';
   }
@@ -2474,7 +2620,7 @@ function renderDataTable(dataStr, schemaStr) {
       html += '</tr>';
     }
     if (!showAll) {
-      html += '<tr><td colspan="' + hdrs.length + '" style="text-align:center;color:#999;font-style:italic;padding:0.5rem">... 共 ' + rows.length + ' 行，仅显示前 ' + maxRows + ' 行 ...</td></tr>';
+      html += '<tr><td colspan="' + hdrs.length + '" style="text-align:center;color:#999;font-style:italic;padding:0.5rem">... ' + tf('共 {0} 行，仅显示前 {1} 行', rows.length, maxRows) + ' ...</td></tr>';
     }
     html += '</tbody></table>';
   }
@@ -2487,7 +2633,7 @@ function renderExpectedOutput(expStr) {
   try {
     var data = JSON.parse(expStr);
     if (data.rows && data.rows.length) {
-      var html = '<div class="exp-label">预期输出</div><table class="data-table"><thead><tr>';
+      var html = '<div class="exp-label">' + t('预期输出') + '</div><table class="data-table"><thead><tr>';
       for (var h = 0; h < data.headers.length; h++) html += '<th>' + data.headers[h] + '</th>';
       html += '</tr></thead><tbody>';
       for (var r = 0; r < data.rows.length; r++) {
@@ -2506,7 +2652,7 @@ function renderExpectedOutput(expStr) {
   } catch(e) { /* fall through to text format */ }
   // Text table format: lines with | separator, second line is -+-
   var lines = expStr.split('\n');
-  if (lines.length < 2) return '<div class="exp-label">预期输出</div><pre class="expected-output-text">' + expStr + '</pre>';
+  if (lines.length < 2) return '<div class="exp-label">' + t('预期输出') + '</div><pre class="expected-output-text">' + expStr + '</pre>';
   var headerLine = lines[0];
   var sepLine = lines[1] || '';
   var dataLines = [];
@@ -2516,7 +2662,7 @@ function renderExpectedOutput(expStr) {
   // Check if separator line contains -+- (table format)
   if (sepLine.indexOf('-+-') >= 0) {
     var headers = headerLine.split('|').map(function(s) { return s.trim(); });
-    var html = '<div class="exp-label">预期输出</div><table class="data-table"><thead><tr>';
+    var html = '<div class="exp-label">' + t('预期输出') + '</div><table class="data-table"><thead><tr>';
     for (var h = 0; h < headers.length; h++) html += '<th>' + headers[h] + '</th>';
     html += '</tr></thead><tbody>';
     for (var r = 0; r < dataLines.length; r++) {
@@ -2528,7 +2674,7 @@ function renderExpectedOutput(expStr) {
     html += '</tbody></table>';
     return html;
   }
-  return '<div class="exp-label">预期输出</div><pre class="expected-output-text">' + expStr + '</pre>';
+  return '<div class="exp-label">' + t('预期输出') + '</div><pre class="expected-output-text">' + expStr + '</pre>';
 }
 
 function renderSqlPanel(q) {
@@ -2537,7 +2683,7 @@ function renderSqlPanel(q) {
   if (q.table_schema) code += q.table_schema.replace(/</g, '&lt;') + ';\n';
   if (q.initial_data) code += q.initial_data.replace(/</g, '&lt;') + '\n';
   var id = 'sql_panel_' + q.id;
-  return '<div class="sql-toggle" onclick="var p=document.getElementById(\'' + id + '\');p.classList.toggle(\'open\');this.querySelector(\'span\').textContent=p.classList.contains(\'open\')?\'收起 SQL\':\'展开 SQL\'"><span>展开 SQL</span> <i class="fas fa-chevron-down" style="font-size:0.5rem"></i></div><div class="sql-panel" id="' + id + '"><div class="sql-code">' + code + '</div></div>';
+  return '<div class="sql-toggle" onclick="var p=document.getElementById(\'' + id + '\');p.classList.toggle(\'open\');this.querySelector(\'span\').textContent=p.classList.contains(\'open\')?t(\'收起 SQL\'):t(\'展开 SQL\')"><span>' + t('展开 SQL') + '</span> <i class="fas fa-chevron-down" style="font-size:0.5rem"></i></div><div class="sql-panel" id="' + id + '"><div class="sql-code">' + code + '</div></div>';
 }
 
 function renderSchemaAndData(q) {
@@ -2565,7 +2711,7 @@ function showPage(name) {
   if (btns.length > 1 && currentPool === 'exam') btns[1].classList.add('active');
   else if (btns.length > 0) btns[0].classList.add('active');
   if (name === 'practice') {
-    document.getElementById('poolLabel').textContent = currentPool === 'exam' ? '🎯 真题测试' : '📝 自主练习';
+    document.getElementById('poolLabel').textContent = currentPool === 'exam' ? t('🎯 真题测试') : t('📝 自主练习');
     if (!_catSelectBuilt) { buildCategorySelect(); _catSelectBuilt = true; }
     loadPracticeQuestions();
   }
@@ -2653,7 +2799,7 @@ function showOptionExplanations(prefix, qid, options, explanations, correctAnswe
   for (var i = 0; i < opts.length; i++) {
     var isCorrect = opts[i].trim().toLowerCase() === correctAnswer.trim().toLowerCase();
     var mark = isCorrect ? '✓' : '✗';
-    var explain = (expls && expls[i]) ? expls[i] : (isCorrect ? '这是正确答案' : '');
+    var explain = (expls && expls[i]) ? expls[i] : (isCorrect ? t('这是正确答案') : '');
     html += '<div class="opt-explain" style="background:' + (isCorrect ? 'rgba(34,139,34,0.08)' : 'rgba(220,20,20,0.06)') + '">';
     html += '<span class="mark" style="color:' + (isCorrect ? '#1a6b1a' : '#b22222') + '">' + mark + '</span>';
     html += '<span><code style="font-family:Oswald,Consolas,monospace;font-size:0.75rem">' + opts[i].replace(/</g, '&lt;') + '</code>';
@@ -2664,14 +2810,14 @@ function showOptionExplanations(prefix, qid, options, explanations, correctAnswe
 }
 
 function renderQuestion(q, prefix) {
-  var diffMap = { easy: '简单', medium: '中等', hard: '困难' };
+  var diffMap = { easy: t('简单'), medium: t('中等'), hard: t('困难') };
   var diffClass = { easy: 'tag-easy', medium: 'tag-medium', hard: 'tag-hard' };
   var hasOpts = q.options && (typeof q.options === 'string' ? q.options.trim() : q.options.length);
   var hint = q.hint || '';
   var html = '<div class="flex gap-2 flex-wrap mb-2">';
-  html += '<span class="tag">' + q.category + '</span>';
+  html += '<span class="tag">' + catLabel(q.category) + '</span>';
   html += '<span class="tag ' + diffClass[q.difficulty] + '">' + diffMap[q.difficulty] + '</span>';
-  html += '<span class="tag" style="background:' + (hasOpts ? 'rgba(52,119,191,0.15)' : 'rgba(193,124,74,0.20)') + ';color:' + (hasOpts ? '#3477bf' : '#a8683e') + '">' + (hasOpts ? '选择题' : '填空题') + '</span>';
+  html += '<span class="tag" style="background:' + (hasOpts ? 'rgba(52,119,191,0.15)' : 'rgba(193,124,74,0.20)') + ';color:' + (hasOpts ? '#3477bf' : '#a8683e') + '">' + (hasOpts ? t('选择题') : t('填空题')) + '</span>';
   html += '</div>';
   html += '<h3 class="title-serif text-lg mb-2">' + q.title + '</h3>';
   html += '<p class="question-desc">' + q.description + '</p>';
@@ -2686,10 +2832,10 @@ function renderQuestion(q, prefix) {
     html += '</div>';
   } else {
     if (hint) html += '<div class="text-xs mb-2" style="color:#a8683e"><i class="fas fa-lightbulb mr-1"></i> ' + hint + '</div>';
-    html += '<textarea class="code-input" id="' + prefix + '_inp_' + q.id + '" placeholder="手动输入你的 SQL 语句..." oninput="clearOpt(\'' + prefix + '\',' + q.id + ')"></textarea>';
+    html += '<textarea class="code-input" id="' + prefix + '_inp_' + q.id + '" placeholder="' + t('手动输入你的 SQL 语句...') + '" oninput="clearOpt(\'' + prefix + '\',' + q.id + ')"></textarea>';
   }
   html += '<div id="' + prefix + '_res_' + q.id + '" class="result-box" style="display:none"></div>';
-  html += '<div class="mt-2"><button class="btn btn-primary" onclick="' + (prefix === 'journey' ? 'submitJourneyAnswer' : 'submitPracticeAnswer') + '(' + q.id + ')"><i class="fas fa-paper-plane mr-1"></i> 提交答案</button></div>';
+  html += '<div class="mt-2"><button class="btn btn-primary" onclick="' + (prefix === 'journey' ? 'submitJourneyAnswer' : 'submitPracticeAnswer') + '(' + q.id + ')"><i class="fas fa-paper-plane mr-1"></i> ' + t('提交答案') + '</button></div>';
   return html;
 }
 
@@ -2714,15 +2860,15 @@ async function startJourney() {
     journeyData = resp;
     showJourneyQuestion(resp);
   } catch (e) {
-    document.getElementById('journeyQuestion').innerHTML = '<p style="color:#b04a4a">加载失败，请确保后端已启动</p>';
+    document.getElementById('journeyQuestion').innerHTML = '<p style="color:#b04a4a">' + t('加载失败，请确保后端已启动') + '</p>';
   }
 }
 
 function showJourneyQuestion(data) {
   journeyQuestionStart = Date.now();
-  var actionMap = { advance: '进阶', consolidate: '巩固', easier: '降难度', start: '开始', fallback: '练习', skip: '跳级', review: '复习', fillin: '填空题' };
-  document.getElementById('journeyNodeLabel').textContent = data.current_node ? getNodeName(data.current_node, data.graph) : '加载中';
-  document.getElementById('journeyStats').textContent = (data.total_answered || 0) + '题';
+  var actionMap = { advance: t('进阶'), consolidate: t('巩固'), easier: t('降难度'), start: t('开始'), fallback: t('练习'), skip: t('跳级'), review: t('复习'), fillin: t('填空题') };
+  document.getElementById('journeyNodeLabel').textContent = data.current_node ? getNodeName(data.current_node, data.graph) : t('加载中...');
+  document.getElementById('journeyStats').textContent = (data.total_answered || 0) + t('题');
   var progress = data.total_answered > 0 ? Math.min(100, (data.total_correct || 0) / Math.max(1, data.total_answered) * 100) : 0;
   document.getElementById('journeyProgress').style.width = progress + '%';
   var tag = document.getElementById('journeyActionTag');
@@ -2731,7 +2877,6 @@ function showJourneyQuestion(data) {
   } else { tag.style.display = 'none'; }
   // sync deep mode toggle
   if (data.deep_mode !== undefined) document.getElementById('deepModeToggle').checked = data.deep_mode;
-  renderJourneyBadges(data.graph, data.mastery, data.unlocked_nodes, data.current_node);
   // question
   currentJourneyQid = null;
   document.getElementById('journeyNextBtn').style.display = 'none';
@@ -2745,7 +2890,7 @@ function showJourneyQuestion(data) {
     var ta = el.querySelector('textarea');
     if (ta) ta.focus();
   } else {
-    el.innerHTML = '<p class="text-sm opacity-60 text-center py-4">所有知识点已掌握！🎉</p>';
+    el.innerHTML = '<p class="text-sm opacity-60 text-center py-4">' + t('所有知识点已掌握！🎉') + '</p>';
     document.getElementById('journeyNextBtn').style.display = 'none';
   }
 }
@@ -2763,30 +2908,6 @@ function getNodeName(nodeId, graph) {
   return nodeId;
 }
 
-function renderJourneyBadges(graph, mastery, unlocked, current) {
-  var el = document.getElementById('journeyGraph');
-  if (!graph || !graph.nodes) { el.innerHTML = ''; return; }
-  var html = '';
-  var unlockedSet = {};
-  var masteredSet = {};
-  if (unlocked) for (var i = 0; i < unlocked.length; i++) unlockedSet[unlocked[i]] = true;
-  if (mastery) for (var key in mastery) {
-    if (mastery[key].total_count > 0 && mastery[key].correct_count / mastery[key].total_count >= 0.7) masteredSet[key] = true;
-  }
-  var unlockedCount = 0;
-  for (var j = 0; j < graph.nodes.length; j++) {
-    var n = graph.nodes[j];
-    var cls = 'graph-node';
-    if (n.id === current) { cls += ' current'; unlockedCount++; }
-    else if (masteredSet[n.id]) { cls += ' mastered'; unlockedCount++; }
-    else if (unlockedSet[n.id]) { cls += ''; unlockedCount++; }
-    else cls += ' locked';
-    html += '<span class="' + cls + '" title="' + (n.description || '') + '"><i class="fas ' + (n.icon || 'fa-code') + '"></i>' + n.name + '</span>';
-  }
-  el.innerHTML = html;
-  document.getElementById('unlockedCount').textContent = unlockedCount;
-}
-
 async function submitJourneyAnswer(qid) { saveAllCM();
   var q = journeyData && journeyData.question && journeyData.question.id === qid ? journeyData.question : null;
   var input = '';
@@ -2795,7 +2916,7 @@ async function submitJourneyAnswer(qid) { saveAllCM();
     var sel = document.querySelector('#journey_opts_' + qid + ' .option-btn.selected');
     if (sel) input = sel.textContent.trim();
   }
-  if (!input) return alert('请先输入或选择答案');
+  if (!input) return alert(t('请先输入或选择答案'));
   var elapsed = Math.round((Date.now() - journeyQuestionStart) / 1000);
   try {
     var resp = await apiPost('/journey/next', { session_id: sessionId, question_id: qid, answer: input, duration: elapsed });
@@ -2803,27 +2924,20 @@ async function submitJourneyAnswer(qid) { saveAllCM();
     resultBox.style.display = 'block';
     resultBox.className = 'result-box ' + (resp.last_answer_correct ? 'correct' : 'wrong');
     if (resp.last_answer_correct === true) {
-      resultBox.innerHTML = '<strong><i class="fas fa-check-circle mr-1"></i> 回答正确</strong>';
+      resultBox.innerHTML = '<strong><i class="fas fa-check-circle mr-1"></i> ' + t('回答正确') + '</strong>';
     } else if (resp.last_answer_correct === false) {
-      resultBox.innerHTML = '<strong><i class="fas fa-times-circle mr-1"></i> 回答错误</strong>';
-      if (q) resultBox.innerHTML += '<br>正确答案：<strong>' + q.correct_answer + '</strong>';
+      resultBox.innerHTML = '<strong><i class="fas fa-times-circle mr-1"></i> ' + t('回答错误') + '</strong>';
+      if (q) resultBox.innerHTML += '<br>' + t('正确答案：') + '<strong>' + q.correct_answer + '</strong>';
       if (q && q.options && q.option_explanations) {
         showOptionExplanations('journey', qid, q.options, q.option_explanations, q.correct_answer);
       }
     }
     if (resp.explanation) resultBox.innerHTML += '<div class="explanation"><i class="fas fa-lightbulb mr-1"></i> ' + resp.explanation + '</div>';
     var submitBtn = document.querySelector('#journeyQuestion .btn-primary');
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '已提交'; }
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('已提交'); }
     journeyData = resp;
     document.getElementById('journeyNextBtn').style.display = 'inline-flex';
-  } catch (e) { alert('提交失败'); }
-}
-
-var journeyMapExpanded = false;
-function toggleJourneyMap() {
-  journeyMapExpanded = !journeyMapExpanded;
-  document.getElementById('journeyGraph').style.display = journeyMapExpanded ? 'flex' : 'none';
-  document.getElementById('journeyMapToggle').innerHTML = journeyMapExpanded ? '<i class="fas fa-chevron-up"></i>' : '<i class="fas fa-chevron-down"></i>';
+  } catch (e) { alert(t('提交失败')); }
 }
 
 var journeyVizExpanded = false;
@@ -2854,7 +2968,7 @@ async function loadPracticeQuestions() {
     params.push('node=' + encodeURIComponent(nodeIds[0]));
   }
   if (difficulty) params.push('difficulty=' + encodeURIComponent(difficulty));
-  document.getElementById('practiceList').innerHTML = '<div class="text-center text-sm py-4 opacity-50"><i class="fas fa-spinner fa-spin mr-1"></i> 加载中...</div>';
+  document.getElementById('practiceList').innerHTML = '<div class="text-center text-sm py-4 opacity-50"><i class="fas fa-spinner fa-spin mr-1"></i> ' + t('加载中...') + '</div>';
   document.getElementById('questionDetail').classList.remove('visible');
   document.getElementById('questionDetail').style.display = 'none';
   document.getElementById('practiceList').style.display = 'block';
@@ -2868,7 +2982,7 @@ async function loadPracticeQuestions() {
     }
     renderPracticeList();
   } catch (e) {
-    document.getElementById('practiceList').innerHTML = '<p style="color:#b04a4a;text-align:center">加载失败，请确保后端已启动</p>';
+    document.getElementById('practiceList').innerHTML = '<p style="color:#b04a4a;text-align:center">' + t('加载失败，请确保后端已启动') + '</p>';
   }
 }
 
@@ -2884,7 +2998,8 @@ function renderPracticeList() {
     filtered = filtered.filter(function(q) {
       return (q.title && q.title.toLowerCase().indexOf(searchText) !== -1) ||
              (q.description && q.description.toLowerCase().indexOf(searchText) !== -1) ||
-             (q.category && q.category.toLowerCase().indexOf(searchText) !== -1);
+             (q.category && (q.category.toLowerCase().indexOf(searchText) !== -1 ||
+                             catLabel(q.category).toLowerCase().indexOf(searchText) !== -1));
     });
   }
   if (filterType === 'mcq') {
@@ -2909,13 +3024,13 @@ function renderPracticeList() {
       return false;
     });
   }
-  document.getElementById('poolCount').textContent = filtered.length + ' 题';
+  document.getElementById('poolCount').textContent = filtered.length + t('题');
 
   if (!filtered.length) {
-    el.innerHTML = '<div class="text-center text-sm py-4 opacity-50">暂无符合条件的题目</div>';
+    el.innerHTML = '<div class="text-center text-sm py-4 opacity-50">' + t('暂无符合条件的题目') + '</div>';
     return;
   }
-  var diffMap = { easy: '简单', medium: '中等', hard: '困难' };
+  var diffMap = { easy: t('简单'), medium: t('中等'), hard: t('困难') };
   var diffClass = { easy: 'tag-easy', medium: 'tag-medium', hard: 'tag-hard' };
   var html = '';
   for (var i = 0; i < filtered.length; i++) {
@@ -2925,7 +3040,7 @@ function renderPracticeList() {
     var qid = q.id != null ? q.id : ('static_' + practiceQuestions.indexOf(q));
     html += '<div class="card p-3 question-item" onclick="showPracticeDetail(\'' + qid + '\')">';
     html += '<div class="flex gap-2 flex-wrap mb-1">';
-    html += '<span class="tag">' + q.category + '</span>';
+    html += '<span class="tag">' + catLabel(q.category) + '</span>';
     html += '<span class="tag ' + (diffClass[q.difficulty] || '') + '">' + (diffMap[q.difficulty] || q.difficulty) + '</span>';
     html += '<span class="tag" style="background:' + (hasOpts ? 'rgba(52,119,191,0.15)' : 'rgba(193,124,74,0.20)') + ';color:' + (hasOpts ? '#3477bf' : '#a8683e') + '">' + (hasOpts ? '选择' : '填空') + '</span>';
     html += '</div>';
@@ -2956,13 +3071,13 @@ function showPracticeDetail(qid) {
 }
 
 function renderPracticeQuestion(q) {
-  var diffMap = { easy: '简单', medium: '中等', hard: '困难' };
+  var diffMap = { easy: t('简单'), medium: t('中等'), hard: t('困难') };
   var diffClass = { easy: 'tag-easy', medium: 'tag-medium', hard: 'tag-hard' };
   var hasOpts = q.options && (typeof q.options === 'string' ? q.options.trim() : q.options.length);
   var html = '<div class="flex gap-2 flex-wrap mb-2">';
-  html += '<span class="tag">' + q.category + '</span>';
+  html += '<span class="tag">' + catLabel(q.category) + '</span>';
   html += '<span class="tag ' + (diffClass[q.difficulty] || '') + '">' + (diffMap[q.difficulty] || q.difficulty) + '</span>';
-  html += '<span class="tag" style="background:' + (hasOpts ? 'rgba(52,119,191,0.15)' : 'rgba(193,124,74,0.20)') + ';color:' + (hasOpts ? '#3477bf' : '#a8683e') + '">' + (hasOpts ? '选择题' : '填空题') + '</span>';
+  html += '<span class="tag" style="background:' + (hasOpts ? 'rgba(52,119,191,0.15)' : 'rgba(193,124,74,0.20)') + ';color:' + (hasOpts ? '#3477bf' : '#a8683e') + '">' + (hasOpts ? t('选择题') : t('填空题')) + '</span>';
   html += '</div>';
   html += '<h3 class="title-serif text-lg mb-2">' + q.title + '</h3>';
   html += '<p class="question-desc">' + q.description + '</p>';
@@ -2993,10 +3108,10 @@ function renderPracticeQuestion(q) {
     }
     html += '</div>';
   } else {
-    html += '<textarea class="code-input" id="prac_inp_' + q.id + '" placeholder="手动输入你的 SQL 语句..."></textarea>';
+    html += '<textarea class="code-input" id="prac_inp_' + q.id + '" placeholder="' + t('手动输入你的 SQL 语句...') + '"></textarea>';
   }
   html += '<div id="prac_res_' + q.id + '" class="result-box" style="display:none"></div>';
-  html += '<div class="mt-2"><button class="btn btn-primary" id="prac_btn_' + q.id + '" onclick="submitPracticeAnswer(' + q.id + ')"><i class="fas fa-paper-plane mr-1"></i> 提交答案</button></div>';
+  html += '<div class="mt-2"><button class="btn btn-primary" id="prac_btn_' + q.id + '" onclick="submitPracticeAnswer(' + q.id + ')"><i class="fas fa-paper-plane mr-1"></i> ' + t('提交答案') + '</button></div>';
   return html;
 }
 
@@ -3019,8 +3134,8 @@ function checkStaticAnswer(key, btn) {
   res.style.display = 'block';
   res.className = 'result-box ' + (isCorrect ? 'correct' : 'wrong');
   res.innerHTML = isCorrect
-    ? '<strong><i class="fas fa-check-circle mr-1"></i> 回答正确！</strong>'
-    : '<strong><i class="fas fa-times-circle mr-1"></i> 回答错误，正确答案：' + correct + '</strong>';
+    ? '<strong><i class="fas fa-check-circle mr-1"></i> ' + t('回答正确！') + '</strong>'
+    : '<strong><i class="fas fa-times-circle mr-1"></i> ' + t('回答错误') + '，' + t('正确答案：') + correct + '</strong>';
   if (q.explanation) {
     res.innerHTML += '<div class="explanation"><i class="fas fa-lightbulb mr-1"></i> ' + q.explanation + '</div>';
   }
@@ -3036,20 +3151,20 @@ async function submitPracticeAnswer(qid) { saveAllCM();
     var sel = document.querySelector('#prac_opts_' + qid + ' .option-btn.selected');
     if (sel) input = sel.textContent.trim();
   }
-  if (!input) return alert('请先输入或选择答案');
+  if (!input) return alert(t('请先输入或选择答案'));
   var result = await apiPost('/submit', { session_id: sessionId, question_id: qid, answer: input });
   var resultBox = document.getElementById('prac_res_' + qid);
   resultBox.style.display = 'block';
   resultBox.className = 'result-box ' + (result.is_correct ? 'correct' : 'wrong');
   resultBox.innerHTML = result.is_correct
-    ? '<strong><i class="fas fa-check-circle mr-1"></i> 回答正确</strong>'
-    : '<strong><i class="fas fa-times-circle mr-1"></i> 回答错误</strong><br>正确答案：<strong>' + result.correct_answer + '</strong>';
+    ? '<strong><i class="fas fa-check-circle mr-1"></i> ' + t('回答正确') + '</strong>'
+    : '<strong><i class="fas fa-times-circle mr-1"></i> ' + t('回答错误') + '</strong><br>' + t('正确答案：') + '<strong>' + result.correct_answer + '</strong>';
   resultBox.innerHTML += '<div class="explanation"><i class="fas fa-lightbulb mr-1"></i> ' + (result.explanation || '') + '</div>';
   if (!result.is_correct && q && q.options && q.option_explanations) {
     showOptionExplanations('prac', qid, q.options, q.option_explanations, q.correct_answer);
   }
   var btn = document.getElementById('prac_btn_' + qid);
-  if (btn) { btn.disabled = true; btn.textContent = '已提交'; }
+  if (btn) { btn.disabled = true; btn.textContent = t('已提交'); }
   var isMcq = q && q.options && (typeof q.options === 'string' ? q.options.trim() : q.options.length);
   var showDerivedNext = result.is_correct && isMcq;
   if (showDerivedNext) {
@@ -3057,8 +3172,8 @@ async function submitPracticeAnswer(qid) { saveAllCM();
   } else {
     currentPrototypeQ = null;
   }
-  var nextLabel = showDerivedNext ? '举一反三 →' : '下一题';
-  var nextHint = showDerivedNext ? '已掌握该选择题，进入举一反三' : '';
+  var nextLabel = showDerivedNext ? t('举一反三 →') : t('下一题');
+  var nextHint = showDerivedNext ? t('已掌握该选择题，进入举一反三') : '';
   resultBox.innerHTML += '<div class="mt-3" style="border-top:1px solid var(--border);padding-top:0.75rem">' +
     (nextHint ? '<p class="text-sm mb-2"><i class="fas fa-lightbulb mr-1" style="color:var(--accent)"></i> ' + nextHint + '</p>' : '') +
     '<button class="btn btn-accent" onclick="onPracticeNext()"><i class="fas fa-arrow-right mr-1"></i> ' + nextLabel + '</button></div>';
@@ -3087,20 +3202,20 @@ async function startDerivedPractice(prototypeId) {
     currentDerivedQ = resp.derived_question;
     renderDerivedQuestion(currentDerivedQ);
   } catch(e) {
-    area.innerHTML = '<p style="color:#b04a4a">生成失败</p>';
+    area.innerHTML = '<p style="color:#b04a4a">' + t('生成失败') + '</p>';
   }
 }
 
 function renderDerivedQuestion(dq) {
   var area = document.getElementById('deriveArea');
-  var html = '<div class="highlight-box mb-3"><p class="text-sm"><i class="fas fa-lightbulb mr-1 accent"></i><strong>举一反三</strong> — 这是根据你刚做对的选择题生成的填空题，请手动编写 SQL 语句。</p></div>';
+  var html = '<div class="highlight-box mb-3"><p class="text-sm"><i class="fas fa-lightbulb mr-1 accent"></i><strong>' + t('举一反三') + '</strong> — ' + t('这是根据你刚做对的选择题生成的填空题，请手动编写 SQL 语句。') + '</p></div>';
   // Tags
-  var diffMap = { easy: '简单', medium: '中等', hard: '困难' };
+  var diffMap = { easy: t('简单'), medium: t('中等'), hard: t('困难') };
   var diffClass = { easy: 'tag-easy', medium: 'tag-medium', hard: 'tag-hard' };
   html += '<div class="flex gap-2 flex-wrap mb-2">';
-  html += '<span class="tag">' + dq.category + '</span>';
+  html += '<span class="tag">' + catLabel(dq.category) + '</span>';
   html += '<span class="tag ' + diffClass[dq.difficulty] + '">' + diffMap[dq.difficulty] + '</span>';
-  html += '<span class="tag" style="background:rgba(193,124,74,0.20);color:#a8683e">填空题</span>';
+  html += '<span class="tag" style="background:rgba(193,124,74,0.20);color:#a8683e">' + t('填空题') + '</span>';
   html += '</div>';
   html += '<h3 class="title-serif text-lg mb-2">' + dq.title + '</h3>';
   html += '<p class="question-desc">' + dq.description + '</p>';
@@ -3122,16 +3237,16 @@ function renderDerivedQuestion(dq) {
     } catch(e) {}
   }
   // SQL panel
-  html += '<div class="sql-toggle" onclick="var p=document.getElementById(\'derivedSqlPanel\');p.classList.toggle(\'open\');this.querySelector(\'span\').textContent=p.classList.contains(\'open\')?\'收起 SQL\':\'展开 SQL\'"><span>展开 SQL</span> <i class="fas fa-chevron-down" style="font-size:0.5rem"></i></div><div class="sql-panel" id="derivedSqlPanel"><div class="sql-code">';
+  html += '<div class="sql-toggle" onclick="var p=document.getElementById(\'derivedSqlPanel\');p.classList.toggle(\'open\');this.querySelector(\'span\').textContent=p.classList.contains(\'open\')?t(\'收起 SQL\'):t(\'展开 SQL\')"><span>' + t('展开 SQL') + '</span> <i class="fas fa-chevron-down" style="font-size:0.5rem"></i></div><div class="sql-panel" id="derivedSqlPanel"><div class="sql-code">';
   if (dq.table_schema) html += dq.table_schema.replace(/</g, '&lt;') + ';\n';
   if (dq.initial_data) html += dq.initial_data.replace(/</g, '&lt;') + '\n';
   html += '</div></div>';
   // Expected output
   if (dq.expected_output) html += renderExpectedOutput(dq.expected_output);
   // Input
-  html += '<textarea class="code-input" id="derived_inp" placeholder="手动输入你的 SQL 语句..."></textarea>';
+  html += '<textarea class="code-input" id="derived_inp" placeholder="' + t('手动输入你的 SQL 语句...') + '"></textarea>';
   html += '<div id="derived_res" class="result-box" style="display:none"></div>';
-  html += '<div class="mt-2"><button class="btn btn-primary" id="derived_btn" onclick="submitDerivedAnswer()"><i class="fas fa-paper-plane mr-1"></i> 提交答案</button></div>';
+  html += '<div class="mt-2"><button class="btn btn-primary" id="derived_btn" onclick="submitDerivedAnswer()"><i class="fas fa-paper-plane mr-1"></i> ' + t('提交答案') + '</button></div>';
   area.innerHTML = html;
   setTimeout(initAllCodeMirrors, 100);
   setTimeout(function() { var ta = document.getElementById('derived_inp'); if (ta && ta._cm) ta._cm.focus(); else if (ta) ta.focus(); }, 150);
@@ -3140,17 +3255,17 @@ function renderDerivedQuestion(dq) {
 async function submitDerivedAnswer() { saveAllCM();
   if (!currentDerivedQ) return;
   var input = document.getElementById('derived_inp').value.trim();
-  if (!input) return alert('请先输入 SQL 语句');
+  if (!input) return alert(t('请先输入 SQL 语句'));
   var result = await apiPost('/submit', { session_id: sessionId, question_id: currentDerivedQ.id, answer: input });
   var resultBox = document.getElementById('derived_res');
   resultBox.style.display = 'block';
   resultBox.className = 'result-box ' + (result.is_correct ? 'correct' : 'wrong');
   resultBox.innerHTML = result.is_correct
-    ? '<strong><i class="fas fa-check-circle mr-1"></i> 回答正确</strong>'
-    : '<strong><i class="fas fa-times-circle mr-1"></i> 回答错误</strong><br>正确答案：<strong>' + result.correct_answer + '</strong>';
+    ? '<strong><i class="fas fa-check-circle mr-1"></i> ' + t('回答正确') + '</strong>'
+    : '<strong><i class="fas fa-times-circle mr-1"></i> ' + t('回答错误') + '</strong><br>' + t('正确答案：') + '<strong>' + result.correct_answer + '</strong>';
   resultBox.innerHTML += '<div class="explanation"><i class="fas fa-lightbulb mr-1"></i> ' + (result.explanation || '') + '</div>';
   var btn = document.getElementById('derived_btn');
-  if (btn) { btn.disabled = true; btn.textContent = '已提交'; }
+  if (btn) { btn.disabled = true; btn.textContent = t('已提交'); }
   // Get next recommendation
   var rec = await apiPost('/practice/recommend', {
     session_id: sessionId,
@@ -3160,7 +3275,7 @@ async function submitDerivedAnswer() { saveAllCM();
   resultBox.innerHTML += '<div class="mt-3" style="border-top:1px solid var(--border);padding-top:0.75rem">';
   if (rec.recommended && rec.question) {
     resultBox.innerHTML += '<p class="text-sm mb-2"><i class="fas fa-arrow-right mr-1" style="color:var(--accent)"></i> ' + rec.reason + '</p>';
-    resultBox.innerHTML += '<button class="btn btn-accent" onclick="showRecommendedQuestion(' + rec.question.id + ')"><i class="fas fa-play mr-1"></i> 开始练习</button>';
+    resultBox.innerHTML += '<button class="btn btn-accent" onclick="showRecommendedQuestion(' + rec.question.id + ')"><i class="fas fa-play mr-1"></i> ' + t('开始练习') + '</button>';
     // Store the recommended question
     var found = false;
     for (var i = 0; i < practiceQuestions.length; i++) {
@@ -3169,7 +3284,7 @@ async function submitDerivedAnswer() { saveAllCM();
     if (!found) practiceQuestions.push(rec.question);
     currentPrototypeQ = null;
   } else {
-    resultBox.innerHTML += '<p class="text-sm opacity-60"><i class="fas fa-check-circle mr-1" style="color:var(--success)"></i> 该知识点已全部掌握，可返回列表选择其他题目</p>';
+    resultBox.innerHTML += '<p class="text-sm opacity-60"><i class="fas fa-check-circle mr-1" style="color:var(--success)"></i> ' + t('该知识点已全部掌握，可返回列表选择其他题目') + '</p>';
   }
   resultBox.innerHTML += '</div>';
 }
@@ -3215,14 +3330,14 @@ function toggleSummary() {
 
 async function loadWrongSet() {
   var el = document.getElementById('wrongList');
-  el.innerHTML = '<div class="text-center text-sm py-4 opacity-50"><i class="fas fa-spinner fa-spin mr-1"></i> 加载中...</div>';
+  el.innerHTML = '<div class="text-center text-sm py-4 opacity-50"><i class="fas fa-spinner fa-spin mr-1"></i> ' + t('加载中...') + '</div>';
   try {
     var data = await apiGet('/progress/' + encodeURIComponent(sessionId));
     wrongQuestions = data.progress.filter(function(p) { return !p.is_correct; });
     renderWrongSummary(data);
     renderWrongList();
   } catch (e) {
-    el.innerHTML = '<p style="color:#b04a4a;text-align:center">加载失败</p>';
+    el.innerHTML = '<p style="color:#b04a4a;text-align:center">' + t('加载失败') + '</p>';
   }
 }
 
@@ -3242,16 +3357,16 @@ function renderWrongSummary(data) {
     if (durationCount > 0) avgDuration = Math.round(sum / durationCount);
   }
   body.innerHTML = '';
-  body.innerHTML += '<div class="text-center"><div class="num-oswald text-xl">' + total + '</div><div class="text-xs opacity-50">总答题</div></div>';
-  body.innerHTML += '<div class="text-center"><div class="num-oswald text-xl" style="color:#2c241b">' + correct + '</div><div class="text-xs opacity-50">正确</div></div>';
-  body.innerHTML += '<div class="text-center"><div class="num-oswald text-xl" style="color:#b04a4a">' + wrong + '</div><div class="text-xs opacity-50">错误</div></div>';
-  body.innerHTML += '<div class="text-center"><div class="num-oswald text-xl">' + (data.accuracy || 0) + '%</div><div class="text-xs opacity-50">正确率</div></div>';
+  body.innerHTML += '<div class="text-center"><div class="num-oswald text-xl">' + total + '</div><div class="text-xs opacity-50">' + t('总答题') + '</div></div>';
+  body.innerHTML += '<div class="text-center"><div class="num-oswald text-xl" style="color:#2c241b">' + correct + '</div><div class="text-xs opacity-50">' + t('正确') + '</div></div>';
+  body.innerHTML += '<div class="text-center"><div class="num-oswald text-xl" style="color:#b04a4a">' + wrong + '</div><div class="text-xs opacity-50">' + t('错误') + '</div></div>';
+  body.innerHTML += '<div class="text-center"><div class="num-oswald text-xl">' + (data.accuracy || 0) + '%</div><div class="text-xs opacity-50">' + t('正确率') + '</div></div>';
 }
 
 function renderWrongList() {
   var el = document.getElementById('wrongList');
   if (!wrongQuestions.length) {
-    el.innerHTML = '<div class="text-center text-sm py-6 opacity-50"><i class="fas fa-check-circle mr-1" style="color:#2c241b"></i> 暂无错题，继续保持！</div>';
+    el.innerHTML = '<div class="text-center text-sm py-6 opacity-50"><i class="fas fa-check-circle mr-1" style="color:#2c241b"></i> ' + t('暂无错题，继续保持！') + '</div>';
     return;
   }
   var html = '';
@@ -3259,11 +3374,11 @@ function renderWrongList() {
     var w = wrongQuestions[i];
     html += '<div class="card p-3" style="cursor:pointer" onclick="showWrongDetail(' + i + ')">';
     html += '<div class="flex gap-2 flex-wrap mb-1">';
-    html += '<span class="tag">' + (w.category || '') + '</span>';
-    html += '<span class="tag" style="background:rgba(176,74,74,0.12);color:#b04a4a">✗ 答错</span>';
+    html += '<span class="tag">' + catLabel(w.category) + '</span>';
+    html += '<span class="tag" style="background:rgba(176,74,74,0.12);color:#b04a4a">' + t('✗ 答错') + '</span>';
     html += '</div>';
     html += '<h3>' + (w.title || '') + '</h3>';
-    html += '<p style="font-size:0.75rem;color:#666">你的答案：<code style="font-family:Oswald,Consolas,monospace">' + (w.user_answer || '').replace(/</g, '&lt;') + '</code></p>';
+    html += '<p style="font-size:0.75rem;color:#666">' + t('你的答案：') + '<code style="font-family:Oswald,Consolas,monospace">' + (w.user_answer || '').replace(/</g, '&lt;') + '</code></p>';
     html += '</div>';
   }
   el.innerHTML = html;
@@ -3271,10 +3386,10 @@ function renderWrongList() {
 
 function showWrongDetail(idx) {
   var w = wrongQuestions[idx];
-  var diffLabel = { easy: '简单', medium: '中等', hard: '困难' };
+  var diffLabel = { easy: t('简单'), medium: t('中等'), hard: t('困难') };
   var html = '<div class="card p-4 fade-in">';
   html += '<div class="flex gap-2 flex-wrap mb-2">';
-  html += '<span class="tag">' + (w.category || '') + '</span>';
+  html += '<span class="tag">' + catLabel(w.category) + '</span>';
   html += '<span class="tag" style="background:rgba(176,74,74,0.12);color:#b04a4a">' + (diffLabel[w.difficulty] || w.difficulty) + '</span>';
   html += '</div>';
   html += '<h3 class="title-serif text-lg mb-2">' + (w.title || '') + '</h3>';
@@ -3282,14 +3397,14 @@ function showWrongDetail(idx) {
   html += renderSchemaAndData(w);
   if (w.expected_output) html += renderExpectedOutput(w.expected_output);
   html += '<div style="margin-top:0.5rem;padding:0.5rem;border-left:4px solid #b04a4a;background:rgba(176,74,74,0.06);border-radius:0 0.4rem 0.4rem 0">';
-  html += '<div class="text-xs opacity-50">你的答案</div>';
+  html += '<div class="text-xs opacity-50">' + t('你的答案') + '</div>';
   html += '<code style="font-family:Oswald,Consolas,monospace;font-size:0.85rem">' + (w.user_answer || '').replace(/</g, '&lt;') + '</code>';
-  html += '<div class="text-xs opacity-50 mt-2">正确答案</div>';
+  html += '<div class="text-xs opacity-50 mt-2">' + t('正确答案') + '</div>';
   html += '<code style="font-family:Oswald,Consolas,monospace;font-size:0.85rem;color:#1a6b1a">' + (w.correct_answer || '').replace(/</g, '&lt;') + '</code>';
   if (w.explanation) html += '<div class="text-xs mt-2" style="color:#666"><i class="fas fa-lightbulb mr-1"></i> ' + w.explanation + '</div>';
   html += '</div></div>';
   var el = document.getElementById('wrongList');
-  el.innerHTML = '<a class="back-link" onclick="loadWrongSet()" style="cursor:pointer;margin-bottom:0.5rem;display:inline-block"><i class="fas fa-arrow-left mr-1"></i> 返回错题列表</a>' + html;
+  el.innerHTML = '<a class="back-link" onclick="loadWrongSet()" style="cursor:pointer;margin-bottom:0.5rem;display:inline-block"><i class="fas fa-arrow-left mr-1"></i> ' + t('返回错题列表') + '</a>' + html;
 }
 
 // update showPage to load wrong set
@@ -3301,9 +3416,12 @@ showPage = function(name) {
   var btns = document.querySelectorAll('.nav-btn[data-page="' + name + '"]');
   if (btns.length > 1 && currentPool === 'exam') btns[1].classList.add('active');
   else if (btns.length > 0) btns[0].classList.add('active');
-  if (name === 'practice') { document.getElementById('poolLabel').textContent = currentPool === 'exam' ? '🎯 真题测试' : '📝 自主练习'; if (!_catSelectBuilt) { buildCategorySelect(); _catSelectBuilt = true; } loadPracticeQuestions(); }
+  if (name === 'practice') { document.getElementById('poolLabel').textContent = currentPool === 'exam' ? t('🎯 真题测试') : t('📝 自主练习'); if (!_catSelectBuilt) { buildCategorySelect(); _catSelectBuilt = true; } loadPracticeQuestions(); }
   else if (name === 'wrongset') { summaryExpanded = false; document.getElementById('summaryBody').style.display = 'none'; document.getElementById('summaryToggle').innerHTML = '<i class="fas fa-chevron-down"></i>'; loadWrongSet(); }
 };
+
+// 应用语言偏好（data-i18n 元素 + 语言按钮 + 标题）
+applyI18n();
 
 // 确保默认页面可见
 var defaultPage = document.querySelector('.nav-btn.active');

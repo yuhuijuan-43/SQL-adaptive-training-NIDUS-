@@ -1,5 +1,6 @@
 """用户认证：bcrypt 密码存储、登录/注册"""
 import hashlib
+import os
 import uuid
 
 from db import get_connection
@@ -90,15 +91,66 @@ def login_or_register(username, password=''):
             return sid, True
     return None, False
 
-# ---- 管理员账号（内推码注册 + 登录） ----
-REFERRAL_CODE = 'NIDUS_Agent'   # 固定内推码（按产品要求写死）
+# ---- 平台级设置：统一管理员密钥 + 内推码（主管理员可管理，DB 存储） ----
+DEFAULT_REFERRAL_CODE = 'NIDUS_Agent'   # 默认内推码（首次使用时种入，可增删）
+
+def get_admin_key():
+    """当前统一管理员密钥：DB 优先（主管理员可更换），未设置时回退 env / 默认值（运行时读取 env，支持测试注入）"""
+    conn = get_connection()
+    row = conn.execute("SELECT value FROM admin_settings WHERE key='admin_key'").fetchone()
+    if row:
+        return row['value']
+    return os.environ.get('ADMIN_TOKEN', 'change-me-admin-token-2024')
+
+def set_admin_key(new_key):
+    """主管理员更换统一管理员密钥（同步影响全部管理员登录与 Bearer 鉴权）"""
+    conn = get_connection()
+    conn.execute('''INSERT INTO admin_settings (key, value, updated_at) VALUES ('admin_key', ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP''', (new_key,))
+    conn.commit()
+
+def get_referral_codes():
+    """全部内推码（首次使用时惰性种入默认码，保证至少一个可用）"""
+    conn = get_connection()
+    rows = conn.execute('SELECT code, note, created_at FROM referral_codes ORDER BY id').fetchall()
+    codes = [dict(r) for r in rows]
+    if not codes:
+        conn.execute('INSERT OR IGNORE INTO referral_codes (code, note) VALUES (?,?)', (DEFAULT_REFERRAL_CODE, '默认内推码'))
+        conn.commit()
+        return [{'code': DEFAULT_REFERRAL_CODE, 'note': '默认内推码', 'created_at': None}]
+    return codes
+
+def add_referral_code(code, note=''):
+    """新增内推码；返回 (ok, reason)：exists / invalid"""
+    code = (code or '').strip()
+    if not code or len(code) > 32:
+        return None, 'invalid'
+    conn = get_connection()
+    if conn.execute('SELECT id FROM referral_codes WHERE code=?', (code,)).fetchone():
+        return None, 'exists'
+    conn.execute('INSERT INTO referral_codes (code, note) VALUES (?,?)', (code, note.strip()))
+    conn.commit()
+    return True, None
+
+def delete_referral_code(code):
+    """删除内推码；最后一个不允许删除（保证注册入口存在）"""
+    conn = get_connection()
+    row = conn.execute('SELECT id FROM referral_codes WHERE code=?', (code,)).fetchone()
+    if not row:
+        return None, 'not_found'
+    if conn.execute('SELECT COUNT(*) FROM referral_codes').fetchone()[0] <= 1:
+        return None, 'last_one'
+    conn.execute('DELETE FROM referral_codes WHERE id=?', (row['id'],))
+    conn.commit()
+    return True, None
 
 def register_admin(username, password, referral_code):
-    """管理员注册：内推码校验 + 用户名全局唯一（含平台用户）+ bcrypt；密码规则与平台一致（8-64 字符）"""
+    """管理员注册：内推码校验（与 DB 实时同步）+ 用户名全局唯一（含平台用户）+ bcrypt；密码规则与平台一致（8-64 字符）"""
     import bcrypt
     if not password or len(password.strip()) < 8 or len(password.strip()) > 64:
         return None, 'weak_password'
-    if (referral_code or '').strip() != REFERRAL_CODE:
+    valid_codes = [c['code'] for c in get_referral_codes()]
+    if (referral_code or '').strip() not in valid_codes:
         return None, 'bad_referral'
     conn = get_connection()
     existing = conn.execute('SELECT id FROM admin_users WHERE username=?', (username,)).fetchone()
@@ -138,14 +190,20 @@ def check_admin_username_exists(username):
         return True
     return False
 
-def get_admin_colleagues(exclude_username=None):
-    """我的同事：其他管理员的用户名与最后上线时间"""
+def get_admin_profile(username):
+    """返回管理员个人资料（含是否主管理员 is_primary）；不存在返回 None"""
     conn = get_connection()
+    row = conn.execute('SELECT username, is_primary FROM admin_users WHERE username=?', (username,)).fetchone()
+    return dict(row) if row else None
+
+def get_admin_colleagues(exclude_username=None):
+    """我的同事：其他管理员的用户名、最后上线时间、是否主管理员与可回退次数"""
+    conn = get_connection()
+    base = '''SELECT a.username, a.last_login_at, a.is_primary,
+        (SELECT COUNT(*) FROM user_password_history h WHERE h.username=a.username AND h.kind='admin') as rollback_count
+        FROM admin_users a'''
     if exclude_username:
-        rows = conn.execute(
-            'SELECT username, last_login_at FROM admin_users WHERE username != ? ORDER BY last_login_at DESC',
-            (exclude_username,)).fetchall()
+        rows = conn.execute(base + ' WHERE a.username != ? ORDER BY a.last_login_at DESC', (exclude_username,)).fetchall()
     else:
-        rows = conn.execute(
-            'SELECT username, last_login_at FROM admin_users ORDER BY last_login_at DESC').fetchall()
+        rows = conn.execute(base + ' ORDER BY a.last_login_at DESC').fetchall()
     return [dict(r) for r in rows]

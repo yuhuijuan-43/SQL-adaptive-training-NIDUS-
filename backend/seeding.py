@@ -5,96 +5,150 @@ import os
 from db import get_connection
 from repositories import invalidate_graph_cache
 
+# ============================================================
+# 官方知识图谱结构（knowledge map.md + knowledge_tags.csv，2026-08）
+# 7 大分类 × 29 个标签；level：根 0 / 大类 1 / 标签 2 + (星级-1)
+# 星级 → 难度：★ 简单 / ★★ 中等 / ★★★ 困难
+# ============================================================
+OFFICIAL_TAGS = {
+    'top_dml': ('DML', [
+        ('dml_select', 'SELECT', '★'),
+        ('dml_insert', 'INSERT', '★'),
+        ('dml_update', 'UPDATE', '★'),
+        ('dml_delete', 'DELETE', '★'),
+    ]),
+    'top_ddl': ('DDL', [
+        ('ddl_create', 'CREATE', '★'),
+        ('ddl_alter', 'ALTER', '★★'),
+        ('ddl_drop', 'DROP', '★'),
+        ('ddl_truncate', 'TRUNCATE', '★'),
+        ('ddl_rename', 'RENAME', '★'),
+        ('ddl_comment', 'COMMENT', '★'),
+    ]),
+    'top_func': ('函数', [
+        ('string_func', '字符串函数', '★'),
+        ('numeric_func', '数字函数', '★'),
+        ('aggregate_func', '聚合函数', '★★'),
+        ('cast_func', '转换函数', '★★'),
+        ('window_func', '窗口函数', '★★★'),
+    ]),
+    'top_join': ('表连接', [
+        ('join_inner', '内连接', '★★'),
+        ('join_outer', '外连接', '★★'),
+        ('join_self', '自连接', '★★★'),
+        ('join_cross', '交叉连接', '★★'),
+    ]),
+    'top_constraint': ('约束', [
+        ('constraint_primary_key', '主键', '★'),
+        ('constraint_foreign_key', '外键', '★★'),
+    ]),
+    'top_subquery': ('子查询', [
+        ('subquery_scalar', '标量子查询', '★★'),
+        ('subquery_column', '列子查询', '★★'),
+        ('subquery_table', '表子查询', '★★★'),
+        ('subquery_in', 'IN 子查询', '★★★'),
+    ]),
+    'top_select': ('SELECT', [
+        ('select_basic', '基本 SELECT：字段、别名、常量', '★'),
+        ('where_basic', 'WHERE 条件筛选', '★'),
+        ('group_by', '聚合函数与 GROUP BY', '★★'),
+        ('having', 'HAVING 子句', '★★★'),
+    ]),
+}
+STAR_TO_LEVEL = {'★': 2, '★★': 3, '★★★': 4}
+STAR_TO_DIFFICULTY = {'★': 'easy', '★★': 'medium', '★★★': 'hard'}
+# 标签 → 星级（来自 knowledge_tags.csv）
+TAG_STARS = {tag: stars for _, leaves in OFFICIAL_TAGS.values() for tag, _, stars in leaves}
+# 标签 → 难度
+TAG_DIFFICULTY = {tag: STAR_TO_DIFFICULTY[s] for tag, s in TAG_STARS.items()}
+# 保序学习边（保留旧引擎的进阶顺序：基础 SELECT → WHERE/聚合/连接/子查询 → 深入）
+LEARNING_EDGES = [
+    ('select_basic', 'where_basic'), ('select_basic', 'aggregate_func'),
+    ('select_basic', 'join_inner'), ('select_basic', 'subquery_scalar'),
+    ('select_basic', 'string_func'), ('select_basic', 'numeric_func'),
+    ('select_basic', 'cast_func'), ('select_basic', 'dml_select'),
+    ('where_basic', 'subquery_in'),
+    ('aggregate_func', 'group_by'), ('aggregate_func', 'window_func'),
+    ('group_by', 'having'),
+    ('join_inner', 'join_outer'), ('join_inner', 'join_self'),
+    ('join_outer', 'join_cross'),
+    ('subquery_scalar', 'subquery_column'), ('subquery_column', 'subquery_table'),
+    ('dml_select', 'dml_insert'), ('dml_select', 'dml_update'), ('dml_select', 'dml_delete'),
+    ('dml_select', 'ddl_create'),
+    ('ddl_create', 'ddl_alter'), ('ddl_create', 'ddl_drop'), ('ddl_create', 'ddl_truncate'),
+    ('ddl_create', 'ddl_rename'), ('ddl_create', 'ddl_comment'),
+    ('ddl_create', 'constraint_primary_key'),
+    ('constraint_primary_key', 'constraint_foreign_key'),
+]
+# 旧分类 → 官方标签（历史分类/旧节点 ID → 官方 29 标签）
+CATEGORY_TO_TAG = {
+    '基础查询': 'select_basic', '条件筛选': 'where_basic',
+    '排序分页': 'select_basic', '聚合与分组': 'aggregate_func',
+    '多表连接': 'join_inner', '子查询与CTE': 'subquery_scalar',
+    '窗口函数': 'window_func', '日期处理': 'numeric_func', '字符串处理': 'string_func',
+    # 旧节点 ID 分类
+    'select_basic': 'select_basic', 'alias': 'select_basic', 'distinct': 'select_basic',
+    'where_basic': 'where_basic', 'where_andor': 'where_basic', 'where_like': 'where_basic',
+    'where_null': 'where_basic', 'where_in': 'where_basic', 'where_between': 'where_basic',
+    'order_by': 'select_basic', 'limit_offset': 'select_basic',
+    'aggregate_basic': 'aggregate_func', 'avg': 'aggregate_func',
+    'group_by': 'group_by', 'having': 'having', 'count_distinct': 'aggregate_func',
+    'case_when': 'aggregate_func',
+    'join_inner': 'join_inner', 'join_left': 'join_outer', 'join_outer': 'join_outer',
+    'join_self': 'join_self', 'join_multi': 'join_inner', 'join_full': 'join_outer',
+    'join_cross': 'join_cross',
+    'subquery_basic': 'subquery_scalar', 'subquery_exists': 'subquery_scalar',
+    'subquery_all': 'subquery_column', 'subquery_select': 'subquery_column',
+    'cte': 'subquery_table',
+    'window': 'window_func', 'date': 'numeric_func', 'string': 'string_func',
+    'dml': 'dml_insert',
+    # 官方标签直接透传
+    'dml_select': 'dml_select', 'dml_insert': 'dml_insert', 'dml_update': 'dml_update',
+    'dml_delete': 'dml_delete',
+    'ddl_create': 'ddl_create', 'ddl_alter': 'ddl_alter', 'ddl_drop': 'ddl_drop',
+    'ddl_truncate': 'ddl_truncate', 'ddl_rename': 'ddl_rename', 'ddl_comment': 'ddl_comment',
+    'string_func': 'string_func', 'numeric_func': 'numeric_func',
+    'aggregate_func': 'aggregate_func', 'cast_func': 'cast_func', 'window_func': 'window_func',
+    'constraint_primary_key': 'constraint_primary_key',
+    'constraint_foreign_key': 'constraint_foreign_key',
+    'subquery_scalar': 'subquery_scalar', 'subquery_column': 'subquery_column',
+    'subquery_table': 'subquery_table', 'subquery_in': 'subquery_in',
+}
+
+def map_category(category, title=''):
+    """旧分类 → 官方标签（dml 通用分类按标题细分 INSERT/DELETE）"""
+    tag = CATEGORY_TO_TAG.get(category, 'select_basic')
+    if tag == 'dml_insert' and category == 'dml':
+        tag = 'dml_delete' if '删除' in (title or '') else 'dml_insert'
+    return tag
+
 def seed_knowledge_graph():
     conn = get_connection()
     needs_init = conn.execute('SELECT COUNT(*) FROM knowledge_nodes').fetchone()[0] == 0
     if needs_init:
-        nodes = [
-            ('select_basic','SELECT 基础查询','从单表中查询列','SELECT',0,'fa-table'),
-            ('alias','别名 AS','为列或表取别名','SELECT',1,'fa-tag'),
-            ('distinct','DISTINCT 去重','去除重复行','SELECT',1,'fa-eraser'),
-            ('where_basic','WHERE 条件筛选','按条件过滤行','WHERE',1,'fa-filter'),
-            ('order_by','ORDER BY 排序','对结果集排序','ORDER BY',1,'fa-sort'),
-            ('where_andor','AND / OR 多条件','组合多个条件','WHERE',2,'fa-plus-circle'),
-            ('where_like','LIKE 模糊查询','字符串模式匹配','WHERE',2,'fa-search'),
-            ('where_null','NULL 值判断','IS NULL / IS NOT NULL','WHERE',2,'fa-question-circle'),
-            ('where_in','IN 运算符','匹配值列表','WHERE',2,'fa-list-ul'),
-            ('where_between','BETWEEN 范围查询','值区间筛选','WHERE',2,'fa-arrows-alt-h'),
-            ('limit_offset','LIMIT / OFFSET 分页','限制返回行数','ORDER BY',2,'fa-cut'),
-            ('aggregate_basic','聚合函数基础','COUNT/SUM/MAX/MIN','聚合',2,'fa-calculator'),
-            ('group_by','GROUP BY 分组','按列分组聚合','聚合',3,'fa-object-group'),
-            ('having','HAVING 过滤分组','过滤分组后结果','聚合',4,'fa-filter'),
-            ('avg','AVG 平均值','计算均值','聚合',4,'fa-chart-line'),
-            ('count_distinct','COUNT(DISTINCT)','去重计数','聚合',4,'fa-sort-numeric-up'),
-            ('case_when','CASE WHEN 条件','条件分支逻辑','聚合',5,'fa-code-branch'),
-            ('join_inner','INNER JOIN 内连接','等值连接两表','JOIN',2,'fa-link'),
-            ('join_left','LEFT JOIN 左连接','保留左表全部记录','JOIN',3,'fa-arrow-right'),
-            ('join_self','自连接','同一表连接自身','JOIN',3,'fa-redo'),
-            ('join_multi','多表 JOIN','连续 JOIN 多表','JOIN',4,'fa-project-diagram'),
-            ('join_full','FULL OUTER JOIN','全外连接模拟','JOIN',5,'fa-arrows-alt'),
-            ('subquery_basic','子查询基础','WHERE 中子查询','子查询',2,'fa-indent'),
-            ('subquery_exists','EXISTS 子查询','存在性检查','子查询',4,'fa-check-double'),
-            ('subquery_all','ALL / ANY 子查询','多行比较','子查询',4,'fa-greater-than'),
-            ('subquery_select','SELECT 中子查询','标量子查询','子查询',5,'fa-code'),
-            ('cte','CTE (WITH)','公共表表达式','子查询',6,'fa-layer-group'),
-        ]
+        nodes = [('root', 'SQL知识图谱', '知识图谱根节点', '根', 0, 'fa-database')]
+        for top_id, (top_name, leaves) in OFFICIAL_TAGS.items():
+            nodes.append((top_id, top_name, f'{top_name} 大类', top_name, 1, 'fa-folder-open'))
+            for tag, name, stars in leaves:
+                nodes.append((tag, name, f'{top_name} · {name}', top_name, STAR_TO_LEVEL[stars], 'fa-code'))
         for n in nodes:
             conn.execute('INSERT INTO knowledge_nodes (id,name,description,category,level,icon) VALUES (?,?,?,?,?,?)', n)
-        edges = [
-            ('select_basic','alias'),('select_basic','distinct'),
-            ('select_basic','where_basic'),('select_basic','order_by'),('select_basic','aggregate_basic'),
-            ('where_basic','where_andor'),('where_basic','where_like'),('where_basic','where_null'),
-            ('where_basic','where_in'),('where_basic','where_between'),
-            ('order_by','limit_offset'),
-            ('aggregate_basic','group_by'),
-            ('group_by','having'),('group_by','avg'),('group_by','count_distinct'),('group_by','case_when'),
-            ('select_basic','join_inner'),
-            ('join_inner','join_left'),('join_inner','join_self'),
-            ('join_left','join_multi'),('join_left','join_full'),
-            ('select_basic','subquery_basic'),
-            ('subquery_basic','subquery_exists'),('subquery_basic','subquery_all'),('subquery_basic','subquery_select'),
-            ('subquery_select','cte'),
-        ]
-        for f,t in edges:
-            conn.execute('INSERT INTO knowledge_edges (from_node,to_node) VALUES (?,?)', (f,t))
-        qn = [
-            (1,'select_basic'),(2,'select_basic'),
-            (3,'where_basic'),(4,'where_andor'),(5,'order_by'),(6,'limit_offset'),
-            (7,'aggregate_basic'),(7,'group_by'),(8,'avg'),(9,'having'),
-            (10,'join_inner'),(11,'join_left'),(12,'subquery_basic'),(13,'subquery_exists'),
-            (14,'aggregate_basic'),(15,'where_like'),(16,'distinct'),
-            (17,'join_multi'),(18,'subquery_all'),(19,'aggregate_basic'),(20,'where_between'),
-            (21,'order_by'),(22,'join_self'),(23,'having'),
-            (24,'subquery_select'),(25,'alias'),(26,'where_in'),(27,'cte'),
-            (28,'case_when'),(29,'join_full'),(30,'where_null'),(31,'count_distinct'),(32,'limit_offset'),
-        ]
-        for qid,nid in qn:
-            conn.execute('INSERT OR IGNORE INTO question_knowledge (question_id,node_id) VALUES (?,?)', (qid,nid))
+        edges = [('root', top_id) for top_id in OFFICIAL_TAGS]
+        edges += [(top_id, tag) for top_id, (_, leaves) in OFFICIAL_TAGS.items() for tag, _, _ in leaves]
+        edges += LEARNING_EDGES
+        for f, t in edges:
+            conn.execute('INSERT INTO knowledge_edges (from_node,to_node) VALUES (?,?)', (f, t))
     # Auto-map ALL questions by their category field（仅在新题目出现时执行）
     total_q = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
     mapped_q = conn.execute('SELECT COUNT(DISTINCT question_id) FROM question_knowledge').fetchone()[0]
     if mapped_q < total_q:
-        all_qs = conn.execute('SELECT id, category FROM questions').fetchall()
-        cat_to_node = {
-            '基础查询': 'select_basic', '条件筛选': 'where_basic',
-            '排序分页': 'order_by', '聚合与分组': 'aggregate_basic',
-            '多表连接': 'join_inner', '子查询与CTE': 'subquery_basic',
-            '窗口函数': 'window', '日期处理': 'date', '字符串处理': 'string',
-            # 新增 viz 分类标签映射
-            'dml_select': 'select_basic', 'dml_insert': 'dml', 'dml_update': 'dml', 'dml_delete': 'dml',
-            'ddl_create': 'select_basic', 'ddl_alter': 'select_basic', 'ddl_drop': 'select_basic',
-            'ddl_truncate': 'select_basic', 'ddl_rename': 'select_basic', 'ddl_comment': 'select_basic',
-            'string_func': 'string', 'numeric_func': 'aggregate_basic', 'aggregate_func': 'aggregate_basic',
-            'cast_func': 'select_basic', 'window_func': 'window',
-            'join_outer': 'join_left', 'join_cross': 'join_inner',
-            'constraint_primary_key': 'select_basic', 'constraint_foreign_key': 'select_basic',
-            'subquery_scalar': 'subquery_basic', 'subquery_column': 'subquery_basic',
-            'subquery_table': 'subquery_basic', 'subquery_in': 'where_in',
-            'where_basic': 'where_basic', 'having': 'having', 'group_by': 'group_by',
-        }
+        all_qs = conn.execute('SELECT id, category, title FROM questions').fetchall()
         for r in all_qs:
-            node_id = cat_to_node.get(r['category'], 'select_basic')
+            node_id = map_category(r['category'], r['title'])
             conn.execute('INSERT OR IGNORE INTO question_knowledge (question_id,node_id) VALUES (?,?)', (r['id'], node_id))
+            # 同步更新分类为官方标签（旧库兜底；新库 seed 时已按官方标签入库）
+            if r['category'] != node_id:
+                conn.execute('UPDATE questions SET category=? WHERE id=?', (node_id, r['id']))
     conn.commit()
     print("Knowledge graph seeded.")
 
@@ -382,9 +436,12 @@ def seed_questions():
     if not questions:
         questions = get_seed_questions()
     for q in questions:
+            # 分类 → 官方标签，难度按标签星级（★ 简单 / ★★ 中等 / ★★★ 困难）
+            category = map_category(q['category'], q['title'])
+            difficulty = TAG_DIFFICULTY.get(category, q['difficulty'])
             conn.execute('''INSERT INTO questions (source,category,difficulty,title,description,table_schema,initial_data,correct_answer,explanation,options,option_explanations,expected_output,pool)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)''',
-            (q['source'],q['category'],q['difficulty'],q['title'],q['description'],
+            (q['source'],category,difficulty,q['title'],q['description'],
              q.get('table_schema'),q.get('initial_data'),q['correct_answer'],q.get('explanation'),q.get('options'), q.get('option_explanations'), q.get('expected_output'), 'practice'))
     conn.commit()
     print(f"Seeded {len(questions)} practice questions.")
@@ -402,9 +459,12 @@ def seed_exam_questions():
     with open(qpath, 'r', encoding='utf-8') as f:
         questions = json.load(f)
     for q in questions:
+        # 分类 → 官方标签，难度按标签星级
+        category = map_category(q['category'], q['title'])
+        difficulty = TAG_DIFFICULTY.get(category, q['difficulty'])
         conn.execute('''INSERT INTO exam_questions (source,category,difficulty,title,description,table_schema,initial_data,correct_answer,explanation,options,option_explanations,expected_output)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
-        (q['source'],q['category'],q['difficulty'],q['title'],q['description'],
+        (q['source'],category,difficulty,q['title'],q['description'],
          q.get('table_schema'),q.get('initial_data'),q.get('correct_answer',''),q.get('explanation'),q.get('options'), q.get('option_explanations'), q.get('expected_output')))
     conn.commit()
     print(f"Seeded {len(questions)} exam questions.")

@@ -200,6 +200,22 @@
   </div>
 </div>
 
+<!-- 删除用户警告弹窗（警告 → 确认 → 删除完毕） -->
+<div class="modal-mask" id="deleteModal" onclick="if(event.target===this)closeDelete()">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <span class="modal-title" style="color:var(--error)">删除用户</span>
+      <button class="modal-close" onclick="closeDelete()">✕</button>
+    </div>
+    <div class="modal-tip" id="deleteTip"></div>
+    <div class="modal-tip" id="deleteWarn" style="color:var(--error);font-weight:600;background:rgba(224,74,85,0.08);border:1px solid rgba(224,74,85,0.25);border-radius:10px;padding:10px 12px;">⚠ 该操作不可恢复，删除后该用户将无法登录，其全部数据将永久丢失！</div>
+    <div class="modal-foot">
+      <button class="mini-btn" onclick="closeDelete()">取消</button>
+      <button class="btn-ok" id="deleteOkBtn" style="background:linear-gradient(135deg,#e04a55 0%,#c2333e 100%);box-shadow:0 4px 14px rgba(224,74,85,0.35)" onclick="confirmDelete()">确认删除</button>
+    </div>
+  </div>
+</div>
+
 <div id="userDetailModal" style="display:none;position:fixed;inset:0;background:rgba(45,60,110,0.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:999;align-items:center;justify-content:center;padding:1rem;" onclick="if(event.target===this)closeUserDetail()">
   <div style="background:rgba(255,255,255,0.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--border);border-radius:0.9rem;max-width:760px;width:100%;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(58,82,148,0.28);">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:0.8rem 1rem;border-bottom:1px solid var(--border);">
@@ -361,12 +377,14 @@ function renderUserTable() {
     var u = pageUsers[i];
     var lastActive = u.last_active ? new Date(u.last_active + ' UTC').toLocaleString() : '从未作答';
     var accClass = u.accuracy >= 60 ? '' : (u.accuracy > 0 ? 'style="color:var(--accent)"' : 'style="color:var(--error)"');
-    // 操作列：重置密码（+ 有历史时显示回退）；stopPropagation 避免触发行点击查看答题记录
+    // 操作列：重置密码（+ 有历史时显示回退）+ 删除用户；stopPropagation 避免触发行点击查看答题记录
     var opBtn = '<button class="mini-btn danger" onclick="event.stopPropagation();openReset(\'' + escapeHtml(u.username) + '\')">重置密码</button>';
     if (u.rollback_count > 0) {
       opBtn += ' <button class="mini-btn" title="回退到上一个密码（最多 3 次）" onclick="event.stopPropagation();openRollback(\'' +
                escapeHtml(u.username) + '\',' + u.rollback_count + ')">回退(' + u.rollback_count + ')</button>';
     }
+    opBtn += ' <button class="mini-btn danger" title="永久删除该用户及其全部数据，不可恢复" onclick="event.stopPropagation();openDelete(\'' +
+             escapeHtml(u.username) + '\',' + u.answered + ',' + u.correct + ')">删除用户</button>';
     html += '<tr style="cursor:pointer" onclick="openUserDetail(_allUsers[' + (start + i) + '])" title="查看答题记录"><td><strong>' + u.username + '</strong></td>';
     html += '<td class="num-oswald">' + u.answered + '</td>';
     html += '<td style="color:var(--text)">' + u.correct + '</td>';
@@ -521,6 +539,44 @@ function confirmRollback() {
     })
     .catch(function(e) {
       if (e.message !== '401') toast('回退失败', 'bad');
+    })
+    .finally(function() { btn.disabled = false; });
+}
+
+/* ---- 删除用户（警告 → 确认 → 删除完毕） ---- */
+var _deleteTarget = '';
+function openDelete(username, answered, correct) {
+  _deleteTarget = username;
+  document.getElementById('deleteTip').textContent =
+    '即将永久删除用户「' + username + '」，其名下数据将一并从数据库删除：\n' +
+    '· 答题记录 ' + answered + ' 条（答对 ' + correct + ' 条）\n' +
+    '· 学习掌握度、自适应旅程状态、摸底诊断结果\n' +
+    '· 密码修改历史（回退功能对该用户同步失效）\n' +
+    '删除后该用户名可重新注册。';
+  document.getElementById('deleteTip').style.whiteSpace = 'pre-line';
+  document.getElementById('deleteModal').classList.add('show');
+}
+function closeDelete() {
+  document.getElementById('deleteModal').classList.remove('show');
+  _deleteTarget = '';
+}
+function confirmDelete() {
+  var btn = document.getElementById('deleteOkBtn');
+  btn.disabled = true;
+  adminFetch('/admin/user-delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: _deleteTarget, confirm: true })
+  })
+    .then(function(r) {
+      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.reload(); throw new Error('401'); }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      closeDelete();
+      toast('删除完毕：' + _deleteTarget + ' 及其全部数据已从数据库移除', 'ok');
+      loadAdmin();   // 立即刷新统计卡与用户明细
+    })
+    .catch(function(e) {
+      if (e.message !== '401') toast('删除失败，请重试', 'bad');
     })
     .finally(function() { btn.disabled = false; });
 }

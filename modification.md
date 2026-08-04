@@ -4,6 +4,189 @@
 
 ---
 
+## 2026-08-04（晚间追加）：刷题前端中英双语（index.html）
+
+### 设计目标
+
+做题前端（自适应进阶/自主练习/真题测试/错题集）支持中英切换，与门户/登录/了解我们/管理员面板语言体系打通（localStorage `lang` 全局共享偏好）。
+
+### 实现（frontend/index.html）
+
+- **原文即键的 i18n 引擎**：`I18N` 字典（96 键，只存英文译文，中文为默认原文）+ `t()`/`tf()`（模板参数）+ `applyI18n()`（data-i18n/-placeholder/-title 处理）+ `toggleLang()`（切语言后全量 reload 重渲染）
+- **语言按钮**：header 右侧胶囊按钮（English/中文），偏好存 localStorage，全站共享
+- **覆盖范围**：导航/品牌/筛选栏（题型/难度/分类）/Journey（说明/特性/动作标签/结果框）/题卡（类型标签/占位符/提交按钮/回答结果/举一反三提示）/衍生题/错题集（统计/明细/空态）/CodeMirror 校验提示/用户区（登录注册/切换用户）—— 24 处 data-i18n + 61 处 t()
+- **分类标签双语**：新增 `KG_LABELS_EN`（官方 29 标签 + 7 大分类英文名），`catLabel()` 按语言返回，级联筛选面板/题干标签/筛选 ✕ 标签同步双语；`KG_GROUPS` 大类按钮走 t()
+- **不翻译**：题库数据（题干/选项/解析/答案，数据层双语需双语题库，超 UI 范围）；静态题库（STATIC_QUESTIONS）内容
+
+### 验证
+
+- JS 语法校验通过；残留中文扫描确认仅剩字典/数据/注释
+- 交叉检查：全部 t() 调用与 data-i18n 中文键均有字典映射（0 缺失）
+- 语言切换后 `location.reload()` 全量重渲染，题目卡/分类标签统一按新语言展示
+
+---
+
+## 2026-08-04（晚间追加）：主管理员可管理平台密钥与内推码
+
+### 设计目标
+
+主管理员两项新能力：① 编辑（更换）新的管理平台密码——即**统一管理员密钥**，更换后同步到所有子管理员（新密钥立即对登录门与 Bearer 鉴权生效）；② 查看全部内推码并编辑（新增/删除）新内推码——与注册校验**实时同步**（新增即可用、删除即失效）。
+
+### 1. 存储层（backend/db.py + auth.py）
+
+| 项 | 说明 |
+|---|---|
+| `referral_codes` 表（新） | code（唯一）+ note 备注 + created_at；**惰性种入默认码 `NIDUS_Agent`**（首次读取时），保证注册入口始终存在 |
+| `admin_settings` 表（新） | 键值设置；`admin_key` 存统一管理员密钥 |
+| `get_admin_key()` | DB 优先 → env `ADMIN_TOKEN` 兜底（运行时读取 env，测试可注入）；`set_admin_key()` UPSERT 更换 |
+| 内推码增删查 | `get_referral_codes()` / `add_referral_code()`（1-32 字符，重复 409）/ `delete_referral_code()`（**最后一个不允许删除**，404 不存在） |
+
+### 2. 鉴权改造（backend/app.py）
+
+- `_check_admin_token`、管理后台登录门第二重验证、`/api/admin/key`、auth-register/auth-login 返回的 token —— 全部改读 `get_admin_key()`（原模块常量 ADMIN_TOKEN 移除）
+- 管理员注册校验：`REFERRAL_CODE` 常量 → **DB 内推码列表实时比对**
+
+### 3. 新接口（全部主管理员 operator 校验，非主 403）
+
+| 接口 | 用途 |
+|---|---|
+| `POST /api/admin/key-update` | 更换统一密钥（8-64 字符、不得与当前相同）；返回新 key，前端本地 token 同步 |
+| `GET /api/admin/referral-codes?me=` | 主管理员查看全部内推码（码+备注+创建时间） |
+| `POST /api/admin/referral-add` | 新增内推码（注册校验即时生效） |
+| `POST /api/admin/referral-delete` | 删除内推码（409 最后一个不允许删） |
+
+### 4. 前端（frontend/admin_panel.html，主管理员专属，双语）
+
+- 密钥卡片新增「更换密钥」按钮 → 弹窗（输入/随机生成/复制 + 确认）→ 成功后**本地 token 同步为新密钥**并刷新显示
+- 新增「内推码管理」卡片：全部内推码列表（码/备注/创建时间/删除）+ 新增行（码+备注）；删除用 confirm 确认
+- 错误提示统一解析后端 `error` 文案（`toastServerError` helper）；i18n 字典 +18 键
+
+### 5. 测试（pytest 85 → 94）
+
+| 新用例 | 覆盖点 |
+|---|---|
+| TestAdminKeyUpdate（4 个） | 401 / 非主 403 / 400（过短、与当前相同）/ **更换后新 Bearer 生效、旧密钥 401、登录门与注册返回新 token** |
+| TestReferralCodes（5 个） | 401 / 非主 403 / 默认码惰性种入 / **新增→注册可用、删除→注册 403（实时同步）** / 最后一个 409 |
+
+- conftest：`monkeypatch.setattr(ADMIN_TOKEN)` → `monkeypatch.setenv('ADMIN_TOKEN')`（密钥改 DB 存储后 env 注入方式调整）
+
+---
+
+## 2026-08-04（晚间追加）：做题分类标签对齐官方知识图谱（7 大分类 × 29 标签 + 星级难度）
+
+> 数据源：微信官方版 `knowledge_tags.csv`（29 标签 + 1~3★ 难度）+ `knowledge map.md`（7 大分类层级树），与项目现有文件字节一致，据此把**做题前端分类标签**与**题目难度**整体对齐。
+
+### 1. 官方结构落地（backend/seeding.py 重写图谱种子）
+
+- **37 节点**：root（level 0）→ 7 大分类（DML/DDL/函数/表连接/约束/子查询/SELECT，level 1）→ **29 标签**（level = 2 + 星级-1，即 ★→2 / ★★→3 / ★★★→4），官方中文名（如「基本 SELECT：字段、别名、常量」「WHERE 条件筛选」）
+- **64 条边**：root→大类→标签的官方层级边 + 保序学习边（保留旧引擎进阶顺序：基础 SELECT → WHERE/聚合/连接/子查询 → DML/DDL/约束）
+- **星级→难度**（knowledge_tags.csv）：1★=简单 / 2★=中等 / 3★=困难（**仅用于难度计算，界面不显示星级**）
+- `CATEGORY_TO_TAG` 旧分类→官方标签全量映射（含旧节点 ID、`dml` 按标题细分 INSERT/DELETE）；`seed_questions`/`seed_exam_questions` 入库时即转换分类 + 按星级定难度；auto-map 同步更新 `questions.category` 兜底
+
+### 2. 真实库迁移（backend/migrate_official_tags.py，可幂等重跑）
+
+- questions 457 题 / exam_questions 50 题：category → 官方标签，difficulty → 星级难度（easy 272→302 / medium 148→137 / hard 37→18）
+- question_knowledge 全量重建（457/457 映射）；图谱重建 37 节点 / 64 边
+- 迁移前已备份 `questions.db.bak`；`invalidate_graph_cache` 失效
+
+### 3. 引擎兼容（backend/engine.py）
+
+- 官方结构引入无题节点（root/大分类）后，`_is_mastered` 与 `_get_unlocked_nodes` 将**无题节点自动视为已掌握**（`_node_has_questions` 判定），保证大分类不成为候选、其下标签可正常解锁；`_recommend_weak_prereq` 同步跳过无题前置
+
+### 4. 前端分类标签（frontend/index.html）
+
+- `KG_HIERARCHY`/`KG_LABELS`/`KG_GROUPS` 整体替换为官方 7×29 结构；`KG_LEAF` 清空（29 标签全部归属 7 大分类，移除独立叶节点按钮与分隔符）
+- 级联子面板不再重复渲染顶层大分类（"全部XX"已覆盖）；选中标签/大分类后按官方名显示 ✕ 标签
+- 题卡 `q.category` 直接显示官方标签（如「内连接」「窗口函数」）
+
+### 5. 测试（pytest 82 → 85）
+
+| 新用例 | 覆盖点 |
+|---|---|
+| TestOfficialTaxonomy（3 个） | 图谱 37 节点/7 大类/29 标签 + 官方层级边 + 星级→level（1★2 / 2★3 / 3★4）/ 难度按星级（select_basic 题 easy）/ 官方标签筛选（有题 2 题、无题 0 题不报错、大类 top_dml 展开） |
+
+### 6. 问题排查记录
+
+| 问题 | 根因 | 修复 |
+|---|---|---|
+| 新库 seed 后题目分类仍是旧值 | auto-map 只写 question_knowledge 不更新 questions.category（真实库由迁移脚本更新，测试库未覆盖） | auto-map 循环同步 UPDATE questions.category |
+
+---
+
+## 2026-08-04（晚间追加）：做题页移除 KNOWLEDGE MAP 徽章面板
+
+- `frontend/index.html` 自适应进阶：删除「KNOWLEDGE MAP」折叠徽章面板（27 个知识点状态标签 + 解锁计数 `0/27`）及其全部支撑代码：
+  - HTML：`#journeyGraphPanel`（`unlockedCount` / `journeyMapToggle` / `journeyGraph`）
+  - JS：`renderJourneyBadges()`、`toggleJourneyMap()`、`journeyMapExpanded` 变量及 `showJourneyQuestion` 内的调用点
+  - CSS：`.graph-node` 系列样式（mastered/current/locked）
+- **保留**：「📊 知识图谱可视化」折叠面板（iframe 嵌入 `/knowledge-map` 的 ECharts 图）与 `toggleJourneyViz()`、`getNodeName()`、独立页面 `/knowledge-map`、`/api/graph` 接口、`echarts.min.js` 均不动；后端引擎对图谱数据的依赖不受影响
+- **面板位置微调**：`#journeyVizPanel { transform: translateY(0.75em); }` 下移 0.75 字符高度（与导航按钮/页面模块的 translateY 位移方式一致），填补徽章面板移除后的视觉间距
+
+## 2026-08-04（晚间追加）：题干分类标签显示官方中文子标签
+
+- `frontend/index.html`：题卡上的分类标签由官方标签 **ID（英文，如 `join_inner`）** 替换为**官方中文子标签名**（如「内连接」「窗口函数」）
+  - 新增 `catLabel(cat)` helper：`KG_LABELS[cat] || cat` 映射，未知 ID 原样回退
+  - 6 处渲染点替换：练习列表题卡 ×3、衍生题题卡 ×1、错题集 ×2
+  - 搜索框升级为**双通道匹配**：中文子标签名 + 原始 ID 均可命中（搜「内连接」或 `join_inner` 都行）
+- 客户端分类筛选（`nodeIds.indexOf(q.category)`）保持 ID 匹配不变，后端筛选链路无改动
+
+---
+
+## 2026-08-04（晚间）：删除用户功能 + 主管理员体系
+
+### 设计目标
+
+管理后台可直接删除平台用户（警告 → 确认 → 删除完毕，数据从数据库同步清除）；将 **Yuhuijuan 设为主管理员**，主管理员可在「管理员面板 → 我的同事」修改其他管理员密码（防遗忘），流程与管理后台重置用户密码完全一致。
+
+### 1. 删除用户（backend/repositories.py + app.py + frontend/admin.html）
+
+| 项 | 说明 |
+|---|---|
+| `delete_user(username)` | **单事务同步删除**：users + 答题记录（user_progress）+ 掌握度（user_mastery）+ 旅程状态（journey_state）+ 诊断结果（diagnostic_results）+ 密码历史（user_password_history, kind='user'） |
+| `/api/admin/user-delete` | POST，Bearer 鉴权 + **confirm=true 显式确认**（缺省 400）；管理员账号返回 400 拒绝（先查管理员表拦截，因用户名全局唯一）；用户不存在 404 |
+| 前端交互流 | 用户明细操作列「删除用户」→ 警告弹窗（列出将删除的数据明细 + 红色不可恢复警告条）→「确认删除」（红色渐变按钮）→ toast「删除完毕」+ 统计卡/明细立即刷新 |
+| 删除后效果 | 该用户无法登录（登录返回 404），用户名可重新注册；`/admin/stats` 用户数同步减少 |
+
+### 2. 主管理员体系（Yuhuijuan）
+
+| 项 | 说明 |
+|---|---|
+| `admin_users.is_primary` | db.py 新增列（ALTER 迁移，默认 0）；**真实库已执行：Yuhuijuan = 1** |
+| `get_admin_profile(username)` | auth.py 新增：返回 username + is_primary（同事接口的 me 字段） |
+| `/api/admin/colleagues` | 响应新增 `me`（当前管理员资料），列表项新增 `is_primary`；`get_admin_accounts` 管理员行同步带出 |
+| **权限收紧** | `/api/admin/user-reset` 与 `password-rollback`：目标为**管理员账号**时，仅主管理员可操作（请求体 `operator` 声明操作者，非主管理员 403）；**平台用户不受限**（任意管理员可重置，行为不变） |
+
+### 3. 管理员面板修改同事密码（frontend/admin_panel.html）
+
+- 同事表格新增「操作」列：**仅主管理员**可见「修改密码」按钮（不对主管理员账号本身操作）；主管理员身份由同事接口 `me.is_primary` 判定
+- 弹窗流程与管理后台一致：新密码输入 + 生成 + 复制 + 确认修改（密码规则 8-64 位含大小写数字），请求带 `operator=当前管理员`
+- 同事名旁新增琥珀色「主管理员」徽章（badge-primary）；表格下方主管理员专属提示行
+- 全部新增文案中英双语（i18n 字典 +12 键）
+
+### 4. 主管理员：同事回退密码 + 删除管理员（追加）
+
+- **回退密码**：同事列表新增「回退(n)」按钮（`rollback_count>0` 时显示，来自同事接口新字段，统计 kind='admin' 历史条数）；确认弹窗与管理后台一致，请求带 `operator`；成功后即时刷新回退次数
+- **删除管理员**：
+  - `delete_admin(username, operator)`（repositories.py）：防护三层——操作者须主管理员（否则 `not_primary`）/ 不能删自己（`self`）/ 主管理员账号不可删除（`is_primary`，唯一主管理员保护）；同步删除该管理员密码历史（kind='admin'），删除后其无法再登录管理后台（登录返回 404）
+  - `/api/admin/admin-delete`：POST，Bearer + `confirm=true` + `operator`；403 非主管理员 / 400 删自己或主管理员 / 404 不存在
+  - 前端交互流与删除用户一致：警告弹窗（列出删除内容 + 红色不可恢复警示条）→「确认删除」→ toast「删除完毕」+ 同事列表即时刷新
+- 同事接口 `/api/admin/colleagues` 每项新增 `rollback_count`；`get_admin_accounts` 不受影响
+
+### 5. 测试（pytest 75 → 82）
+
+| 新用例 | 覆盖点 |
+|---|---|
+| TestPrimaryAdmin 追加（1 个） | 同事列表 rollback_count：重置前 0 → 重置后 1 |
+| TestAdminDelete（6 个） | 401 无 token / 400 缺 confirm / 非主管理员 403、主管理员 200 + 删除后登录 404 / 删自己（主管理员）400 / **账号+密码历史同步清除、同事列表消失** / 不存在 404 |
+
+### 6. 问题排查记录
+
+| 问题 | 根因 | 修复 |
+|---|---|---|
+| 删除管理员账号返回 404 而非 400 | `delete_user` 先查 users 表，用户名全局唯一导致管理员分支成死代码 | 调整顺序：先查 admin_users 拦截，再查 users |
+
+---
+
 ## 2026-08-04（全天）：后端重构 + 真实判题 + 管理员体系 + 双语支持 + 多项修复
 
 ### 设计目标

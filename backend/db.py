@@ -105,6 +105,8 @@ def init_db():
         referral_code TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_login_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    try: c.execute("ALTER TABLE admin_users ADD COLUMN is_primary INTEGER DEFAULT 0")
+    except: pass
     # 平台用户密码历史：重置前入档，供管理员回退（每账号最多保留 3 条；kind 区分用户/管理员）
     c.execute('''CREATE TABLE IF NOT EXISTS user_password_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -115,6 +117,17 @@ def init_db():
     try: c.execute("ALTER TABLE user_password_history ADD COLUMN kind TEXT DEFAULT 'user'")
     except: pass
     c.execute('CREATE INDEX IF NOT EXISTS idx_uph_user ON user_password_history(username)')
+    # 内推码（管理员注册校验；主管理员可查看/新增/删除）
+    c.execute('''CREATE TABLE IF NOT EXISTS referral_codes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT NOT NULL UNIQUE,
+        note TEXT DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    # 平台级设置（统一管理员密钥等；env 作为兜底）
+    c.execute('''CREATE TABLE IF NOT EXISTS admin_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     c.execute('''CREATE TABLE IF NOT EXISTS diagnostic_results (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         session_id TEXT NOT NULL,

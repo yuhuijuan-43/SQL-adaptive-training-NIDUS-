@@ -102,7 +102,9 @@
 | `journey_state` | 用户自适应旅程的当前状态（阶段、当前节点、队列等） | ⭐⭐ |
 | `users` | 用户注册信息（用户名 + bcrypt 密码哈希） | ⭐ |
 | `diagnostic_results` | 摸底测试结果 | ⭐ |
-| `admin_users` | 管理员账号（内推码注册，用户名全局唯一，last_login_at） | ⭐⭐ |
+| `admin_users` | 管理员账号（内推码注册，用户名全局唯一，last_login_at，is_primary 主管理员标记） | ⭐⭐ |
+| `referral_codes` | 内推码（主管理员可查看/新增/删除，注册校验实时读取；默认 NIDUS_Agent 惰性种入） | ⭐⭐ |
+| `admin_settings` | 平台级设置（统一管理员密钥 admin_key，主管理员可更换；未设置时 env ADMIN_TOKEN 兜底） | ⭐⭐ |
 | `user_password_history` | 密码历史（重置前入档，每账号最多 3 条，kind 区分用户/管理员） | ⭐⭐ |
 
 ### 3.3 知识图谱（已重构）
@@ -130,7 +132,7 @@ root [SQL知识图谱]
     ├─ 基本SELECT / WHERE条件筛选 / 聚合函数与GROUP BY / HAVING子句
 ```
 
-**与旧版区别：** 旧版为 26 个扁平知识点节点（select_basic, where_basic, join_inner...），新版为三层树形结构（根→7 分类→29 子节点），通过 `knowledge_tags.csv` 定义标签与难度星级。
+**与旧版区别：** 旧版为 26 个扁平知识点节点（select_basic, where_basic, join_inner...），新版为三层树形结构（根→7 分类→29 子节点），通过 `knowledge_tags.csv` 定义标签与难度星级（**星级→难度：1★ 简单 / 2★ 中等 / 3★ 困难**，仅用于难度计算，界面不显示星级）；题目分类与难度已全量对齐官方标签（2026-08 迁移，见 `backend/migrate_official_tags.py`），另含保序学习边（基础 SELECT → WHERE/聚合/连接/子查询 → DML/DDL/约束）支撑引擎解锁。
 
 ### 3.4 自适应引擎核心算法（已实现）
 
@@ -247,14 +249,20 @@ root [SQL知识图谱]
 | `/api/admin/users` | GET | 后台用户列表（仅平台用户，不含管理员） |
 | `/api/admin/accounts` | GET | 用户+管理员合并列表（role 区分，密码管理用） |
 | `/api/admin/user-progress` | GET | 单用户答题记录摘要（?session_id=） |
-| `/api/admin/colleagues` | GET | 我的同事（管理员用户名 + 最后上线时间，?me= 排除自己） |
+| `/api/admin/colleagues` | GET | 我的同事（用户名 + 最后上线时间 + is_primary + rollback_count，?me= 排除自己，响应含 me 资料） |
 | `/api/admin/key` | GET | 当前统一管理员密钥（面板展示/复制） |
 | `/api/admin/login` | POST | 管理后台登录门：账号密码 + 统一密钥双重验证 |
 | `/api/admin/auth-register` | POST | 管理员内推码注册（403 错码 / 409 重名 / 400 弱密码） |
 | `/api/admin/auth-login` | POST | 管理员账号登录（更新最后上线时间） |
 | `/api/admin/auth-check-username` | GET | 管理员用户名预检（含平台用户同名） |
-| `/api/admin/user-reset` | POST | 重置密码（用户/管理员自动识别，旧密码入历史） |
-| `/api/admin/password-rollback` | POST | 回退密码（最多 3 次，kind 隔离） |
+| `/api/admin/user-reset` | POST | 重置密码（用户/管理员自动识别，旧密码入历史；管理员账号仅主管理员可重置，需 operator 参数） |
+| `/api/admin/password-rollback` | POST | 回退密码（最多 3 次，kind 隔离；管理员账号仅主管理员可回退） |
+| `/api/admin/user-delete` | POST | 删除平台用户（confirm=true 显式确认；同步删除答题/掌握度/旅程/诊断/密码历史；管理员账号拒绝） |
+| `/api/admin/admin-delete` | POST | 删除管理员（仅主管理员 + confirm + operator；不能删自己/主管理员；同步清密码历史） |
+| `/api/admin/key-update` | POST | 主管理员更换统一管理员密钥（8-64 字符；更换后对全部管理员生效，返回新 key） |
+| `/api/admin/referral-codes` | GET | 主管理员查看全部内推码（?me=；码+备注+创建时间） |
+| `/api/admin/referral-add` | POST | 主管理员新增内推码（注册校验即时生效；重复 409） |
+| `/api/admin/referral-delete` | POST | 主管理员删除内推码（最后一个 409 不允许删；删除后注册校验即时失效） |
 
 ---
 
@@ -303,8 +311,8 @@ root [SQL知识图谱]
 - **数据表格渲染：** INSERT 数据自动解析为可视化表格，支持多表
 - **预期输出渲染：** 文本管道格式自动转为表格
 - **建表 SQL 面板：** 可折叠展开
-- **ECharts 知识图谱可视化：** 力导向图，按掌握状态着色（根深→分类中→子节点浅，绿色=已掌握，红色=当前节点）
-- **类别筛选下拉框：** 从 29 个 knowledge tags 动态生成
+- **ECharts 知识图谱可视化：** 力导向图，按掌握状态着色（根深→分类中→子节点浅，绿色=已掌握，红色=当前节点）；位于自适应进阶页折叠面板（2026-08 移除 KNOWLEDGE MAP 徽章面板后，面板下移 0.75em 补齐间距）
+- **类别筛选下拉框：** 官方 7 大分类 × 29 子标签级联结构（`KG_HIERARCHY`/`KG_LABELS`/`KG_GROUPS`），题干分类标签显示官方中文子标签名（`catLabel()` 映射，搜索框中文名/ID 双通道匹配）
 - **填空题输入框：** 横向+纵向自由拖拽 (`resize: both`)
 - **选择题选项按钮：** 点击即时判分，正确/错误着色
 
@@ -434,6 +442,11 @@ SQL自适应训练/
 | 管理员账号体系（内推码注册） | ✅ 完成 | `frontend/admin_auth.html` + `/api/admin/auth-*` |
 | 管理员自身页面（密钥 + 同事） | ✅ 完成 | `frontend/admin_panel.html` + `/api/admin/colleagues` `/key` |
 | 密码管理（重置 + 回退 3 次 + 复制） | ✅ 完成 | `/api/admin/user-reset` `/password-rollback` + 历史表 |
+| **主管理员体系** | ✅ 完成 | `admin_users.is_primary`（Yuhuijuan）；仅主管理员可重置/回退/删除管理员账号（`operator` 参数校验，403 拦截）；同事接口返回 `me` + `is_primary` + `rollback_count`，面板仅主管理员可见操作列 |
+| **删除用户** | ✅ 完成 | `/api/admin/user-delete`（confirm 显式确认；同步删答题/掌握度/旅程/诊断/密码历史）+ `admin.html` 警告→确认→删除完毕三步流 |
+| **删除管理员** | ✅ 完成 | `/api/admin/admin-delete`（仅主管理员 + confirm + operator；不能删自己/主管理员；同步清密码历史） |
+| **更换统一密钥** | ✅ 完成 | `/api/admin/key-update`（主管理员更换管理平台密码，更换后对所有管理员生效） |
+| **内推码管理** | ✅ 完成 | `/api/admin/referral-codes` `-add` `-delete`（主管理员查看/新增/删除，注册校验实时同步） |
 | **真实 SQL 判题引擎** | ✅ 完成 | `backend/sql_judge.py`（内存库真实执行 + 结果集比对） |
 | 后端分层架构 | ✅ 完成 | `db.py` / `repositories.py` / `auth.py` / `engine.py` / `seeding.py` |
 | 中英双语（4 组页面） | ✅ 完成 | 轻量 i18n 引擎 + 右上角切换 |
