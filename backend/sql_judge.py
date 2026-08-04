@@ -98,6 +98,18 @@ def _fetch(conn, sql):
     return rows, cols
 
 
+def _value_key(v):
+    """值规范化：float 整数值与 int 视为相同（15000.0 == 15000）"""
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    return str(v)
+
+
+def _row_key(row):
+    """行内值排序后转字符串（列顺序不影响比较）；值先转字符串避免 int/str 混排报错"""
+    return str(sorted(_value_key(v) for v in row))
+
+
 def judge(user_sql, correct_sql, table_schema, initial_data):
     """执行 SQL 判题。
 
@@ -133,12 +145,11 @@ def judge(user_sql, correct_sql, table_schema, initial_data):
             # 标准答案本身执行失败（题库数据问题）→ 回退字符串比对
             return answers_match(user_sql, correct_sql), None, f'标准答案执行失败（题库问题）：{e}'
 
-        # 列集合比对（顺序无关，大小写不敏感）
-        if sorted(u_cols) != sorted(c_cols):
-            expected = ', '.join(c_cols)
-            return False, u_rows, f'输出列不匹配：应为（{expected}）'
-        # 行集比对（顺序无关，保留重复行）
-        if sorted(map(str, u_rows)) == sorted(map(str, c_rows)):
+        # 列数比对（列名不参与：COUNT(*) 与 COUNT(非空列) 等语义等价写法应判对）
+        if len(u_cols) != len(c_cols):
+            return False, u_rows, f'列数不匹配：预期 {len(c_cols)} 列，实际 {len(u_cols)} 列'
+        # 行集比对：列顺序、行顺序均不影响（保留重复行）
+        if sorted(_row_key(r) for r in u_rows) == sorted(_row_key(r) for r in c_rows):
             return True, u_rows, None
         return False, u_rows, f'结果不匹配：预期 {len(c_rows)} 行，实际 {len(u_rows)} 行'
     finally:
