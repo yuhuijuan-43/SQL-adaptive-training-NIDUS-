@@ -472,7 +472,7 @@ const UPDATES = [
     ],
     thinking: '选择题能检验「认不认识」，填空题才能检验「会不会写」——只刷选择题容易产生「我懂了」的错觉。深度模式的思路是概念题答对立刻上实战题，趁热打铁形成闭环，把「看懂」真正变成「会写」。',
     stats: [['1', '个核心功能'], ['4', '条解锁规则'], ['×1.5', '答错强化权重']]
-  },,
+  },
   {
     date: '2026-07-25', tag: 'opt', tagText: '优化',
     title: '题库导入与标签难度同步',
@@ -633,6 +633,7 @@ function renderUpdates() {
     </div>`;
   const listHtml = items.map((u0, i) => {
     const idx = start + i;
+    if (!u0 || !UPDATES_EN[idx]) return '';   // 防御：跳过空洞/缺英文条目，避免整页崩溃
     const u = pick(u0, UPDATES_EN[idx]);
     return `
     <div class="update-item glass fade-up" style="animation-delay:${i * 0.06}s" onclick="openDetail(${idx})">
@@ -668,7 +669,8 @@ function gotoPage(p) {
 
 /* ---- 详情弹窗 ---- */
 function openDetail(idx) {
-  const u = idx === -1 ? pick(VISION, VISION_EN) : pick(UPDATES[idx], UPDATES_EN[idx]);
+  const u = idx === -1 ? pick(VISION, VISION_EN)
+                       : (UPDATES[idx] && UPDATES_EN[idx] ? pick(UPDATES[idx], UPDATES_EN[idx]) : null);
   if (!u) return;
   document.getElementById('detailBody').innerHTML = `
     <div class="modal-head">
