@@ -228,7 +228,7 @@ body {
           <label for="regRef" data-i18n="label_ref">内推码</label>
           <div class="inp-wrap">
             <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></span>
-            <input id="regRef" type="text" placeholder="NIDUS_Agent" autocomplete="off" data-i18n-placeholder="ph_ref">
+            <input id="regRef" type="text" placeholder="请输入团队内推码" autocomplete="off" data-i18n-placeholder="ph_ref">
           </div>
           <div class="hint" id="regRefHint"></div>
         </div>
@@ -282,7 +282,7 @@ body {
 
 <script>
 /* ============================================================
-   管理员账号登录/注册（内推码 NIDUS_Agent）
+   管理员账号登录/注册（内推码仅由后端校验，前端不暴露）
    接口：POST /api/admin/auth-login · /api/admin/auth-register · GET /api/admin/auth-check-username
    成功：sessionStorage.admin_token / admin_user → 跳转 /admin-panel
    注意：按产品要求，本页无随机用户名/密码按钮
@@ -304,7 +304,7 @@ const I18N = {
   label_user: { zh: '管理员用户名', en: 'Admin Username' },
   label_pass: { zh: '密码', en: 'Password' },
   label_pass2: { zh: '确认密码', en: 'Confirm Password' },
-  ph_ref: { zh: 'NIDUS_Agent', en: 'NIDUS_Agent' },
+  ph_ref: { zh: '请输入团队内推码', en: 'Enter the team referral code' },
   ph_user: { zh: '请输入管理员用户名', en: 'Enter admin username' },
   ph_reg_user: { zh: '请输入管理员用户名', en: 'Enter admin username' },
   ph_pass: { zh: '请输入密码', en: 'Enter password' },
@@ -481,7 +481,7 @@ function updateRegisterBtn() {
   const pwd = $('regPass').value;
   const confirm = $('regPass2').value;
   const hasBasic = pwd.length >= 8 && pwd.length <= 64 && /[A-Z]/.test(pwd) && /[a-z]/.test(pwd) && /\d/.test(pwd);
-  const can = ref === 'NIDUS_Agent' && name.length >= 3 && hasBasic && pwd === confirm && !_userExists;
+  const can = !!ref && name.length >= 3 && hasBasic && pwd === confirm && !_userExists;
   $('regBtn').disabled = !can;
 }
 
@@ -525,7 +525,7 @@ async function doRegister(e) {
   const ref = $('regRef').value.trim();
   const user = $('regUser').value.trim();
   const p1 = $('regPass').value, p2 = $('regPass2').value;
-  if (ref !== 'NIDUS_Agent') { setHint('regRefHint', t('bad_ref'), 'err'); return; }
+  if (!ref) { setHint('regRefHint', t('need_ref'), 'err'); return; }
   if (user.length < 3) { setHint('regUserHint', t('user_min'), 'err'); setInputState('regUser', 'err'); return; }
   if (_userExists) { setHint('regUserHint', t('user_taken'), 'err'); setInputState('regUser', 'err'); return; }
   if (!(p1.length >= 8 && p1.length <= 64 && /[A-Z]/.test(p1) && /[a-z]/.test(p1) && /\d/.test(p1))) { toast('bad', t('pwd_policy'), 'bad'); return; }
