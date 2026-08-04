@@ -1,34 +1,8 @@
-import uuid, os, random, re
-
-def normalize_sql(sql):
-    """Normalize SQL for flexible comparison, handling column reordering, aliases, etc."""
-    s = sql.strip().rstrip(';').strip().lower()
-    s = re.sub(r'\s+', ' ', s)
-    # Remove quotes around aliases
-    s = s.replace("'", '').replace('"', '')
-    # Handle SELECT: sort columns alphabetically
-    m = re.match(r'(select\s+)(.*?)(\s+from\s+.*)', s, re.DOTALL)
-    if m:
-        prefix = m.group(1)
-        cols = m.group(2)
-        rest = m.group(3)
-        # Split columns by comma, strip each, sort
-        col_list = [c.strip() for c in cols.split(',')]
-        # Normalize each column: remove AS keyword for sorting
-        def sort_key(col):
-            c = re.sub(r'\s+as\s+.*', '', col).strip()
-            c = re.sub(r'\s+.*', '', c).strip()
-            return c
-        col_list.sort(key=sort_key)
-        cols_sorted = ', '.join(col_list)
-        s = prefix + cols_sorted + rest
-    return s
-
-def answers_match(user_answer, correct_answer):
-    return normalize_sql(user_answer) == normalize_sql(correct_answer)
+import uuid, os, random
 
 from flask import Flask, jsonify, redirect, request, send_from_directory
 from flask_cors import CORS
+from sql_judge import judge as judge_sql
 from db import init_db, get_connection, close_db
 from repositories import (get_all_questions, get_exam_questions, get_question_by_id,
     get_questions_by_node, get_question_node_id, save_answer, get_progress, get_graph,
@@ -257,14 +231,19 @@ def submit_answer():
         else:
             return jsonify({"error": "题目不存在"}), 404
     correct = q['correct_answer'].strip()
-    is_correct = answers_match(user_answer, correct)
+    # 真实执行判题：内存 SQLite 构建题目环境，比较用户 SQL 与标准答案的结果集
+    is_correct, _rows, judge_error = judge_sql(
+        user_answer, correct, q.get('table_schema'), q.get('initial_data'))
     save_answer(session_id, save_qid, user_answer, is_correct)
-    return jsonify({
+    resp = {
         "is_correct": is_correct,
         "correct_answer": correct,
         "explanation": q['explanation'],
         "session_id": session_id
-    })
+    }
+    if judge_error:
+        resp['judge_error'] = judge_error
+    return jsonify(resp)
 
 # ---- 衍生题（举一反三）----
 @app.route('/api/practice/derive', methods=['POST'])
@@ -341,7 +320,8 @@ def journey_next_route():
     if question_id and user_answer:
         q = get_question_by_id(question_id)
         if q:
-            is_correct = answers_match(user_answer, q['correct_answer'])
+            is_correct, _rows, _err = judge_sql(
+                user_answer, q['correct_answer'], q.get('table_schema'), q.get('initial_data'))
             save_answer(session_id, question_id, user_answer, is_correct, duration or 0)
     result = journey_next(session_id, just_answered_qid=question_id, was_correct=is_correct, duration=duration)
     if result.get('question'):
