@@ -100,6 +100,8 @@
   .nav-btn { padding: 0.5rem 1.1rem; font-family: inherit; font-size: 0.75rem; font-weight: 600; color: var(--text2); cursor: pointer; border: none; background: none; transition: all 0.18s; border-radius: 999px; }
   .nav-btn:hover { color: var(--text); background: var(--tag-bg); }
   .nav-btn.active { color: #fff; background: var(--accent-grad); box-shadow: 0 4px 14px rgba(90,100,255,0.35); }
+  /* 「自适应进阶」按钮标签下移 0.75 字符高度（0.75em，按按钮自身字号计算） */
+  .nav-btn[data-page="journey"] { transform: translateY(0.75em); }
   .graph-node { display:inline-flex; align-items:center; gap:3px; padding:3px 7px; border-radius:4px; font-size:0.6rem; font-weight:600; border:1px solid var(--border); background:var(--card); color:var(--text2); transition:all 0.15s; font-family:'SF Mono','Consolas',monospace; }
   .graph-node i { font-size: 0.55rem; }
   .opt-explain { font-size: 0.7rem; padding: 0.4rem 0.6rem; border-radius: 0.375rem; margin-bottom: 2px; display: flex; align-items: flex-start; gap: 6px; }
