@@ -84,3 +84,58 @@ def login_or_register(username, password=''):
         if sid:
             return sid, True
     return None, False
+
+# ---- 管理员账号（内推码注册 + 登录） ----
+REFERRAL_CODE = 'NIDUS_Agent'   # 固定内推码（按产品要求写死）
+
+def register_admin(username, password, referral_code):
+    """管理员注册：内推码校验 + 用户名唯一 + bcrypt；密码规则与平台一致（8-64 字符）"""
+    import bcrypt
+    if not password or len(password.strip()) < 8 or len(password.strip()) > 64:
+        return None, 'weak_password'
+    if (referral_code or '').strip() != REFERRAL_CODE:
+        return None, 'bad_referral'
+    conn = get_connection()
+    existing = conn.execute('SELECT id FROM admin_users WHERE username=?', (username,)).fetchone()
+    if existing:
+        return None, 'exists'
+    pw_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    conn.execute('INSERT INTO admin_users (username, password, referral_code) VALUES (?,?,?)',
+                 (username, pw_hash, referral_code.strip()))
+    conn.commit()
+    return True, None
+
+def login_admin(username, password):
+    """管理员登录：bcrypt 校验 + 更新最后上线时间"""
+    import bcrypt
+    conn = get_connection()
+    row = conn.execute('SELECT * FROM admin_users WHERE username=?', (username,)).fetchone()
+    if not row:
+        return None, 'not_found'
+    stored = dict(row)['password']
+    try:
+        if not bcrypt.checkpw(password.encode('utf-8'), stored.encode('utf-8')):
+            return None, 'wrong_password'
+    except Exception:
+        return None, 'wrong_password'
+    conn.execute('UPDATE admin_users SET last_login_at=CURRENT_TIMESTAMP WHERE username=?', (username,))
+    conn.commit()
+    return True, None
+
+def check_admin_username_exists(username):
+    """检查管理员用户名是否已占用（注册预检）"""
+    conn = get_connection()
+    row = conn.execute('SELECT id FROM admin_users WHERE username=?', (username,)).fetchone()
+    return row is not None
+
+def get_admin_colleagues(exclude_username=None):
+    """我的同事：其他管理员的用户名与最后上线时间"""
+    conn = get_connection()
+    if exclude_username:
+        rows = conn.execute(
+            'SELECT username, last_login_at FROM admin_users WHERE username != ? ORDER BY last_login_at DESC',
+            (exclude_username,)).fetchall()
+    else:
+        rows = conn.execute(
+            'SELECT username, last_login_at FROM admin_users ORDER BY last_login_at DESC').fetchall()
+    return [dict(r) for r in rows]

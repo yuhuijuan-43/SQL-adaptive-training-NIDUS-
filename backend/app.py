@@ -9,9 +9,11 @@ from repositories import (get_all_questions, get_exam_questions, get_question_by
     get_mastery, save_diagnostic_result, get_diagnostic_result,
     get_or_create_derived_question, get_derived_question_by_id,
     get_questions_by_node_and_type, get_node_id_for_question, is_mcq,
-    get_diagnostic_questions, get_admin_stats, get_admin_users, get_progress_summary)
+    get_diagnostic_questions, get_admin_stats, get_admin_users, get_progress_summary,
+    reset_user_password)
 from auth import (login_user, register_user, login_or_register, check_username_exists,
-    _is_authenticated)
+    _is_authenticated, register_admin, login_admin, check_admin_username_exists,
+    get_admin_colleagues, REFERRAL_CODE)
 from engine import init_journey, journey_next, get_journey_state, _get_unlocked_nodes
 from seeding import seed_questions, seed_exam_questions, seed_knowledge_graph
 
@@ -72,8 +74,10 @@ FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'fronten
 # ---- 登录门槛：游客不允许读题/答题 ----
 # 公开端点白名单：登录注册、用户名检查、知识图谱结构、背景装饰标题、admin（自行校验 token）
 _PUBLIC_API_PATHS = {'/api/login', '/api/register', '/api/check-username',
-                     '/api/graph', '/api/admin/login', '/api/admin/stats',
-                     '/api/admin/users', '/api/admin/user-progress'}
+                     '/api/graph', '/api/admin/login', '/api/admin/auth-register',
+                     '/api/admin/auth-login', '/api/admin/auth-check-username',
+                     '/api/admin/stats', '/api/admin/users', '/api/admin/user-progress',
+                     '/api/admin/colleagues', '/api/admin/user-reset'}
 
 def _request_session_id():
     """从请求体 / 查询参数 / 路径参数中提取 session_id"""
@@ -476,6 +480,16 @@ def admin_gate_page():
     """管理员登录门（用户名 + 统一密钥）"""
     return send_from_directory(FRONTEND_DIR, 'admin_gate.html')
 
+@app.route('/admin-auth')
+def admin_auth_page():
+    """管理员账号登录/注册（内推码）"""
+    return send_from_directory(FRONTEND_DIR, 'admin_auth.html')
+
+@app.route('/admin-panel')
+def admin_panel_page():
+    """管理员自身页面（我的同事 + 平台用户密码管理）"""
+    return send_from_directory(FRONTEND_DIR, 'admin_panel.html')
+
 @app.route('/api/admin/login', methods=['POST'])
 @limiter.limit("5 per minute")
 def admin_login():
@@ -513,6 +527,78 @@ def admin_user_progress():
     if not session_id:
         return jsonify({"error": "缺少 session_id"}), 400
     return jsonify({"session_id": session_id, "answers": get_progress_summary(session_id)})
+
+# ---- 管理员账号体系（内推码注册 + 登录） ----
+@app.route('/api/admin/auth-register', methods=['POST'])
+@limiter.limit("5 per minute")
+def admin_auth_register():
+    """管理员注册：内推码 + 用户名唯一 + 密码规则与平台一致"""
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
+    referral = (data.get('referral_code') or '').strip()
+    if not username:
+        return jsonify({"error": "请输入用户名"}), 400
+    if not password or len(password) < 8 or len(password) > 64:
+        return jsonify({"error": "密码需为8-64个字符"}), 400
+    if referral != REFERRAL_CODE:
+        return jsonify({"error": "内推码不正确"}), 403
+    ok, reason = register_admin(username, password, referral)
+    if not ok:
+        if reason == 'exists':
+            return jsonify({"error": "用户名已存在"}), 409
+        return jsonify({"error": "注册失败，请重试"}), 500
+    return jsonify({"ok": True, "token": ADMIN_TOKEN, "username": username})
+
+@app.route('/api/admin/auth-login', methods=['POST'])
+@limiter.limit("8 per minute")
+def admin_auth_login():
+    """管理员账号登录"""
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
+    if not username:
+        return jsonify({"error": "请输入用户名"}), 400
+    ok, reason = login_admin(username, password)
+    if not ok:
+        if reason == 'not_found':
+            return jsonify({"error": "管理员不存在"}), 404
+        return jsonify({"error": "密码错误"}), 401
+    return jsonify({"ok": True, "token": ADMIN_TOKEN, "username": username})
+
+@app.route('/api/admin/auth-check-username')
+@limiter.limit("20 per minute")
+def admin_auth_check_username():
+    """管理员用户名占用预检（注册时防重复）"""
+    name = request.args.get('name', '').strip()
+    return jsonify({"exists": check_admin_username_exists(name) if name else False})
+
+@app.route('/api/admin/colleagues')
+@limiter.limit("30 per minute")
+def admin_colleagues():
+    """我的同事：其他管理员的用户名与最后上线时间（?me=排除自己）"""
+    if not _check_admin_token():
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    me = request.args.get('me', '').strip()
+    return jsonify({"colleagues": get_admin_colleagues(exclude_username=me or None)})
+
+@app.route('/api/admin/user-reset', methods=['POST'])
+@limiter.limit("10 per minute")
+def admin_user_reset():
+    """管理员重置平台用户密码"""
+    if not _check_admin_token():
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    new_password = data.get('new_password') or ''
+    if not username or not new_password:
+        return jsonify({"error": "缺少参数"}), 400
+    if len(new_password) < 8 or len(new_password) > 64:
+        return jsonify({"error": "密码需为8-64个字符"}), 400
+    ok, reason = reset_user_password(username, new_password)
+    if not ok:
+        return jsonify({"error": "用户不存在"}), 404
+    return jsonify({"ok": True})
 
 if __name__ == '__main__':
     init_db()

@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理员账号 · SQL 自适应训练</title>
+<style>
+:root {
+  --bg-0: #eef3fc; --bg-1: #e3ecf9;
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(88, 110, 170, 0.14);
+  --glass-border-hover: rgba(88, 110, 170, 0.30);
+  --text-1: #1b2747; --text-2: #48577c; --text-3: #8b96b4;
+  --accent: #4a7dff; --accent-grad: linear-gradient(135deg, #4a7dff 0%, #8b5bff 100%);
+  --success: #0ea678; --error: #e04a55;
+  --radius: 18px;
+  --sans: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  --shadow: 0 10px 34px rgba(58, 82, 148, 0.13);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--sans); color: var(--text-1); line-height: 1.6; overflow-x: hidden;
+  min-height: 100vh; display: flex; flex-direction: column;
+  background:
+    radial-gradient(1100px 700px at 88% -12%, rgba(140, 120, 255, 0.18), transparent 60%),
+    radial-gradient(900px 620px at -8% 18%, rgba(80, 140, 255, 0.16), transparent 55%),
+    radial-gradient(800px 560px at 50% 115%, rgba(70, 190, 210, 0.13), transparent 55%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%);
+}
+.orb { position: fixed; border-radius: 50%; filter: blur(100px); z-index: 0; pointer-events: none; }
+.orb-1 { width: 500px; height: 500px; background: #b9a6ff; top: -160px; right: -120px; opacity: 0.30; animation: drift 19s ease-in-out infinite; }
+.orb-2 { width: 430px; height: 430px; background: #9cc0ff; top: 42%; left: -190px; opacity: 0.27; animation: drift 24s ease-in-out infinite reverse; }
+.orb-3 { width: 370px; height: 370px; background: #93e2ea; bottom: -140px; right: 20%; opacity: 0.24; animation: drift 27s ease-in-out infinite; }
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(42px, -28px) scale(1.07); }
+  66% { transform: translate(-30px, 24px) scale(0.94); }
+}
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+.navbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px);
+  border-bottom: 1px solid rgba(88, 110, 170, 0.12);
+}
+.nav-inner { max-width: 1180px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; gap: 30px; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; cursor: pointer; user-select: none; }
+.logo-badge { width: 40px; height: 40px; border-radius: 10px; overflow: hidden; flex-shrink: 0; background: rgba(255, 255, 255, 0.7); filter: drop-shadow(0 2px 6px rgba(58, 82, 148, 0.18)); }
+.logo-badge img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.nav-links { display: flex; gap: 4px; flex: 1; }
+.nav-link {
+  padding: 7px 14px; border-radius: 999px; font-size: 13.5px; color: var(--text-2);
+  cursor: pointer; transition: all 0.2s; border: none; background: none; font-family: inherit;
+}
+.nav-link:hover { color: var(--text-1); background: rgba(88, 110, 170, 0.08); }
+.nav-link.active { color: #fff; background: var(--accent-grad); box-shadow: 0 4px 14px rgba(90, 100, 255, 0.35); }
+#langBtn { margin-left: auto; border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.5); font-size: 12.5px; }
+.auth-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 46px 20px 60px; position: relative; z-index: 1; }
+.auth-card { width: 100%; max-width: 440px; padding: 36px 38px; position: relative; overflow: hidden; }
+.auth-card::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(320px 190px at 85% 0%, rgba(120, 100, 255, 0.12), transparent 70%);
+}
+.auth-head { text-align: center; margin-bottom: 26px; }
+.auth-title { font-size: 23px; font-weight: 800; }
+.auth-title .grad { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.auth-sub { font-size: 12.5px; color: var(--text-3); margin-top: 6px; }
+.tabs { display: flex; background: rgba(88, 110, 170, 0.08); border-radius: 12px; padding: 4px; margin-bottom: 24px; }
+.tab {
+  flex: 1; height: 38px; border: none; border-radius: 9px; cursor: pointer; font-family: inherit;
+  font-size: 13.5px; font-weight: 700; color: var(--text-2); background: transparent; transition: all 0.22s;
+}
+.tab.on { color: #fff; background: var(--accent-grad); box-shadow: 0 4px 14px rgba(90, 100, 255, 0.35); }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-2); margin-bottom: 7px; }
+.field .inp-wrap { position: relative; }
+.field .inp-wrap .u-ico {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  color: var(--text-3); opacity: 0.75; pointer-events: none; transition: color 0.2s, opacity 0.2s;
+  display: grid; place-items: center;
+}
+.field input {
+  width: 100%; height: 44px; padding: 0 14px 0 40px; border-radius: 11px; outline: none;
+  background: rgba(255, 255, 255, 0.6); border: 1px solid var(--glass-border);
+  color: var(--text-1); font-family: inherit; font-size: 13.5px; transition: all 0.2s;
+}
+.field input::placeholder { color: var(--text-3); }
+.field input:focus { border-color: rgba(74, 125, 255, 0.7); background: #fff; box-shadow: 0 0 0 3px rgba(74, 125, 255, 0.14); }
+.field input.err { border-color: rgba(224, 74, 85, 0.6); }
+.field input.ok { border-color: rgba(14, 166, 120, 0.5); }
+.field .hint { font-size: 11.5px; margin-top: 5px; min-height: 16px; }
+.hint.err { color: var(--error); }
+.hint.ok { color: var(--success); }
+.inp-wrap.has-right input { padding-right: 78px; }
+.inp-btn {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 30px; height: 30px; border: none; background: none; cursor: pointer;
+  opacity: 0.5; transition: all 0.2s; border-radius: 8px;
+  display: grid; place-items: center; color: var(--text-2);
+}
+.inp-btn:hover { opacity: 1; background: rgba(88, 110, 170, 0.1); }
+.inp-btn.eye { right: 38px; }
+.strength-box { margin-top: 8px; }
+.strength-bar { height: 5px; border-radius: 99px; background: rgba(88, 110, 170, 0.12); overflow: hidden; }
+.strength-bar .fill { height: 100%; width: 0; border-radius: 99px; transition: width 0.3s, background 0.3s; }
+.strength-label { font-size: 11.5px; margin-top: 6px; min-height: 16px; color: var(--text-3); }
+.rule-list { display: none; margin-top: 4px; }
+.rule-item { font-size: 11.5px; color: var(--text-3); margin: 3px 0; }
+.rule-item::before { content: '✗ '; }
+.rule-item.pass { color: var(--success); }
+.rule-item.pass::before { content: '✓ '; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 46px; width: 100%; border-radius: 12px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 14.5px; font-weight: 700; color: #fff;
+  background: var(--accent-grad); box-shadow: 0 5px 22px rgba(90, 100, 255, 0.4); transition: all 0.25s;
+}
+.btn:hover:not(:disabled) { box-shadow: 0 8px 30px rgba(90, 100, 255, 0.55); transform: translateY(-1px); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn .spin { display: inline-block; width: 15px; height: 15px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.auth-foot { text-align: center; font-size: 12.5px; color: var(--text-3); margin-top: 18px; }
+.link { color: var(--accent); text-decoration: none; cursor: pointer; }
+.link:hover { text-decoration: underline; }
+.back-home { display: block; text-align: center; margin-top: 18px; font-size: 12.5px; color: var(--text-3); text-decoration: none; }
+.back-home:hover { color: var(--accent); }
+.back-home .arr { font-family: var(--mono, monospace); margin-right: 5px; }
+.panel { display: none; }
+.panel.show { display: block; animation: fadeUp 0.3s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.toast-wrap { position: fixed; top: 80px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 10px; }
+.toast {
+  min-width: 260px; max-width: 360px; padding: 13px 17px; border-radius: 13px; font-size: 13px;
+  background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(18px);
+  border: 1px solid rgba(88, 110, 170, 0.2); box-shadow: 0 10px 34px rgba(58, 82, 148, 0.18);
+  display: flex; gap: 11px; align-items: center; color: var(--text-1);
+  animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.toast.ok { border-color: rgba(14, 166, 120, 0.35); } .toast.ok .tdot { background: var(--success); box-shadow: 0 0 8px rgba(14, 166, 120, 0.5); }
+.toast.bad { border-color: rgba(224, 74, 85, 0.35); } .toast.bad .tdot { background: var(--error); box-shadow: 0 0 8px rgba(224, 74, 85, 0.5); }
+.toast .tdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.toast.out { animation: slideOut 0.3s ease forwards; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(30px); } }
+.footer {
+  border-top: 1px solid rgba(88, 110, 170, 0.14); padding: 20px 0 26px; text-align: center;
+  font-size: 12px; color: var(--text-3); position: relative; z-index: 1;
+}
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: rgba(88, 110, 170, 0.25); border-radius: 99px; }
+::-webkit-scrollbar-track { background: transparent; }
+@media (max-width: 560px) {
+  .auth-card { padding: 28px 22px; }
+  .nav-inner { padding: 0 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- ========== 顶部导航 ========== -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="logo" onclick="window.location.href='index_glass.html'">
+      <div class="logo-badge"><img src="nidus_logo.png" alt="NIDUS"></div>
+      <span>SQL 自适应训练</span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-link" onclick="window.location.href='index_glass.html'" data-i18n="nav_home">首页</button>
+      <button class="nav-link" onclick="window.location.href='about.html'" data-i18n="nav_about">了解我们</button>
+      <button class="nav-link" onclick="window.location.href='login_glass.html'" data-i18n="nav_enter">进入平台</button>
+    </div>
+    <button class="nav-link" id="langBtn" onclick="toggleLang()">English</button>
+  </div>
+</nav>
+
+<!-- ========== 管理员账号登录/注册 ========== -->
+<div class="auth-wrap">
+  <div class="auth-card glass fade-up">
+    <div class="auth-head">
+      <div class="auth-title" data-i18n-html="auth_title">管理员<span class="grad">账号</span></div>
+      <div class="auth-sub" data-i18n="auth_sub">凭内推码注册，凭账号密码登录，管理平台与你同在</div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab on" id="tabLogin" onclick="switchTab('login')" data-i18n="tab_login">账号登录</button>
+      <button class="tab" id="tabRegister" onclick="switchTab('register')" data-i18n="tab_register">注册账号</button>
+    </div>
+
+    <!-- 登录面板 -->
+    <div class="panel show" id="panelLogin">
+      <form onsubmit="doLogin(event)" autocomplete="off">
+        <div class="field">
+          <label for="inpUser" data-i18n="label_user">管理员用户名</label>
+          <div class="inp-wrap">
+            <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+            <input id="inpUser" type="text" placeholder="请输入管理员用户名" autocomplete="off" data-i18n-placeholder="ph_user">
+          </div>
+          <div class="hint" id="loginUserHint"></div>
+        </div>
+        <div class="field">
+          <label for="inpPass" data-i18n="label_pass">密码</label>
+          <div class="inp-wrap has-right">
+            <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input id="inpPass" type="password" placeholder="请输入密码" autocomplete="off" data-i18n-placeholder="ph_pass">
+            <button type="button" class="inp-btn eye" id="inpPassEye" title="显示密码" data-i18n-title="show_pwd" onclick="togglePwd('inpPass','inpPassEye')"></button>
+          </div>
+          <div class="hint" id="loginPassHint"></div>
+        </div>
+        <button class="btn" type="submit" id="loginBtn" data-i18n="btn_login">登 录</button>
+      </form>
+      <div class="auth-foot" data-i18n-html="foot_login">还没有账号？<a class="link" href="javascript:void(0)" onclick="switchTab('register')">凭内推码注册</a></div>
+    </div>
+
+    <!-- 注册面板 -->
+    <div class="panel" id="panelRegister">
+      <form onsubmit="doRegister(event)" autocomplete="off">
+        <div class="field">
+          <label for="regRef" data-i18n="label_ref">内推码</label>
+          <div class="inp-wrap">
+            <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></span>
+            <input id="regRef" type="text" placeholder="NIDUS_Agent" autocomplete="off" data-i18n-placeholder="ph_ref">
+          </div>
+          <div class="hint" id="regRefHint"></div>
+        </div>
+        <div class="field">
+          <label for="regUser" data-i18n="label_user">管理员用户名</label>
+          <div class="inp-wrap">
+            <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+            <input id="regUser" type="text" placeholder="请输入管理员用户名" autocomplete="off" oninput="onRegUserInput()" data-i18n-placeholder="ph_reg_user">
+          </div>
+          <div class="hint" id="regUserHint"></div>
+        </div>
+        <div class="field">
+          <label for="regPass" data-i18n="label_pass">密码</label>
+          <div class="inp-wrap has-right">
+            <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input id="regPass" type="password" placeholder="8-64 位，含大小写+数字" autocomplete="off" oninput="onRegPassInput()" data-i18n-placeholder="ph_reg_pass">
+            <button type="button" class="inp-btn eye" id="regPassEye" title="显示密码" data-i18n-title="show_pwd" onclick="togglePwd('regPass','regPassEye')"></button>
+          </div>
+          <div class="strength-box">
+            <div class="strength-bar"><div class="fill" id="strengthFill"></div></div>
+            <div class="strength-label" id="strengthLabel"></div>
+            <div class="rule-list" id="ruleList">
+              <div class="rule-item" id="ruleLen" data-i18n="rule_len">8-64 个字符</div>
+              <div class="rule-item" id="ruleUpper" data-i18n="rule_upper">包含大写字母</div>
+              <div class="rule-item" id="ruleLower" data-i18n="rule_lower">包含小写字母</div>
+              <div class="rule-item" id="ruleDigit" data-i18n="rule_digit">包含数字</div>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="regPass2" data-i18n="label_pass2">确认密码</label>
+          <div class="inp-wrap has-right">
+            <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input id="regPass2" type="password" placeholder="再次输入密码" autocomplete="off" oninput="onRegPassInput()" data-i18n-placeholder="ph_pass2">
+            <button type="button" class="inp-btn eye" id="regPass2Eye" title="显示密码" data-i18n-title="show_pwd" onclick="togglePwd('regPass2','regPass2Eye')"></button>
+          </div>
+          <div class="hint" id="regPass2Hint"></div>
+        </div>
+        <button class="btn" type="submit" id="regBtn" disabled data-i18n="btn_reg">注 册</button>
+      </form>
+      <div class="auth-foot" data-i18n-html="foot_reg">已有账号？<a class="link" href="javascript:void(0)" onclick="switchTab('login')">直接登录</a></div>
+    </div>
+
+    <a class="back-home" href="index_glass.html"><span class="arr">←</span><span data-i18n="back_home">返回首页</span></a>
+  </div>
+</div>
+
+<footer class="footer" data-i18n="footer">© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台</footer>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ============================================================
+   管理员账号登录/注册（内推码 NIDUS_Agent）
+   接口：POST /api/admin/auth-login · /api/admin/auth-register · GET /api/admin/auth-check-username
+   成功：sessionStorage.admin_token / admin_user → 跳转 /admin-panel
+   注意：按产品要求，本页无随机用户名/密码按钮
+   ============================================================ */
+const API_BASE = '/api';
+const $ = id => document.getElementById(id);
+
+/* ---- 中英双语 ---- */
+const I18N = {
+  page_title: { zh: '管理员账号 · SQL 自适应训练', en: 'Admin Account · SQL Adaptive Training' },
+  nav_home: { zh: '首页', en: 'Home' },
+  nav_about: { zh: '了解我们', en: 'About' },
+  nav_enter: { zh: '进入平台', en: 'Enter' },
+  auth_title: { zh: '管理员<span class="grad">账号</span>', en: 'Admin <span class="grad">Account</span>' },
+  auth_sub: { zh: '凭内推码注册，凭账号密码登录，管理平台与你同在', en: 'Register with a referral code, sign in with your account, and manage the platform together' },
+  tab_login: { zh: '账号登录', en: 'Account Login' },
+  tab_register: { zh: '注册账号', en: 'Create Account' },
+  label_ref: { zh: '内推码', en: 'Referral Code' },
+  label_user: { zh: '管理员用户名', en: 'Admin Username' },
+  label_pass: { zh: '密码', en: 'Password' },
+  label_pass2: { zh: '确认密码', en: 'Confirm Password' },
+  ph_ref: { zh: 'NIDUS_Agent', en: 'NIDUS_Agent' },
+  ph_user: { zh: '请输入管理员用户名', en: 'Enter admin username' },
+  ph_reg_user: { zh: '请输入管理员用户名', en: 'Enter admin username' },
+  ph_pass: { zh: '请输入密码', en: 'Enter password' },
+  ph_reg_pass: { zh: '8-64 位，含大小写+数字', en: '8-64 chars, upper + lower + digit' },
+  ph_pass2: { zh: '再次输入密码', en: 'Re-enter password' },
+  show_pwd: { zh: '显示密码', en: 'Show password' },
+  hide_pwd: { zh: '隐藏密码', en: 'Hide password' },
+  btn_login: { zh: '登 录', en: 'Log In' },
+  btn_reg: { zh: '注 册', en: 'Sign Up' },
+  foot_login: { zh: '还没有账号？<a class="link" href="javascript:void(0)" onclick="switchTab(\'register\')">凭内推码注册</a>',
+                 en: 'No account yet? <a class="link" href="javascript:void(0)" onclick="switchTab(\'register\')">Register with a referral code</a>' },
+  foot_reg: { zh: '已有账号？<a class="link" href="javascript:void(0)" onclick="switchTab(\'login\')">直接登录</a>',
+              en: 'Already have an account? <a class="link" href="javascript:void(0)" onclick="switchTab(\'login\')">Sign in</a>' },
+  back_home: { zh: '返回首页', en: 'Back to Home' },
+  footer: { zh: '© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台', en: '© 2026 SQL Adaptive Training · A personalized SQL learning platform' },
+  loading_txt: { zh: '请稍候…', en: 'Please wait…' },
+  need_ref: { zh: '请输入内推码', en: 'Please enter the referral code' },
+  bad_ref: { zh: '内推码不正确', en: 'Incorrect referral code' },
+  user_min: { zh: '用户名至少 3 个字符', en: 'Username must be at least 3 characters' },
+  user_taken: { zh: '该用户名已被占用', en: 'Username already taken' },
+  user_ok: { zh: '✓ 用户名可用', en: '✓ Username available' },
+  user_exists: { zh: '用户名已存在', en: 'Username already exists' },
+  need_user: { zh: '请输入用户名', en: 'Please enter username' },
+  need_pass: { zh: '请输入密码', en: 'Please enter password' },
+  admin_notfound: { zh: '管理员不存在', en: 'Admin account not found' },
+  pwd_wrong: { zh: '密码错误', en: 'Incorrect password' },
+  pwd_mismatch: { zh: '两次输入的密码不一致', en: 'Passwords do not match' },
+  pwd_match: { zh: '✓ 密码一致', en: '✓ Passwords match' },
+  strength_prefix: { zh: '强度：', en: 'Strength: ' },
+  st_weak: { zh: '弱', en: 'Weak' }, st_med: { zh: '中', en: 'Medium' },
+  st_strong: { zh: '强', en: 'Strong' }, st_very: { zh: '非常强', en: 'Very strong' },
+  rule_len: { zh: '8-64 个字符', en: '8-64 characters' },
+  rule_upper: { zh: '包含大写字母', en: 'Uppercase letter' },
+  rule_lower: { zh: '包含小写字母', en: 'Lowercase letter' },
+  rule_digit: { zh: '包含数字', en: 'Number' },
+  pwd_policy: { zh: '密码需 8-64 位，且包含大小写字母和数字', en: 'Password needs 8-64 chars with upper, lower & digit' },
+  net_error: { zh: '无法连接服务器，请确认后端已启动', en: 'Cannot reach server — make sure the backend is running' },
+  login_ok_msg: { zh: '登录成功，正在进入管理员面板…', en: 'Signed in — entering the admin panel…' },
+  reg_ok_msg: { zh: '注册成功，正在进入管理员面板…', en: 'Registered — entering the admin panel…' },
+};
+
+let LANG = localStorage.getItem('lang') || 'zh';
+function t(key) { const e = I18N[key]; return e ? (e[LANG] || e.zh) : key; }
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n-html')); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.getAttribute('data-i18n-title')); });
+  document.title = t('page_title');
+  const btn = document.getElementById('langBtn');
+  if (btn) btn.textContent = LANG === 'zh' ? 'English' : '中文';
+  document.documentElement.lang = LANG === 'zh' ? 'zh-CN' : 'en';
+}
+function toggleLang() {
+  LANG = LANG === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('lang', LANG);
+  applyI18n();
+  if (window.checkUsername) checkUsername();
+  if (window.onRegPassInput) onRegPassInput();
+}
+applyI18n();
+
+/* ---- 选项卡 ---- */
+function switchTab(name) {
+  $('panelLogin').classList.toggle('show', name === 'login');
+  $('panelRegister').classList.toggle('show', name === 'register');
+  $('tabLogin').classList.toggle('on', name === 'login');
+  $('tabRegister').classList.toggle('on', name === 'register');
+  if (name === 'register') { checkUsername(); onRegPassInput(); }
+}
+
+/* ---- 辅助 ---- */
+function setHint(id, text, type) {
+  const el = $(id);
+  el.textContent = text || '';
+  el.className = 'hint' + (type ? ' ' + type : '');
+}
+function setInputState(inpId, state) {
+  const el = $(inpId);
+  el.classList.remove('err', 'ok');
+  if (state) el.classList.add(state);
+}
+function loading(btn, on) {
+  const b = $(btn);
+  if (on) { b.dataset.txt = b.textContent; b.innerHTML = '<span class="spin"></span>' + t('loading_txt'); b.disabled = true; }
+  else { b.textContent = b.dataset.txt || b.textContent; b.disabled = false; }
+}
+function toast(msg, type) {
+  const tEl = document.createElement('div');
+  tEl.className = 'toast ' + type;
+  tEl.innerHTML = '<span class="tdot"></span><span>' + msg + '</span>';
+  $('toastWrap').appendChild(tEl);
+  setTimeout(() => { tEl.classList.add('out'); setTimeout(() => tEl.remove(), 300); }, 3400);
+}
+function svgIcon(inner, size) {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="' + size + '" height="' + size + '">' + inner + '</svg>';
+}
+const ICON_EYE = '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>';
+const ICON_EYE_OFF = '<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>';
+function togglePwd(inpId, btnId) {
+  const inp = $(inpId), btn = $(btnId);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.innerHTML = svgIcon(show ? ICON_EYE_OFF : ICON_EYE, 15);
+  btn.title = show ? t('hide_pwd') : t('show_pwd');
+}
+['inpPassEye', 'regPassEye', 'regPass2Eye'].forEach(id => {
+  const el = $(id);
+  if (el) el.innerHTML = svgIcon(ICON_EYE, 15);
+});
+
+/* ---- 用户名占用预检（注册） ---- */
+let _userCheckTimer = null;
+let _userExists = false;
+function onRegUserInput() { _userExists = false; checkUsername(); }
+function checkUsername() {
+  clearTimeout(_userCheckTimer);
+  const u = $('regUser').value.trim();
+  if (!u) { setHint('regUserHint', ''); setInputState('regUser', ''); _userExists = false; updateRegisterBtn(); return; }
+  if (u.length < 3) { setHint('regUserHint', t('user_min'), 'err'); setInputState('regUser', 'err'); _userExists = false; updateRegisterBtn(); return; }
+  _userCheckTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(API_BASE + '/admin/auth-check-username?name=' + encodeURIComponent(u));
+      const d = await r.json();
+      _userExists = !!d.exists;
+      if (d.exists) { setHint('regUserHint', t('user_taken'), 'err'); setInputState('regUser', 'err'); }
+      else { setHint('regUserHint', t('user_ok'), 'ok'); setInputState('regUser', 'ok'); }
+    } catch (e) { setHint('regUserHint', ''); setInputState('regUser', ''); }
+    updateRegisterBtn();
+  }, 350);
+}
+
+/* ---- 密码强度（规则与平台登录一致：8-64 + 大小写 + 数字） ---- */
+function checkPasswordStrength(pwd) {
+  if (!pwd) return { score: 0, label: '', color: 'transparent', checks: [false,false,false,false] };
+  let score = 0;
+  const checks = [
+    pwd.length >= 8 && pwd.length <= 64,
+    /[A-Z]/.test(pwd),
+    /[a-z]/.test(pwd),
+    /\d/.test(pwd)
+  ];
+  checks.forEach(c => { if (c) score++; });
+  if (pwd.length >= 12) score = Math.min(4, score + 1);
+  const label = score <= 1 ? t('st_weak') : score <= 2 ? t('st_med') : score <= 3 ? t('st_strong') : t('st_very');
+  const color = score <= 1 ? '#e04a55' : score <= 2 ? '#e67e22' : score <= 3 ? '#27ae60' : '#1e8449';
+  return { score, label, color, checks };
+}
+function onRegPassInput() {
+  const pwd = $('regPass').value;
+  const hasContent = pwd.trim().length > 0;
+  const result = checkPasswordStrength(pwd);
+  $('strengthFill').style.width = (result.score / 4 * 100) + '%';
+  $('strengthFill').style.background = result.color;
+  $('strengthLabel').textContent = hasContent ? t('strength_prefix') + result.label : '';
+  $('strengthLabel').style.color = result.color;
+  $('ruleList').style.display = hasContent ? 'block' : 'none';
+  ['ruleLen', 'ruleUpper', 'ruleLower', 'ruleDigit'].forEach((id, i) => {
+    $(id).classList.toggle('pass', result.checks[i]);
+  });
+  checkConfirmMatch();
+  updateRegisterBtn();
+}
+function checkConfirmMatch() {
+  const p1 = $('regPass').value, p2 = $('regPass2').value;
+  if (!p2) { setHint('regPass2Hint', ''); setInputState('regPass2', ''); updateRegisterBtn(); return; }
+  if (p1 === p2) { setHint('regPass2Hint', t('pwd_match'), 'ok'); setInputState('regPass2', 'ok'); }
+  else { setHint('regPass2Hint', t('pwd_mismatch'), 'err'); setInputState('regPass2', 'err'); }
+  updateRegisterBtn();
+}
+function updateRegisterBtn() {
+  const ref = $('regRef').value.trim();
+  const name = $('regUser').value.trim();
+  const pwd = $('regPass').value;
+  const confirm = $('regPass2').value;
+  const hasBasic = pwd.length >= 8 && pwd.length <= 64 && /[A-Z]/.test(pwd) && /[a-z]/.test(pwd) && /\d/.test(pwd);
+  const can = ref === 'NIDUS_Agent' && name.length >= 3 && hasBasic && pwd === confirm && !_userExists;
+  $('regBtn').disabled = !can;
+}
+
+/* ---- 登录 ---- */
+async function doLogin(e) {
+  e.preventDefault();
+  const user = $('inpUser').value.trim();
+  const pass = $('inpPass').value;
+  let ok = true;
+  if (!user) { setHint('loginUserHint', t('need_user'), 'err'); setInputState('inpUser', 'err'); ok = false; }
+  if (!pass) { setHint('loginPassHint', t('need_pass'), 'err'); setInputState('inpPass', 'err'); ok = false; }
+  if (!ok) return;
+  loading('loginBtn', true);
+  try {
+    const r = await fetch(API_BASE + '/admin/auth-login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass })
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      loading('loginBtn', false);
+      if (r.status === 404) { setHint('loginUserHint', t('admin_notfound'), 'err'); setInputState('inpUser', 'err'); }
+      else if (r.status === 401) { setHint('loginPassHint', t('pwd_wrong'), 'err'); setInputState('inpPass', 'err'); }
+      else toast('bad', d.error || t('net_error'), 'bad');
+      return;
+    }
+    sessionStorage.setItem('admin_token', d.token);
+    sessionStorage.setItem('admin_user', d.username);
+    $('loginBtn').textContent = '✓';
+    toast('ok', t('login_ok_msg'), 'ok');
+    setTimeout(() => { window.location.href = 'admin-panel'; }, 700);
+  } catch (err) {
+    loading('loginBtn', false);
+    toast('bad', t('net_error'), 'bad');
+  }
+}
+
+/* ---- 注册 ---- */
+async function doRegister(e) {
+  e.preventDefault();
+  const ref = $('regRef').value.trim();
+  const user = $('regUser').value.trim();
+  const p1 = $('regPass').value, p2 = $('regPass2').value;
+  if (ref !== 'NIDUS_Agent') { setHint('regRefHint', t('bad_ref'), 'err'); return; }
+  if (user.length < 3) { setHint('regUserHint', t('user_min'), 'err'); setInputState('regUser', 'err'); return; }
+  if (_userExists) { setHint('regUserHint', t('user_taken'), 'err'); setInputState('regUser', 'err'); return; }
+  if (!(p1.length >= 8 && p1.length <= 64 && /[A-Z]/.test(p1) && /[a-z]/.test(p1) && /\d/.test(p1))) { toast('bad', t('pwd_policy'), 'bad'); return; }
+  if (p1 !== p2) { setHint('regPass2Hint', t('pwd_mismatch'), 'err'); setInputState('regPass2', 'err'); return; }
+  loading('regBtn', true);
+  try {
+    const r = await fetch(API_BASE + '/admin/auth-register', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: p1, referral_code: ref })
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      loading('regBtn', false);
+      if (r.status === 403) { setHint('regRefHint', t('bad_ref'), 'err'); }
+      else if (r.status === 409) { setHint('regUserHint', t('user_exists'), 'err'); setInputState('regUser', 'err'); }
+      else toast('bad', d.error || t('net_error'), 'bad');
+      return;
+    }
+    sessionStorage.setItem('admin_token', d.token);
+    sessionStorage.setItem('admin_user', d.username);
+    $('regBtn').textContent = '✓';
+    toast('ok', t('reg_ok_msg'), 'ok');
+    setTimeout(() => { window.location.href = 'admin-panel'; }, 700);
+  } catch (err) {
+    loading('regBtn', false);
+    toast('bad', t('net_error'), 'bad');
+  }
+}
+</script>
+</body>
+</html>

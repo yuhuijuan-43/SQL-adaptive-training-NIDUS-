@@ -239,6 +239,18 @@ def get_mastery(session_id):
     rows = conn.execute('SELECT * FROM user_mastery WHERE session_id=?', (session_id,)).fetchall()
     return {r['node_id']: dict(r) for r in rows}
 
+def reset_user_password(username, new_password):
+    """管理员重置平台用户密码（bcrypt 存储）"""
+    import bcrypt
+    conn = get_connection()
+    row = conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
+    if not row:
+        return None, 'not_found'
+    pw_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    conn.execute('UPDATE users SET password=? WHERE username=?', (pw_hash, username))
+    conn.commit()
+    return True, None
+
 def get_admin_stats():
     conn = get_connection()
     total_users = conn.execute('SELECT COUNT(*) FROM users').fetchone()[0]

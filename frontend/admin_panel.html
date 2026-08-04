@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理员面板 · SQL 自适应训练</title>
+<style>
+:root {
+  --bg-0: #eef3fc; --bg-1: #e3ecf9;
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(88, 110, 170, 0.14);
+  --glass-border-hover: rgba(88, 110, 170, 0.30);
+  --text-1: #1b2747; --text-2: #48577c; --text-3: #8b96b4;
+  --accent: #4a7dff; --accent-grad: linear-gradient(135deg, #4a7dff 0%, #8b5bff 100%);
+  --success: #0ea678; --error: #e04a55;
+  --radius: 18px;
+  --sans: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  --shadow: 0 10px 34px rgba(58, 82, 148, 0.13);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--sans); color: var(--text-1); line-height: 1.6; overflow-x: hidden;
+  min-height: 100vh;
+  background:
+    radial-gradient(1100px 700px at 88% -12%, rgba(140, 120, 255, 0.16), transparent 60%),
+    radial-gradient(900px 620px at -8% 18%, rgba(80, 140, 255, 0.15), transparent 55%),
+    radial-gradient(800px 560px at 50% 115%, rgba(70, 190, 210, 0.12), transparent 55%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%);
+}
+.orb { position: fixed; border-radius: 50%; filter: blur(100px); z-index: 0; pointer-events: none; }
+.orb-1 { width: 520px; height: 520px; background: #b9a6ff; top: -160px; right: -120px; opacity: 0.30; animation: drift 19s ease-in-out infinite; }
+.orb-2 { width: 440px; height: 440px; background: #9cc0ff; top: 42%; left: -200px; opacity: 0.28; animation: drift 24s ease-in-out infinite reverse; }
+.orb-3 { width: 380px; height: 380px; background: #93e2ea; bottom: -140px; right: 20%; opacity: 0.26; animation: drift 27s ease-in-out infinite; }
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(42px, -28px) scale(1.07); }
+  66% { transform: translate(-30px, 24px) scale(0.94); }
+}
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+.navbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px);
+  border-bottom: 1px solid rgba(88, 110, 170, 0.12);
+}
+.nav-inner { max-width: 1180px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; gap: 30px; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; cursor: pointer; user-select: none; }
+.logo-badge { width: 40px; height: 40px; border-radius: 10px; overflow: hidden; flex-shrink: 0; background: rgba(255, 255, 255, 0.7); filter: drop-shadow(0 2px 6px rgba(58, 82, 148, 0.18)); }
+.logo-badge img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.nav-links { display: flex; gap: 4px; flex: 1; }
+.nav-link {
+  padding: 7px 14px; border-radius: 999px; font-size: 13.5px; color: var(--text-2);
+  cursor: pointer; transition: all 0.2s; border: none; background: none; font-family: inherit;
+}
+.nav-link:hover { color: var(--text-1); background: rgba(88, 110, 170, 0.08); }
+.nav-link.active { color: #fff; background: var(--accent-grad); box-shadow: 0 4px 14px rgba(90, 100, 255, 0.35); }
+#langBtn { margin-left: auto; border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.5); font-size: 12.5px; }
+.container { max-width: 980px; margin: 0 auto; padding: 30px 24px 60px; position: relative; z-index: 1; }
+.card { padding: 1.1rem 1.2rem; margin-bottom: 18px; }
+.card-title { font-size: 14px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card-title .ct-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-grad); }
+table { width: 100%; border-collapse: collapse; }
+table thead th {
+  text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-2); background: var(--glass-border); padding: 8px 12px; border-bottom: 1px solid var(--glass-border);
+}
+table tbody td { padding: 9px 12px; border-bottom: 1px solid var(--glass-border); font-size: 13px; color: var(--text-1); }
+table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
+.mini-btn {
+  padding: 4px 12px; font-size: 12px; font-weight: 600; border: 1px solid var(--glass-border);
+  border-radius: 8px; background: rgba(255, 255, 255, 0.7); color: var(--text-2); cursor: pointer; transition: all 0.15s;
+}
+.mini-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--glass); }
+.mini-btn.danger { color: #b04a4a; border-color: rgba(224, 74, 85, 0.35); }
+.mini-btn.danger:hover { color: var(--error); border-color: var(--error); }
+.mini-btn.copy { color: var(--success); border-color: rgba(14, 166, 120, 0.35); }
+.mini-btn.copy:hover { color: var(--success); border-color: var(--success); }
+.empty { text-align: center; color: var(--text-3); padding: 22px 0; font-size: 13px; }
+.sec-tip { font-size: 12px; color: var(--text-3); margin-top: 10px; }
+.footer {
+  border-top: 1px solid rgba(88, 110, 170, 0.14); padding: 20px 0 26px; text-align: center;
+  font-size: 12px; color: var(--text-3); position: relative; z-index: 1;
+}
+/* 弹窗 */
+.modal-mask {
+  position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center;
+  background: rgba(45, 60, 110, 0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  padding: 20px;
+}
+.modal-mask.show { display: flex; animation: fadeIn 0.22s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  width: 100%; max-width: 460px; padding: 26px 30px;
+  background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(88, 110, 170, 0.2); border-radius: 20px;
+  box-shadow: 0 24px 80px rgba(40, 60, 110, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  animation: fadeUp 0.28s ease;
+}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.modal-title { font-size: 16px; font-weight: 800; }
+.modal-close {
+  width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: none;
+  background: rgba(88, 110, 170, 0.1); color: var(--text-2); font-size: 13px; transition: all 0.2s;
+}
+.modal-close:hover { background: var(--accent-grad); color: #fff; transform: rotate(90deg); }
+.pwd-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.pwd-row input {
+  flex: 1; height: 42px; padding: 0 14px; border-radius: 10px; outline: none;
+  background: rgba(255, 255, 255, 0.75); border: 1px solid var(--glass-border);
+  color: var(--text-1); font-family: var(--mono, monospace); font-size: 13.5px;
+}
+.pwd-row input:focus { border-color: rgba(74, 125, 255, 0.7); }
+.modal-tip { font-size: 12px; color: var(--text-3); margin-bottom: 14px; line-height: 1.7; }
+.modal-foot { display: flex; justify-content: flex-end; gap: 10px; }
+.btn-ok {
+  height: 38px; padding: 0 22px; border-radius: 10px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 700; color: #fff;
+  background: var(--accent-grad); box-shadow: 0 4px 14px rgba(90, 100, 255, 0.35); transition: all 0.2s;
+}
+.btn-ok:hover { transform: translateY(-1px); box-shadow: 0 7px 22px rgba(90, 100, 255, 0.5); }
+.btn-ok:disabled { opacity: 0.5; cursor: not-allowed; }
+.toast-wrap { position: fixed; top: 80px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 10px; }
+.toast {
+  min-width: 260px; max-width: 360px; padding: 13px 17px; border-radius: 13px; font-size: 13px;
+  background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(18px);
+  border: 1px solid rgba(88, 110, 170, 0.2); box-shadow: 0 10px 34px rgba(58, 82, 148, 0.18);
+  display: flex; gap: 11px; align-items: center; color: var(--text-1);
+  animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.toast.ok { border-color: rgba(14, 166, 120, 0.35); } .toast.ok .tdot { background: var(--success); box-shadow: 0 0 8px rgba(14, 166, 120, 0.5); }
+.toast.bad { border-color: rgba(224, 74, 85, 0.35); } .toast.bad .tdot { background: var(--error); box-shadow: 0 0 8px rgba(224, 74, 85, 0.5); }
+.toast .tdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.toast.out { animation: slideOut 0.3s ease forwards; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(30px); } }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: rgba(88, 110, 170, 0.25); border-radius: 99px; }
+::-webkit-scrollbar-track { background: transparent; }
+@media (max-width: 560px) {
+  .container { padding: 20px 14px 40px; }
+  .nav-inner { padding: 0 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- ========== 顶部导航 ========== -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="logo" onclick="window.location.href='index_glass.html'">
+      <div class="logo-badge"><img src="nidus_logo.png" alt="NIDUS"></div>
+      <span>SQL 自适应训练</span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-link active" data-i18n="nav_panel">管理员面板</button>
+    </div>
+    <button class="nav-link" id="langBtn" onclick="toggleLang()">English</button>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- 头部：当前管理员 + 操作 -->
+  <div class="card glass">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:20px;font-weight:800;"><span data-i18n="welcome">你好，</span><span id="meName" style="background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent;">-</span></div>
+        <div class="sec-tip" data-i18n="welcome_sub">这里是管理员的工作台：查看同事动态，管理平台用户密码</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="mini-btn" onclick="window.location.href='index_glass.html'" data-i18n="back_portal">返回门户</button>
+        <button class="mini-btn danger" onclick="logout()" data-i18n="logout">退出登录</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 我的同事 -->
+  <div class="card glass">
+    <div class="card-title"><span class="ct-dot"></span><span data-i18n="colleagues_title">我的同事</span></div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th data-i18n="col_user">管理员用户名</th><th data-i18n="col_last">最后上线时间</th></tr></thead>
+        <tbody id="colleaguesBody"><tr><td colspan="2" class="empty" data-i18n="loading">加载中...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 平台用户密码管理 -->
+  <div class="card glass">
+    <div class="card-title"><span class="ct-dot"></span><span data-i18n="users_title">平台用户密码管理</span></div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th data-i18n="col_user2">用户名</th><th data-i18n="col_answered">答题数</th><th data-i18n="col_active">最后活跃</th><th data-i18n="col_op">操作</th></tr></thead>
+        <tbody id="usersBody"><tr><td colspan="4" class="empty" data-i18n="loading">加载中...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="sec-tip" data-i18n="users_tip">重置密码后请将新密码告知用户，新密码立即生效，旧密码失效</div>
+  </div>
+
+</div>
+
+<footer class="footer" data-i18n="footer">© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台</footer>
+
+<!-- 重置密码弹窗 -->
+<div class="modal-mask" id="resetModal" onclick="if(event.target===this)closeReset()">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="resetTitle">重置密码</span>
+      <button class="modal-close" onclick="closeReset()">✕</button>
+    </div>
+    <div class="modal-tip" id="resetTip"></div>
+    <div class="pwd-row">
+      <input type="text" id="newPwdInput" placeholder="新密码（8-64 位，含大小写+数字）" data-i18n-placeholder="ph_new_pwd">
+      <button class="mini-btn" onclick="genPassword()" data-i18n="gen_pwd">生成</button>
+      <button class="mini-btn copy" onclick="copyPwd()" data-i18n="copy">复制</button>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ok" id="resetOkBtn" onclick="confirmReset()" data-i18n="confirm_reset">确认重置</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ============================================================
+   管理员自身页面
+   数据：/api/admin/colleagues（我的同事）· /api/admin/users + /api/admin/user-reset（密码管理）
+   认证：sessionStorage.admin_token（Bearer）——无 token 回 /admin-auth
+   ============================================================ */
+const API_BASE = '/api';
+const $ = id => document.getElementById(id);
+
+/* ---- 认证 ---- */
+var ADMIN_TOKEN = sessionStorage.getItem('admin_token');
+var ADMIN_USER = sessionStorage.getItem('admin_user') || '';
+if (!ADMIN_TOKEN) { window.location.href = 'admin-auth'; }
+function adminFetch(path, opts) {
+  opts = opts || {};
+  opts.headers = Object.assign({}, opts.headers || {});
+  if (ADMIN_TOKEN) opts.headers['Authorization'] = 'Bearer ' + ADMIN_TOKEN;
+  return fetch(API_BASE + path, opts);
+}
+
+/* ---- 中英双语 ---- */
+const I18N = {
+  page_title: { zh: '管理员面板 · SQL 自适应训练', en: 'Admin Panel · SQL Adaptive Training' },
+  nav_panel: { zh: '管理员面板', en: 'Admin Panel' },
+  welcome: { zh: '你好，', en: 'Hello, ' },
+  welcome_sub: { zh: '这里是管理员的工作台：查看同事动态，管理平台用户密码', en: 'Your admin workspace: see colleagues\' activity and manage platform user passwords' },
+  back_portal: { zh: '返回门户', en: 'Back to Portal' },
+  logout: { zh: '退出登录', en: 'Log Out' },
+  colleagues_title: { zh: '我的同事', en: 'My Colleagues' },
+  col_user: { zh: '管理员用户名', en: 'Admin Username' },
+  col_last: { zh: '最后上线时间', en: 'Last Online' },
+  col_user2: { zh: '用户名', en: 'Username' },
+  col_answered: { zh: '答题数', en: 'Answers' },
+  col_active: { zh: '最后活跃', en: 'Last Active' },
+  col_op: { zh: '操作', en: 'Actions' },
+  users_title: { zh: '平台用户密码管理', en: 'Platform User Password Management' },
+  users_tip: { zh: '重置密码后请将新密码告知用户，新密码立即生效，旧密码失效', en: 'Share the new password with the user after reset — it takes effect immediately and the old one stops working' },
+  loading: { zh: '加载中...', en: 'Loading...' },
+  empty_colleagues: { zh: '暂无其他管理员', en: 'No other admins yet' },
+  empty_users: { zh: '暂无平台用户', en: 'No platform users yet' },
+  never: { zh: '从未上线', en: 'Never' },
+  reset: { zh: '重置密码', en: 'Reset Password' },
+  reset_title: { zh: '重置密码', en: 'Reset Password' },
+  reset_tip: { zh: '为「{0}」设置新密码：新密码需 8-64 位，包含大小写字母和数字。', en: 'Set a new password for "{0}": 8-64 chars with upper, lower & digit.' },
+  ph_new_pwd: { zh: '新密码（8-64 位，含大小写+数字）', en: 'New password (8-64 chars, upper+lower+digit)' },
+  gen_pwd: { zh: '生成', en: 'Generate' },
+  copy: { zh: '复制', en: 'Copy' },
+  confirm_reset: { zh: '确认重置', en: 'Confirm Reset' },
+  reset_ok: { zh: '密码已重置', en: 'Password reset' },
+  reset_fail: { zh: '重置失败', en: 'Reset failed' },
+  copied: { zh: '已复制到剪贴板', en: 'Copied to clipboard' },
+  copy_fail: { zh: '复制失败，请手动选择复制', en: 'Copy failed — please select manually' },
+  bad_pwd: { zh: '密码需 8-64 位，且包含大小写字母和数字', en: 'Password needs 8-64 chars with upper, lower & digit' },
+  err_401: { zh: '登录已过期，请重新登录', en: 'Session expired — please sign in again' },
+  net_error: { zh: '无法连接后端，请确认服务已启动', en: 'Cannot reach the backend — make sure it is running' },
+  footer: { zh: '© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台', en: '© 2026 SQL Adaptive Training · A personalized SQL learning platform' },
+};
+
+let LANG = localStorage.getItem('lang') || 'zh';
+function t(key) { const e = I18N[key]; return e ? (e[LANG] || e.zh) : key; }
+function tf(key) {
+  const s = t(key);
+  const args = Array.prototype.slice.call(arguments, 1);
+  return s.replace(/\{(\d+)\}/g, (m, i) => args[+i] != null ? args[+i] : m);
+}
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n-html')); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
+  document.title = t('page_title');
+  const btn = document.getElementById('langBtn');
+  if (btn) btn.textContent = LANG === 'zh' ? 'English' : '中文';
+  document.documentElement.lang = LANG === 'zh' ? 'zh-CN' : 'en';
+}
+function toggleLang() {
+  LANG = LANG === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('lang', LANG);
+  applyI18n();
+  renderAll();
+}
+applyI18n();
+
+/* ---- 工具 ---- */
+function toast(msg, type) {
+  const tEl = document.createElement('div');
+  tEl.className = 'toast ' + type;
+  tEl.innerHTML = '<span class="tdot"></span><span>' + msg + '</span>';
+  $('toastWrap').appendChild(tEl);
+  setTimeout(() => { tEl.classList.add('out'); setTimeout(() => tEl.remove(), 300); }, 3400);
+}
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function fmtTime(ts) {
+  if (!ts) return t('never');
+  return new Date(ts.replace(' ', 'T') + 'Z').toLocaleString();
+}
+function logout() {
+  sessionStorage.removeItem('admin_token');
+  sessionStorage.removeItem('admin_user');
+  window.location.href = 'index_glass.html';
+}
+function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).then(function() { return true; }, function() { return false; });
+  }
+  // file:// 等非安全上下文回退
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  return Promise.resolve(ok);
+}
+
+/* ---- 数据加载 ---- */
+function renderAll() {
+  $('meName').textContent = ADMIN_USER;
+  loadColleagues();
+  loadUsers();
+}
+
+function loadColleagues() {
+  adminFetch('/admin/colleagues?me=' + encodeURIComponent(ADMIN_USER))
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      const list = d.colleagues || [];
+      const body = $('colleaguesBody');
+      if (!list.length) { body.innerHTML = '<tr><td colspan="2" class="empty">' + t('empty_colleagues') + '</td></tr>'; return; }
+      let html = '';
+      for (let i = 0; i < list.length; i++) {
+        const c = list[i];
+        html += '<tr><td><strong>' + escapeHtml(c.username) + '</strong></td>' +
+                '<td style="color:var(--text-2);font-size:12.5px">' + fmtTime(c.last_login_at) + '</td></tr>';
+      }
+      body.innerHTML = html;
+    })
+    .catch(function() { $('colleaguesBody').innerHTML = '<tr><td colspan="2" class="empty" style="color:#b04a4a">' + t('net_error') + '</td></tr>'; });
+}
+
+function loadUsers() {
+  adminFetch('/admin/users')
+    .then(function(r) {
+      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
+      return r.json();
+    })
+    .then(function(users) {
+      const body = $('usersBody');
+      if (!users.length) { body.innerHTML = '<tr><td colspan="4" class="empty">' + t('empty_users') + '</td></tr>'; return; }
+      let html = '';
+      for (let i = 0; i < users.length; i++) {
+        const u = users[i];
+        const lastActive = u.last_active ? fmtTime(u.last_active) : t('never');
+        html += '<tr><td><strong>' + escapeHtml(u.username) + '</strong></td>' +
+                '<td>' + u.answered + '</td>' +
+                '<td style="color:var(--text-2);font-size:12.5px">' + lastActive + '</td>' +
+                '<td><button class="mini-btn danger" onclick="openReset(\'' + escapeHtml(u.username) + '\')">' + t('reset') + '</button></td></tr>';
+      }
+      body.innerHTML = html;
+    })
+    .catch(function(e) { if (e.message !== '401') $('usersBody').innerHTML = '<tr><td colspan="4" class="empty" style="color:#b04a4a">' + t('net_error') + '</td></tr>'; });
+}
+
+/* ---- 重置密码 ---- */
+let _resetTarget = '';
+function openReset(username) {
+  _resetTarget = username;
+  $('resetTitle').textContent = t('reset_title');
+  $('resetTip').textContent = tf('reset_tip', username);
+  $('newPwdInput').value = '';
+  $('resetModal').classList.add('show');
+  setTimeout(() => $('newPwdInput').focus(), 50);
+}
+function closeReset() {
+  $('resetModal').classList.remove('show');
+  _resetTarget = '';
+}
+function genPassword() {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghjkmnpqrstuvwxyz';
+  const digits = '23456789';
+  const all = upper + lower + digits;
+  const pick = s => s[Math.floor(Math.random() * s.length)];
+  let pwd = '';
+  pwd += pick(upper); pwd += pick(lower); pwd += pick(lower);
+  pwd += pick(digits); pwd += pick(digits);
+  while (pwd.length < 12) pwd += pick(all);
+  pwd = pwd.split('').sort(() => Math.random() - 0.5).join('');
+  $('newPwdInput').value = pwd;
+}
+function copyPwd() {
+  const v = $('newPwdInput').value;
+  if (!v) return;
+  copyText(v).then(ok => toast(ok ? t('copied') : t('copy_fail'), ok ? 'ok' : 'bad'));
+}
+function confirmReset() {
+  const pwd = $('newPwdInput').value;
+  if (!(pwd.length >= 8 && pwd.length <= 64 && /[A-Z]/.test(pwd) && /[a-z]/.test(pwd) && /\d/.test(pwd))) {
+    toast('bad', t('bad_pwd'), 'bad');
+    return;
+  }
+  const btn = $('resetOkBtn');
+  btn.disabled = true;
+  adminFetch('/admin/user-reset', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: _resetTarget, new_password: pwd })
+  })
+    .then(function(r) {
+      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      closeReset();
+      toast('ok', t('reset_ok') + '：' + _resetTarget);
+      // 复制新密码方便发给用户
+      copyText(pwd).then(ok => { if (ok) toast('ok', t('copied')); });
+    })
+    .catch(function(e) {
+      if (e.message !== '401') toast('bad', t('reset_fail'), 'bad');
+    })
+    .finally(function() { btn.disabled = false; });
+}
+
+renderAll();
+setInterval(renderAll, 15000);   // 15s 自动刷新同事上线时间
+</script>
+</body>
+</html>

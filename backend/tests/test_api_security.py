@@ -65,6 +65,97 @@ class TestAdminAuth:
         assert set(a.keys()) >= {'question_id', 'user_answer', 'is_correct', 'title', 'answered_at'}
 
 
+class TestAdminAccount:
+    """管理员账号体系：内推码注册 + 登录 + 同事 + 密码重置"""
+
+    def test_register_bad_referral(self, client):
+        r = client.post('/api/admin/auth-register', json={
+            'username': 'boss', 'password': 'Passw0rd1', 'referral_code': 'WRONG'})
+        assert r.status_code == 403
+
+    def test_register_ok_returns_token(self, client):
+        r = client.post('/api/admin/auth-register', json={
+            'username': 'boss', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
+        assert r.status_code == 200
+        assert r.get_json()['token'] == 'test-admin-token'
+
+    def test_register_duplicate_username(self, client):
+        for _ in range(2):
+            r = client.post('/api/admin/auth-register', json={
+                'username': 'boss2', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
+        assert r.status_code == 409
+
+    def test_register_weak_password(self, client):
+        r = client.post('/api/admin/auth-register', json={
+            'username': 'boss3', 'password': 'short', 'referral_code': 'NIDUS_Agent'})
+        assert r.status_code == 400
+
+    def test_check_admin_username(self, client):
+        assert client.get('/api/admin/auth-check-username?name=boss').get_json()['exists'] is False
+        client.post('/api/admin/auth-register', json={
+            'username': 'boss4', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
+        assert client.get('/api/admin/auth-check-username?name=boss4').get_json()['exists'] is True
+
+    def test_login_wrong_password(self, client):
+        client.post('/api/admin/auth-register', json={
+            'username': 'boss5', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
+        assert client.post('/api/admin/auth-login', json={
+            'username': 'boss5', 'password': 'wrong'}).status_code == 401
+
+    def test_login_not_found(self, client):
+        assert client.post('/api/admin/auth-login', json={
+            'username': 'ghost', 'password': 'whatever'}).status_code == 404
+
+    def test_login_ok(self, client):
+        client.post('/api/admin/auth-register', json={
+            'username': 'boss6', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
+        r = client.post('/api/admin/auth-login', json={
+            'username': 'boss6', 'password': 'Passw0rd1'})
+        assert r.status_code == 200
+        assert r.get_json()['username'] == 'boss6'
+
+    def test_colleagues_requires_token(self, client):
+        assert client.get('/api/admin/colleagues').status_code == 401
+
+    def test_colleagues_excludes_self(self, client):
+        client.post('/api/admin/auth-register', json={
+            'username': 'alice', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
+        client.post('/api/admin/auth-register', json={
+            'username': 'bob', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
+        r = client.get('/api/admin/colleagues?me=alice',
+                       headers={'Authorization': 'Bearer test-admin-token'})
+        assert r.status_code == 200
+        names = [c['username'] for c in r.get_json()['colleagues']]
+        assert names == ['bob'] and 'alice' not in names
+
+    def test_user_reset_requires_token(self, client):
+        assert client.post('/api/admin/user-reset', json={
+            'username': 'x', 'new_password': 'NewPass123'}).status_code == 401
+
+    def test_user_reset_changes_password(self, client):
+        sid = client.post('/api/register', json={
+            'username': 'stu_reset', 'password': 'Password1'}).get_json()['session_id']
+        assert sid
+        r = client.post('/api/admin/user-reset', json={
+            'username': 'stu_reset', 'new_password': 'NewPass123'},
+            headers={'Authorization': 'Bearer test-admin-token'})
+        assert r.status_code == 200
+        assert client.post('/api/login', json={
+            'username': 'stu_reset', 'password': 'NewPass123'}).status_code == 200
+        assert client.post('/api/login', json={
+            'username': 'stu_reset', 'password': 'Password1'}).status_code == 401
+
+    def test_user_reset_unknown_user(self, client):
+        r = client.post('/api/admin/user-reset', json={
+            'username': 'nobody', 'new_password': 'NewPass123'},
+            headers={'Authorization': 'Bearer test-admin-token'})
+        assert r.status_code == 404
+
+    def test_admin_auth_pages_served(self, client):
+        assert client.get('/admin-auth').status_code == 200
+        assert client.get('/admin-panel').status_code == 200
+
+
 class TestPasswordPolicy:
     def test_short_password_rejected(self, client):
         r = client.post('/api/register', json={'username': 'u_short', 'password': 'short'})
