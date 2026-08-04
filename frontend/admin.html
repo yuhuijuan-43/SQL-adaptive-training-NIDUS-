@@ -38,6 +38,30 @@
   table tbody tr:hover td { background:var(--tag-bg); }
   .mini-btn { padding:3px 10px; font-size:0.7rem; border:1px solid var(--border); border-radius:0.375rem; background:var(--card); color:var(--text2); cursor:pointer; transition:all 0.15s; }
   .mini-btn:hover { color:var(--accent); border-color:var(--accent); background:var(--tag-bg); }
+  .mini-btn.danger { color:#b04a4a; border-color:rgba(224,74,85,0.35); }
+  .mini-btn.danger:hover { color:var(--error); border-color:var(--error); }
+  .mini-btn.copy { color:var(--success); border-color:rgba(14,166,120,0.35); }
+  .mini-btn.copy:hover { color:var(--success); border-color:var(--success); }
+  .card-title { font-size:14px; font-weight:800; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .card-title .ct-dot { width:7px; height:7px; border-radius:50%; background:var(--accent-grad); }
+  .sec-tip { font-size:12px; color:var(--text2); margin-top:10px; }
+  .pwd-row { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+  .pwd-row input { flex:1; height:42px; padding:0 14px; border-radius:10px; outline:none; background:rgba(255,255,255,0.75); border:1px solid var(--border); color:var(--text); font-family:'SF Mono','Consolas',monospace; font-size:13.5px; }
+  .pwd-row input:focus { border-color:rgba(74,125,255,0.7); }
+  .modal-mask { position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center; background:rgba(45,60,110,0.45); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); padding:20px; }
+  .modal-mask.show { display:flex; animation:fadeInM 0.22s ease; }
+  @keyframes fadeInM { from { opacity:0; } to { opacity:1; } }
+  .modal { width:100%; max-width:460px; padding:26px 30px; background:rgba(255,255,255,0.94); backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px); border:1px solid var(--border); border-radius:0.9rem; box-shadow:0 24px 80px rgba(40,60,110,0.32); animation:fadeUpM 0.28s ease; }
+  @keyframes fadeUpM { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+  .modal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .modal-title { font-size:16px; font-weight:800; }
+  .modal-close { width:30px; height:30px; border-radius:50%; cursor:pointer; border:none; background:rgba(88,110,170,0.1); color:var(--text2); font-size:13px; transition:all 0.2s; }
+  .modal-close:hover { background:var(--accent-grad); color:#fff; transform:rotate(90deg); }
+  .modal-tip { font-size:12px; color:var(--text2); margin-bottom:14px; line-height:1.7; }
+  .modal-foot { display:flex; justify-content:flex-end; gap:10px; }
+  .btn-ok { height:38px; padding:0 22px; border-radius:10px; border:none; cursor:pointer; font-family:inherit; font-size:13px; font-weight:700; color:#fff; background:var(--accent-grad); box-shadow:0 4px 14px rgba(90,100,255,0.35); transition:all 0.2s; }
+  .btn-ok:hover { transform:translateY(-1px); box-shadow:0 7px 22px rgba(90,100,255,0.5); }
+  .btn-ok:disabled { opacity:0.5; cursor:not-allowed; }
   .accent { color: var(--accent); }
   .grad-text { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .num-oswald { font-weight:600; }
@@ -136,9 +160,55 @@
     </div>
   </div>
 
+  <!-- 用户与管理员密码管理（含管理员信息） -->
+  <div class="card p-3 mt-3">
+    <div class="card-title"><span class="ct-dot"></span>用户与管理员密码管理</div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>角色</th><th>用户名</th><th>答题数</th><th>最后活跃</th><th>操作</th></tr></thead>
+        <tbody id="pwdAccountsBody"><tr><td colspan="5" class="text-center opacity-50 py-4">加载中...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="sec-tip">重置密码后请将新密码告知对方，新密码立即生效，旧密码失效；回退最多 3 次防误操作</div>
+  </div>
+
 </div>
 
 <!-- 用户答题记录弹窗（点击排行榜/明细行打开） -->
+<!-- 重置密码弹窗 -->
+<div class="modal-mask" id="resetModal" onclick="if(event.target===this)closeReset()">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="resetTitle">重置密码</span>
+      <button class="modal-close" onclick="closeReset()">✕</button>
+    </div>
+    <div class="modal-tip" id="resetTip"></div>
+    <div class="pwd-row">
+      <input type="text" id="newPwdInput" placeholder="新密码（8-64 位，含大小写+数字）">
+      <button class="mini-btn" onclick="genPassword()">生成</button>
+      <button class="mini-btn copy" onclick="copyPwd()">复制</button>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ok" id="resetOkBtn" onclick="confirmReset()">确认重置</button>
+    </div>
+  </div>
+</div>
+
+<!-- 回退密码确认弹窗 -->
+<div class="modal-mask" id="rollbackModal" onclick="if(event.target===this)closeRollback()">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">回退密码</span>
+      <button class="modal-close" onclick="closeRollback()">✕</button>
+    </div>
+    <div class="modal-tip" id="rollbackTip"></div>
+    <div class="modal-foot">
+      <button class="mini-btn" onclick="closeRollback()">取消</button>
+      <button class="btn-ok" id="rollbackOkBtn" onclick="confirmRollback()">确认回退</button>
+    </div>
+  </div>
+</div>
+
 <div id="userDetailModal" style="display:none;position:fixed;inset:0;background:rgba(45,60,110,0.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:999;align-items:center;justify-content:center;padding:1rem;" onclick="if(event.target===this)closeUserDetail()">
   <div style="background:rgba(255,255,255,0.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--border);border-radius:0.9rem;max-width:760px;width:100%;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(58,82,148,0.28);">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:0.8rem 1rem;border-bottom:1px solid var(--border);">
@@ -353,6 +423,166 @@ function userPage(delta) {
   renderUserTable();
 }
 
+/* ============ 用户与管理员密码管理（迁移自管理员面板） ============ */
+function fmtTime(ts) {
+  if (!ts) return '从未';
+  return new Date(ts.replace(' ', 'T') + 'Z').toLocaleString();
+}
+function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).then(function() { return true; }, function() { return false; });
+  }
+  // file:// 等非安全上下文回退
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  return Promise.resolve(ok);
+}
+
+function loadAccounts() {
+  adminFetch('/admin/accounts')
+    .then(function(r) {
+      if (r.status === 401) {
+        sessionStorage.removeItem('admin_token');
+        document.getElementById('pwdAccountsBody').innerHTML =
+          '<tr><td colspan="5" class="text-center" style="color:#b04a4a">管理员 Token 无效，请刷新页面重新输入</td></tr>';
+        throw new Error('401');
+      }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(accounts) {
+      var body = document.getElementById('pwdAccountsBody');
+      if (!accounts.length) {
+        body.innerHTML = '<tr><td colspan="5" class="text-center opacity-50 py-4">暂无账号数据</td></tr>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < accounts.length; i++) {
+        var u = accounts[i];
+        var lastActive = u.last_active ? fmtTime(u.last_active) : '从未';
+        var isAdmin = u.role === 'admin';
+        var roleBadge = isAdmin
+          ? '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;color:#fff;background:var(--accent-grad);">管理员</span>'
+          : '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;color:var(--text2);background:var(--tag-bg);">学员</span>';
+        var opBtn = '<button class="mini-btn danger" onclick="openReset(\'' + escapeHtml(u.username) + '\')">重置密码</button>';
+        if (u.rollback_count > 0) {
+          opBtn += ' <button class="mini-btn" title="回退到上一个密码（最多 3 次）" onclick="openRollback(\'' +
+                   escapeHtml(u.username) + '\',' + u.rollback_count + ')">回退(' + u.rollback_count + ')</button>';
+        }
+        html += '<tr><td>' + roleBadge + '</td>' +
+                '<td><strong>' + escapeHtml(u.username) + '</strong></td>' +
+                '<td>' + u.answered + '</td>' +
+                '<td style="font-size:0.65rem;color:#87867f">' + lastActive + '</td>' +
+                '<td>' + opBtn + '</td></tr>';
+      }
+      body.innerHTML = html;
+    })
+    .catch(function(e) {
+      if (e.message !== '401') {
+        document.getElementById('pwdAccountsBody').innerHTML =
+          '<tr><td colspan="5" class="text-center" style="color:#b04a4a">无法连接后端，请确认服务已启动</td></tr>';
+      }
+    });
+}
+
+/* ---- 重置密码 ---- */
+var _resetTarget = '';
+function openReset(username) {
+  _resetTarget = username;
+  document.getElementById('resetTitle').textContent = '重置密码';
+  document.getElementById('resetTip').textContent = '为「' + username + '」设置新密码：新密码需 8-64 位，包含大小写字母和数字。';
+  document.getElementById('newPwdInput').value = '';
+  document.getElementById('resetModal').classList.add('show');
+  setTimeout(function() { document.getElementById('newPwdInput').focus(); }, 50);
+}
+function closeReset() {
+  document.getElementById('resetModal').classList.remove('show');
+  _resetTarget = '';
+}
+function genPassword() {
+  var upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  var lower = 'abcdefghjkmnpqrstuvwxyz';
+  var digits = '23456789';
+  var all = upper + lower + digits;
+  var pick = function(s) { return s[Math.floor(Math.random() * s.length)]; };
+  var pwd = '';
+  pwd += pick(upper); pwd += pick(lower); pwd += pick(lower);
+  pwd += pick(digits); pwd += pick(digits);
+  while (pwd.length < 12) pwd += pick(all);
+  pwd = pwd.split('').sort(function() { return Math.random() - 0.5; }).join('');
+  document.getElementById('newPwdInput').value = pwd;
+}
+function copyPwd() {
+  var v = document.getElementById('newPwdInput').value;
+  if (!v) return;
+  copyText(v).then(function(ok) { toast(ok ? '已复制到剪贴板' : '复制失败，请手动选择复制', ok ? 'ok' : 'bad'); });
+}
+function confirmReset() {
+  var pwd = document.getElementById('newPwdInput').value;
+  if (!(pwd.length >= 8 && pwd.length <= 64 && /[A-Z]/.test(pwd) && /[a-z]/.test(pwd) && /\d/.test(pwd))) {
+    toast('密码需 8-64 位，且包含大小写字母和数字', 'bad');
+    return;
+  }
+  var btn = document.getElementById('resetOkBtn');
+  btn.disabled = true;
+  adminFetch('/admin/user-reset', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: _resetTarget, new_password: pwd })
+  })
+    .then(function(r) {
+      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.reload(); throw new Error('401'); }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      closeReset();
+      toast('密码已重置：' + _resetTarget, 'ok');
+      copyText(pwd).then(function(ok) { if (ok) toast('已复制到剪贴板', 'ok'); });
+    })
+    .catch(function(e) {
+      if (e.message !== '401') toast('重置失败', 'bad');
+    })
+    .finally(function() { btn.disabled = false; });
+}
+
+/* ---- 回退密码 ---- */
+var _rollbackTarget = '';
+function openRollback(username, count) {
+  _rollbackTarget = username;
+  document.getElementById('rollbackTip').textContent =
+    '将把「' + username + '」的密码回退到上一个版本，该版本立即生效。剩余可回退次数：' + count + '（最多 3 次）。';
+  document.getElementById('rollbackModal').classList.add('show');
+}
+function closeRollback() {
+  document.getElementById('rollbackModal').classList.remove('show');
+  _rollbackTarget = '';
+}
+function confirmRollback() {
+  var btn = document.getElementById('rollbackOkBtn');
+  btn.disabled = true;
+  adminFetch('/admin/password-rollback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: _rollbackTarget })
+  })
+    .then(function(r) {
+      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.reload(); throw new Error('401'); }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      closeRollback();
+      toast('已回退到上一个密码：' + _rollbackTarget, 'ok');
+      loadAccounts();
+    })
+    .catch(function(e) {
+      if (e.message !== '401') toast('回退失败', 'bad');
+    })
+    .finally(function() { btn.disabled = false; });
+}
+
 async function loadAdmin() {
   document.getElementById('refreshTime').textContent = new Date().toLocaleTimeString();
   try {
@@ -383,6 +613,8 @@ async function loadAdmin() {
     // 用户明细：分页渲染（每页 5 条）
     _allUsers = users;
     renderUserTable();
+    // 密码管理账号表（独立加载，失败不影响主面板）
+    loadAccounts();
   } catch(e) {
     document.getElementById('userTableBody').innerHTML = adminErrorMsg(e);
     document.getElementById('userPager').style.display = 'none';

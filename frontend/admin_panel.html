@@ -216,62 +216,17 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
     </div>
   </div>
 
-  <!-- 用户与管理员密码管理（同步管理员信息） -->
-  <div class="card glass">
-    <div class="card-title"><span class="ct-dot"></span><span data-i18n="users_title">用户与管理员密码管理</span></div>
-    <div style="overflow-x:auto">
-      <table>
-        <thead><tr><th data-i18n="col_role">角色</th><th data-i18n="col_user2">用户名</th><th data-i18n="col_answered">答题数</th><th data-i18n="col_active">最后活跃</th><th data-i18n="col_op">操作</th></tr></thead>
-        <tbody id="usersBody"><tr><td colspan="5" class="empty" data-i18n="loading">加载中...</td></tr></tbody>
-      </table>
-    </div>
-    <div class="sec-tip" data-i18n="users_tip">重置密码后请将新密码告知对方，新密码立即生效，旧密码失效；重置/回退仅限管理员操作</div>
-  </div>
-
 </div>
+
 
 <footer class="footer" data-i18n="footer">© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台</footer>
-
-<!-- 重置密码弹窗 -->
-<div class="modal-mask" id="resetModal" onclick="if(event.target===this)closeReset()">
-  <div class="modal">
-    <div class="modal-head">
-      <span class="modal-title" id="resetTitle">重置密码</span>
-      <button class="modal-close" onclick="closeReset()">✕</button>
-    </div>
-    <div class="modal-tip" id="resetTip"></div>
-    <div class="pwd-row">
-      <input type="text" id="newPwdInput" placeholder="新密码（8-64 位，含大小写+数字）" data-i18n-placeholder="ph_new_pwd">
-      <button class="mini-btn" onclick="genPassword()" data-i18n="gen_pwd">生成</button>
-      <button class="mini-btn copy" onclick="copyPwd()" data-i18n="copy">复制</button>
-    </div>
-    <div class="modal-foot">
-      <button class="btn-ok" id="resetOkBtn" onclick="confirmReset()" data-i18n="confirm_reset">确认重置</button>
-    </div>
-  </div>
-</div>
-
-<!-- 回退密码确认弹窗 -->
-<div class="modal-mask" id="rollbackModal" onclick="if(event.target===this)closeRollback()">
-  <div class="modal">
-    <div class="modal-head">
-      <span class="modal-title" data-i18n="rollback_title">回退密码</span>
-      <button class="modal-close" onclick="closeRollback()">✕</button>
-    </div>
-    <div class="modal-tip" id="rollbackTip"></div>
-    <div class="modal-foot">
-      <button class="mini-btn" onclick="closeRollback()" data-i18n="cancel">取消</button>
-      <button class="btn-ok" id="rollbackOkBtn" onclick="confirmRollback()" data-i18n="rollback_confirm">确认回退</button>
-    </div>
-  </div>
-</div>
 
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
 /* ============================================================
    管理员自身页面
-   数据：/api/admin/colleagues（我的同事）· /api/admin/users + /api/admin/user-reset（密码管理）
+   数据：/api/admin/colleagues（我的同事）· /api/admin/key（统一密钥）
    认证：sessionStorage.admin_token（Bearer）——无 token 回 /admin-auth
    ============================================================ */
 const API_BASE = '/api';
@@ -299,47 +254,25 @@ const I18N = {
   colleagues_title: { zh: '我的同事', en: 'My Colleagues' },
   col_user: { zh: '管理员用户名', en: 'Admin Username' },
   col_last: { zh: '最后上线时间', en: 'Last Online' },
-  col_role: { zh: '角色', en: 'Role' },
-  col_user2: { zh: '用户名', en: 'Username' },
-  col_answered: { zh: '答题数', en: 'Answers' },
-  col_active: { zh: '最后活跃', en: 'Last Active' },
-  col_op: { zh: '操作', en: 'Actions' },
-  role_admin: { zh: '管理员', en: 'Admin' },
-  role_user: { zh: '学员', en: 'Learner' },
-  users_title: { zh: '用户与管理员密码管理', en: 'Users & Admins Password Management' },
   users_tip: { zh: '重置密码后请将新密码告知对方，新密码立即生效，旧密码失效；重置/回退仅限管理员操作',
                en: 'Share the new password after reset — it takes effect immediately. Reset/rollback are admin-only operations.' },
   loading: { zh: '加载中...', en: 'Loading...' },
   empty_colleagues: { zh: '暂无其他管理员', en: 'No other admins yet' },
   empty_users: { zh: '暂无平台用户', en: 'No platform users yet' },
   never: { zh: '从未上线', en: 'Never' },
-  reset: { zh: '重置密码', en: 'Reset Password' },
   reset_title: { zh: '重置密码', en: 'Reset Password' },
   reset_tip: { zh: '为「{0}」设置新密码：新密码需 8-64 位，包含大小写字母和数字。', en: 'Set a new password for "{0}": 8-64 chars with upper, lower & digit.' },
-  ph_new_pwd: { zh: '新密码（8-64 位，含大小写+数字）', en: 'New password (8-64 chars, upper+lower+digit)' },
-  gen_pwd: { zh: '生成', en: 'Generate' },
   copy: { zh: '复制', en: 'Copy' },
-  confirm_reset: { zh: '确认重置', en: 'Confirm Reset' },
   key_title: { zh: '统一管理员密钥', en: 'Unified Admin Key' },
   key_show: { zh: '显示', en: 'Show' },
   key_hide: { zh: '隐藏', en: 'Hide' },
   key_copy: { zh: '复制密钥', en: 'Copy Key' },
   key_hint: { zh: '此密钥用于登录「管理后台」（门户导航 → 管理后台），请勿泄露给非管理员',
               en: 'Use this key to enter the Admin Dashboard (Portal nav → Admin). Do not share it with non-admins.' },
-  reset_ok: { zh: '密码已重置', en: 'Password reset' },
-  reset_fail: { zh: '重置失败', en: 'Reset failed' },
-  rollback: { zh: '回退', en: 'Rollback' },
-  rollback_hint: { zh: '回退到上一个密码（最多可回退 3 次）', en: 'Restore the previous password (up to 3 rollbacks)' },
-  rollback_title: { zh: '回退密码', en: 'Rollback Password' },
   rollback_tip: { zh: '将把「{0}」的密码回退到上一个版本，该版本立即生效。剩余可回退次数：{1}（最多 3 次）。',
                   en: 'Password of "{0}" will be restored to the previous version and takes effect immediately. Rollbacks left: {1} (max 3).' },
-  rollback_confirm: { zh: '确认回退', en: 'Confirm Rollback' },
-  cancel: { zh: '取消', en: 'Cancel' },
-  rollback_ok: { zh: '已回退到上一个密码', en: 'Rolled back to the previous password' },
-  rollback_fail: { zh: '回退失败', en: 'Rollback failed' },
   copied: { zh: '已复制到剪贴板', en: 'Copied to clipboard' },
   copy_fail: { zh: '复制失败，请手动选择复制', en: 'Copy failed — please select manually' },
-  bad_pwd: { zh: '密码需 8-64 位，且包含大小写字母和数字', en: 'Password needs 8-64 chars with upper, lower & digit' },
   err_401: { zh: '登录已过期，请重新登录', en: 'Session expired — please sign in again' },
   net_error: { zh: '无法连接后端，请确认服务已启动', en: 'Cannot reach the backend — make sure it is running' },
   footer: { zh: '© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台', en: '© 2026 SQL Adaptive Training · A personalized SQL learning platform' },
@@ -457,7 +390,6 @@ function renderAll() {
   $('meName').textContent = ADMIN_USER;
   loadAdminKey();
   loadColleagues();
-  loadUsers();
 }
 
 function loadColleagues() {
@@ -476,132 +408,6 @@ function loadColleagues() {
       body.innerHTML = html;
     })
     .catch(function() { $('colleaguesBody').innerHTML = '<tr><td colspan="2" class="empty" style="color:#b04a4a">' + t('net_error') + '</td></tr>'; });
-}
-
-function loadUsers() {
-  adminFetch('/admin/accounts')
-    .then(function(r) {
-      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
-      return r.json();
-    })
-    .then(function(users) {
-      const body = $('usersBody');
-      if (!users.length) { body.innerHTML = '<tr><td colspan="4" class="empty">' + t('empty_users') + '</td></tr>'; return; }
-      let html = '';
-      for (let i = 0; i < users.length; i++) {
-        const u = users[i];
-        const lastActive = u.last_active ? fmtTime(u.last_active) : t('never');
-        const isAdmin = u.role === 'admin';
-        const roleBadge = isAdmin
-          ? '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;color:#fff;background:var(--accent-grad);">' + t('role_admin') + '</span>'
-          : '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;color:var(--text-2);background:var(--glass-border);">' + t('role_user') + '</span>';
-        var opBtn = '<button class="mini-btn danger" onclick="openReset(\'' + escapeHtml(u.username) + '\')">' + t('reset') + '</button>';
-        if (u.rollback_count > 0) {
-          opBtn += ' <button class="mini-btn" title="' + t('rollback_hint') + '" onclick="openRollback(\'' +
-                   escapeHtml(u.username) + '\',' + u.rollback_count + ')">' + t('rollback') + '(' + u.rollback_count + ')</button>';
-        }
-        html += '<tr><td>' + roleBadge + '</td>' +
-                '<td><strong>' + escapeHtml(u.username) + '</strong></td>' +
-                '<td>' + u.answered + '</td>' +
-                '<td style="color:var(--text-2);font-size:12.5px">' + lastActive + '</td>' +
-                '<td>' + opBtn + '</td></tr>';
-      }
-      body.innerHTML = html;
-    })
-    .catch(function(e) { if (e.message !== '401') $('usersBody').innerHTML = '<tr><td colspan="4" class="empty" style="color:#b04a4a">' + t('net_error') + '</td></tr>'; });
-}
-
-/* ---- 回退密码（防止误操作，最多 3 次） ---- */
-let _rollbackTarget = '';
-function openRollback(username, count) {
-  _rollbackTarget = username;
-  $('rollbackTip').textContent = tf('rollback_tip', username, count);
-  $('rollbackModal').classList.add('show');
-}
-function closeRollback() {
-  $('rollbackModal').classList.remove('show');
-  _rollbackTarget = '';
-}
-function confirmRollback() {
-  const btn = $('rollbackOkBtn');
-  btn.disabled = true;
-  adminFetch('/admin/password-rollback', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: _rollbackTarget })
-  })
-    .then(function(r) {
-      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      closeRollback();
-      toast('ok', t('rollback_ok') + '：' + _rollbackTarget);
-      renderAll();   // 刷新回退按钮/次数
-      return null;
-    })
-    .catch(function(e) {
-      if (e.message !== '401') toast('bad', t('rollback_fail'), 'bad');
-    })
-    .finally(function() { btn.disabled = false; });
-}
-
-/* ---- 重置密码 ---- */
-let _resetTarget = '';
-function openReset(username) {
-  _resetTarget = username;
-  $('resetTitle').textContent = t('reset_title');
-  $('resetTip').textContent = tf('reset_tip', username);
-  $('newPwdInput').value = '';
-  $('resetModal').classList.add('show');
-  setTimeout(() => $('newPwdInput').focus(), 50);
-}
-function closeReset() {
-  $('resetModal').classList.remove('show');
-  _resetTarget = '';
-}
-function genPassword() {
-  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-  const lower = 'abcdefghjkmnpqrstuvwxyz';
-  const digits = '23456789';
-  const all = upper + lower + digits;
-  const pick = s => s[Math.floor(Math.random() * s.length)];
-  let pwd = '';
-  pwd += pick(upper); pwd += pick(lower); pwd += pick(lower);
-  pwd += pick(digits); pwd += pick(digits);
-  while (pwd.length < 12) pwd += pick(all);
-  pwd = pwd.split('').sort(() => Math.random() - 0.5).join('');
-  $('newPwdInput').value = pwd;
-}
-function copyPwd() {
-  const v = $('newPwdInput').value;
-  if (!v) return;
-  copyText(v).then(ok => toast(ok ? t('copied') : t('copy_fail'), ok ? 'ok' : 'bad'));
-}
-function confirmReset() {
-  const pwd = $('newPwdInput').value;
-  if (!(pwd.length >= 8 && pwd.length <= 64 && /[A-Z]/.test(pwd) && /[a-z]/.test(pwd) && /\d/.test(pwd))) {
-    toast('bad', t('bad_pwd'), 'bad');
-    return;
-  }
-  const btn = $('resetOkBtn');
-  btn.disabled = true;
-  adminFetch('/admin/user-reset', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: _resetTarget, new_password: pwd })
-  })
-    .then(function(r) {
-      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      closeReset();
-      toast('ok', t('reset_ok') + '：' + _resetTarget);
-      // 复制新密码方便发给用户
-      copyText(pwd).then(ok => { if (ok) toast('ok', t('copied')); });
-      return null;
-    })
-    .catch(function(e) {
-      if (e.message !== '401') toast('bad', t('reset_fail'), 'bad');
-    })
-    .finally(function() { btn.disabled = false; });
 }
 
 renderAll();
