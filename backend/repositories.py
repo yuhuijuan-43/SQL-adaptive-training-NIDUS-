@@ -239,37 +239,49 @@ def get_mastery(session_id):
     rows = conn.execute('SELECT * FROM user_mastery WHERE session_id=?', (session_id,)).fetchall()
     return {r['node_id']: dict(r) for r in rows}
 
-def reset_user_password(username, new_password):
-    """管理员重置平台用户密码：旧密码先入历史（每用户最多 3 条），新密码 bcrypt 存储"""
-    import bcrypt
+def _account_kind(username):
+    """判断账号类型：'user'（平台用户）/ 'admin'（管理员）/ None（不存在）"""
     conn = get_connection()
-    row = conn.execute('SELECT id, password FROM users WHERE username=?', (username,)).fetchone()
-    if not row:
+    if conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone():
+        return 'user'
+    if conn.execute('SELECT id FROM admin_users WHERE username=?', (username,)).fetchone():
+        return 'admin'
+    return None
+
+def reset_user_password(username, new_password):
+    """重置密码（自动识别平台用户/管理员）：旧密码入历史（kind 区分，每账号最多 3 条），新密码 bcrypt"""
+    import bcrypt
+    kind = _account_kind(username)
+    if kind is None:
         return None, 'not_found'
-    old_hash = dict(row)['password']
+    conn = get_connection()
+    table = 'users' if kind == 'user' else 'admin_users'
+    old_hash = dict(conn.execute(f'SELECT password FROM {table} WHERE username=?', (username,)).fetchone())['password']
     if old_hash:
-        # 旧密码入档（含历史兼容格式，login_user 三种格式都能验证）
-        conn.execute('INSERT INTO user_password_history (username, password) VALUES (?,?)',
-                     (username, old_hash))
-        # 只保留最近 3 条
-        conn.execute('''DELETE FROM user_password_history WHERE username=? AND id NOT IN (
-            SELECT id FROM user_password_history WHERE username=? ORDER BY id DESC LIMIT 3)''',
-            (username, username))
+        conn.execute('INSERT INTO user_password_history (username, password, kind) VALUES (?,?,?)',
+                     (username, old_hash, kind))
+        conn.execute('''DELETE FROM user_password_history WHERE username=? AND kind=? AND id NOT IN (
+            SELECT id FROM user_password_history WHERE username=? AND kind=? ORDER BY id DESC LIMIT 3)''',
+            (username, kind, username, kind))
     pw_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-    conn.execute('UPDATE users SET password=? WHERE username=?', (pw_hash, username))
+    conn.execute(f'UPDATE {table} SET password=? WHERE username=?', (pw_hash, username))
     conn.commit()
     return True, None
 
 def rollback_user_password(username):
-    """回退到最近一次历史密码（消费一条历史；最多可回退 3 次）"""
+    """回退到最近一次历史密码（消费一条历史；最多可回退 3 次；按账号类型恢复各自历史）"""
+    kind = _account_kind(username)
+    if kind is None:
+        return None, 'not_found'
     conn = get_connection()
-    row = conn.execute(
-        'SELECT id, password FROM user_password_history WHERE username=? ORDER BY id DESC LIMIT 1',
-        (username,)).fetchone()
-    if not row:
+    h = conn.execute(
+        'SELECT id, password FROM user_password_history WHERE username=? AND kind=? ORDER BY id DESC LIMIT 1',
+        (username, kind)).fetchone()
+    if not h:
         return None, 'no_history'
-    conn.execute('UPDATE users SET password=? WHERE username=?', (dict(row)['password'], username))
-    conn.execute('DELETE FROM user_password_history WHERE id=?', (dict(row)['id'],))
+    table = 'users' if kind == 'user' else 'admin_users'
+    conn.execute(f'UPDATE {table} SET password=? WHERE username=?', (dict(h)['password'], username))
+    conn.execute('DELETE FROM user_password_history WHERE id=?', (dict(h)['id'],))
     conn.commit()
     return True, None
 
@@ -299,10 +311,16 @@ def get_admin_users():
         (SELECT COUNT(*) FROM user_progress WHERE session_id=u.session_id) as answered,
         (SELECT COUNT(*) FROM user_progress WHERE session_id=u.session_id AND is_correct=1) as correct,
         (SELECT MAX(answered_at) FROM user_progress WHERE session_id=u.session_id) as last_active,
-        (SELECT COUNT(*) FROM user_password_history WHERE username=u.username) as rollback_count
+        (SELECT COUNT(*) FROM user_password_history h WHERE h.username=u.username AND h.kind='user') as rollback_count,
+        'user' as role
         FROM users u ORDER BY u.created_at DESC''').fetchall()
+    admins = conn.execute('''SELECT a.username, '' as session_id, a.created_at,
+        0 as answered, 0 as correct, a.last_login_at as last_active,
+        (SELECT COUNT(*) FROM user_password_history h WHERE h.username=a.username AND h.kind='admin') as rollback_count,
+        'admin' as role
+        FROM admin_users a ORDER BY a.created_at DESC''').fetchall()
     users = []
-    for r in rows:
+    for r in list(rows) + list(admins):
         u = dict(r)
         u['accuracy'] = round(u['correct'] / u['answered'] * 100, 1) if u['answered'] > 0 else 0
         users.append(u)

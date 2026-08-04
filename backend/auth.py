@@ -60,6 +60,8 @@ def register_user(username, password):
     existing = conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
     if existing:
         return None, 'exists'
+    if conn.execute('SELECT id FROM admin_users WHERE username=?', (username,)).fetchone():
+        return None, 'exists'   # 全局唯一：平台用户名不得与管理员重复
     pw_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     session_id = str(uuid.uuid4())
     conn.execute('INSERT INTO users (username, password, session_id) VALUES (?,?,?)',
@@ -68,10 +70,13 @@ def register_user(username, password):
     return session_id, None
 
 def check_username_exists(username):
-    """检查用户名是否已存在"""
+    """检查用户名是否已存在（含管理员同名）"""
     conn = get_connection()
-    row = conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
-    return row is not None
+    if conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone():
+        return True
+    if conn.execute('SELECT id FROM admin_users WHERE username=?', (username,)).fetchone():
+        return True
+    return False
 
 def login_or_register(username, password=''):
     """Legacy: kept for backward compatibility (admin page login).
@@ -89,7 +94,7 @@ def login_or_register(username, password=''):
 REFERRAL_CODE = 'NIDUS_Agent'   # 固定内推码（按产品要求写死）
 
 def register_admin(username, password, referral_code):
-    """管理员注册：内推码校验 + 用户名唯一 + bcrypt；密码规则与平台一致（8-64 字符）"""
+    """管理员注册：内推码校验 + 用户名全局唯一（含平台用户）+ bcrypt；密码规则与平台一致（8-64 字符）"""
     import bcrypt
     if not password or len(password.strip()) < 8 or len(password.strip()) > 64:
         return None, 'weak_password'
@@ -98,6 +103,8 @@ def register_admin(username, password, referral_code):
     conn = get_connection()
     existing = conn.execute('SELECT id FROM admin_users WHERE username=?', (username,)).fetchone()
     if existing:
+        return None, 'exists'
+    if conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone():
         return None, 'exists'
     pw_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     conn.execute('INSERT INTO admin_users (username, password, referral_code) VALUES (?,?,?)',
@@ -123,10 +130,13 @@ def login_admin(username, password):
     return True, None
 
 def check_admin_username_exists(username):
-    """检查管理员用户名是否已占用（注册预检）"""
+    """检查管理员用户名是否已占用（注册预检，含平台用户同名）"""
     conn = get_connection()
-    row = conn.execute('SELECT id FROM admin_users WHERE username=?', (username,)).fetchone()
-    return row is not None
+    if conn.execute('SELECT id FROM admin_users WHERE username=?', (username,)).fetchone():
+        return True
+    if conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone():
+        return True
+    return False
 
 def get_admin_colleagues(exclude_username=None):
     """我的同事：其他管理员的用户名与最后上线时间"""

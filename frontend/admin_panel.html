@@ -216,16 +216,16 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
     </div>
   </div>
 
-  <!-- 平台用户密码管理 -->
+  <!-- 用户与管理员密码管理（同步管理员信息） -->
   <div class="card glass">
-    <div class="card-title"><span class="ct-dot"></span><span data-i18n="users_title">平台用户密码管理</span></div>
+    <div class="card-title"><span class="ct-dot"></span><span data-i18n="users_title">用户与管理员密码管理</span></div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th data-i18n="col_user2">用户名</th><th data-i18n="col_answered">答题数</th><th data-i18n="col_active">最后活跃</th><th data-i18n="col_op">操作</th></tr></thead>
-        <tbody id="usersBody"><tr><td colspan="4" class="empty" data-i18n="loading">加载中...</td></tr></tbody>
+        <thead><tr><th data-i18n="col_role">角色</th><th data-i18n="col_user2">用户名</th><th data-i18n="col_answered">答题数</th><th data-i18n="col_active">最后活跃</th><th data-i18n="col_op">操作</th></tr></thead>
+        <tbody id="usersBody"><tr><td colspan="5" class="empty" data-i18n="loading">加载中...</td></tr></tbody>
       </table>
     </div>
-    <div class="sec-tip" data-i18n="users_tip">重置密码后请将新密码告知用户，新密码立即生效，旧密码失效</div>
+    <div class="sec-tip" data-i18n="users_tip">重置密码后请将新密码告知对方，新密码立即生效，旧密码失效；重置/回退需双重验证（统一管理员密钥）</div>
   </div>
 
 </div>
@@ -245,6 +245,9 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
       <button class="mini-btn" onclick="genPassword()" data-i18n="gen_pwd">生成</button>
       <button class="mini-btn copy" onclick="copyPwd()" data-i18n="copy">复制</button>
     </div>
+    <div class="pwd-row">
+      <input type="password" id="resetVerifyKey" placeholder="统一管理员密钥（双重验证）" data-i18n-placeholder="ph_verify">
+    </div>
     <div class="modal-foot">
       <button class="btn-ok" id="resetOkBtn" onclick="confirmReset()" data-i18n="confirm_reset">确认重置</button>
     </div>
@@ -259,6 +262,9 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
       <button class="modal-close" onclick="closeRollback()">✕</button>
     </div>
     <div class="modal-tip" id="rollbackTip"></div>
+    <div class="pwd-row">
+      <input type="password" id="rollbackVerifyKey" placeholder="统一管理员密钥（双重验证）" data-i18n-placeholder="ph_verify">
+    </div>
     <div class="modal-foot">
       <button class="mini-btn" onclick="closeRollback()" data-i18n="cancel">取消</button>
       <button class="btn-ok" id="rollbackOkBtn" onclick="confirmRollback()" data-i18n="rollback_confirm">确认回退</button>
@@ -299,12 +305,18 @@ const I18N = {
   colleagues_title: { zh: '我的同事', en: 'My Colleagues' },
   col_user: { zh: '管理员用户名', en: 'Admin Username' },
   col_last: { zh: '最后上线时间', en: 'Last Online' },
+  col_role: { zh: '角色', en: 'Role' },
   col_user2: { zh: '用户名', en: 'Username' },
   col_answered: { zh: '答题数', en: 'Answers' },
   col_active: { zh: '最后活跃', en: 'Last Active' },
   col_op: { zh: '操作', en: 'Actions' },
-  users_title: { zh: '平台用户密码管理', en: 'Platform User Password Management' },
-  users_tip: { zh: '重置密码后请将新密码告知用户，新密码立即生效，旧密码失效', en: 'Share the new password with the user after reset — it takes effect immediately and the old one stops working' },
+  role_admin: { zh: '管理员', en: 'Admin' },
+  role_user: { zh: '学员', en: 'Learner' },
+  users_title: { zh: '用户与管理员密码管理', en: 'Users & Admins Password Management' },
+  users_tip: { zh: '重置密码后请将新密码告知对方，新密码立即生效，旧密码失效；重置/回退需双重验证（统一管理员密钥）',
+               en: 'Share the new password after reset — it takes effect immediately. Reset/rollback require double verification (Unified Admin Key).' },
+  ph_verify: { zh: '统一管理员密钥（双重验证）', en: 'Unified Admin Key (double verification)' },
+  verify_fail: { zh: '双重验证失败：请输入正确的统一管理员密钥', en: 'Double verification failed: enter the correct Unified Admin Key' },
   loading: { zh: '加载中...', en: 'Loading...' },
   empty_colleagues: { zh: '暂无其他管理员', en: 'No other admins yet' },
   empty_users: { zh: '暂无平台用户', en: 'No platform users yet' },
@@ -487,12 +499,17 @@ function loadUsers() {
       for (let i = 0; i < users.length; i++) {
         const u = users[i];
         const lastActive = u.last_active ? fmtTime(u.last_active) : t('never');
+        const isAdmin = u.role === 'admin';
+        const roleBadge = isAdmin
+          ? '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;color:#fff;background:var(--accent-grad);">' + t('role_admin') + '</span>'
+          : '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;color:var(--text-2);background:var(--glass-border);">' + t('role_user') + '</span>';
         var opBtn = '<button class="mini-btn danger" onclick="openReset(\'' + escapeHtml(u.username) + '\')">' + t('reset') + '</button>';
         if (u.rollback_count > 0) {
           opBtn += ' <button class="mini-btn" title="' + t('rollback_hint') + '" onclick="openRollback(\'' +
                    escapeHtml(u.username) + '\',' + u.rollback_count + ')">' + t('rollback') + '(' + u.rollback_count + ')</button>';
         }
-        html += '<tr><td><strong>' + escapeHtml(u.username) + '</strong></td>' +
+        html += '<tr><td>' + roleBadge + '</td>' +
+                '<td><strong>' + escapeHtml(u.username) + '</strong></td>' +
                 '<td>' + u.answered + '</td>' +
                 '<td style="color:var(--text-2);font-size:12.5px">' + lastActive + '</td>' +
                 '<td>' + opBtn + '</td></tr>';
@@ -507,6 +524,7 @@ let _rollbackTarget = '';
 function openRollback(username, count) {
   _rollbackTarget = username;
   $('rollbackTip').textContent = tf('rollback_tip', username, count);
+  $('rollbackVerifyKey').value = '';
   $('rollbackModal').classList.add('show');
 }
 function closeRollback() {
@@ -514,19 +532,23 @@ function closeRollback() {
   _rollbackTarget = '';
 }
 function confirmRollback() {
+  const vk = $('rollbackVerifyKey').value.trim();
+  if (!vk) { toast('bad', t('verify_fail'), 'bad'); return; }
   const btn = $('rollbackOkBtn');
   btn.disabled = true;
   adminFetch('/admin/password-rollback', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: _rollbackTarget })
+    body: JSON.stringify({ username: _rollbackTarget, verify_key: vk })
   })
     .then(function(r) {
       if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
+      if (r.status === 403) { toast('bad', t('verify_fail'), 'bad'); return null; }
       if (!r.ok) throw new Error('HTTP ' + r.status);
       closeRollback();
       toast('ok', t('rollback_ok') + '：' + _rollbackTarget);
       renderAll();   // 刷新回退按钮/次数
+      return null;
     })
     .catch(function(e) {
       if (e.message !== '401') toast('bad', t('rollback_fail'), 'bad');
@@ -541,6 +563,7 @@ function openReset(username) {
   $('resetTitle').textContent = t('reset_title');
   $('resetTip').textContent = tf('reset_tip', username);
   $('newPwdInput').value = '';
+  $('resetVerifyKey').value = '';
   $('resetModal').classList.add('show');
   setTimeout(() => $('newPwdInput').focus(), 50);
 }
@@ -568,24 +591,28 @@ function copyPwd() {
 }
 function confirmReset() {
   const pwd = $('newPwdInput').value;
+  const vk = $('resetVerifyKey').value.trim();
   if (!(pwd.length >= 8 && pwd.length <= 64 && /[A-Z]/.test(pwd) && /[a-z]/.test(pwd) && /\d/.test(pwd))) {
     toast('bad', t('bad_pwd'), 'bad');
     return;
   }
+  if (!vk) { toast('bad', t('verify_fail'), 'bad'); return; }
   const btn = $('resetOkBtn');
   btn.disabled = true;
   adminFetch('/admin/user-reset', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: _resetTarget, new_password: pwd })
+    body: JSON.stringify({ username: _resetTarget, new_password: pwd, verify_key: vk })
   })
     .then(function(r) {
       if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
+      if (r.status === 403) { toast('bad', t('verify_fail'), 'bad'); return null; }
       if (!r.ok) throw new Error('HTTP ' + r.status);
       closeReset();
       toast('ok', t('reset_ok') + '：' + _resetTarget);
       // 复制新密码方便发给用户
       copyText(pwd).then(ok => { if (ok) toast('ok', t('copied')); });
+      return null;
     })
     .catch(function(e) {
       if (e.message !== '401') toast('bad', t('reset_fail'), 'bad');

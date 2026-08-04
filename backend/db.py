@@ -105,12 +105,15 @@ def init_db():
         referral_code TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_login_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-    # 平台用户密码历史：重置前入档，供管理员回退（每用户最多保留 3 条）
+    # 平台用户密码历史：重置前入档，供管理员回退（每账号最多保留 3 条；kind 区分用户/管理员）
     c.execute('''CREATE TABLE IF NOT EXISTS user_password_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
         password TEXT NOT NULL,
+        kind TEXT DEFAULT 'user',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    try: c.execute("ALTER TABLE user_password_history ADD COLUMN kind TEXT DEFAULT 'user'")
+    except: pass
     c.execute('CREATE INDEX IF NOT EXISTS idx_uph_user ON user_password_history(username)')
     c.execute('''CREATE TABLE IF NOT EXISTS diagnostic_results (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

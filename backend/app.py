@@ -583,13 +583,23 @@ def admin_colleagues():
     me = request.args.get('me', '').strip()
     return jsonify({"colleagues": get_admin_colleagues(exclude_username=me or None)})
 
+def _check_double_verify(data):
+    """双重验证：操作需携带统一管理员密钥（verify_key），常量时间比较"""
+    import hmac
+    verify_key = (data.get('verify_key') or '').strip()
+    if not verify_key or not hmac.compare_digest(verify_key, ADMIN_TOKEN):
+        return False
+    return True
+
 @app.route('/api/admin/user-reset', methods=['POST'])
 @limiter.limit("10 per minute")
 def admin_user_reset():
-    """管理员重置平台用户密码"""
+    """管理员重置密码（平台用户/管理员通用，需双重验证 verify_key）"""
     if not _check_admin_token():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     data = request.get_json(silent=True) or {}
+    if not _check_double_verify(data):
+        return jsonify({"error": "双重验证失败：请输入统一管理员密钥"}), 403
     username = (data.get('username') or '').strip()
     new_password = data.get('new_password') or ''
     if not username or not new_password:
@@ -612,16 +622,18 @@ def admin_key():
 @app.route('/api/admin/password-rollback', methods=['POST'])
 @limiter.limit("10 per minute")
 def admin_password_rollback():
-    """回退平台用户密码到上一个版本（历史保留 3 条 → 最多回退 3 次）"""
+    """回退密码到上一个版本（历史保留 3 条 → 最多回退 3 次；需双重验证 verify_key）"""
     if not _check_admin_token():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     data = request.get_json(silent=True) or {}
+    if not _check_double_verify(data):
+        return jsonify({"error": "双重验证失败：请输入统一管理员密钥"}), 403
     username = (data.get('username') or '').strip()
     if not username:
         return jsonify({"error": "缺少参数"}), 400
     ok, reason = rollback_user_password(username)
     if not ok:
-        return jsonify({"error": "该用户没有可回退的历史密码（最多可回退 3 次）"}), 409
+        return jsonify({"error": "该账号没有可回退的历史密码（最多可回退 3 次）"}), 409
     return jsonify({"ok": True})
 
 if __name__ == '__main__':
