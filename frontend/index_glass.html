@@ -230,7 +230,7 @@ body {
       <button class="nav-link" onclick="window.location.href='about.html'" data-i18n="nav_about">了解我们</button>
       <button class="nav-link" onclick="window.location.href='login_glass.html'" data-i18n="nav_enter">进入平台</button>
       <button class="nav-link" onclick="window.location.href='admin-gate'" data-i18n="nav_admin">管理后台</button>
-      <button class="nav-link" onclick="window.location.href='admin-auth'" data-i18n="nav_admin_acct">管理员账号</button>
+      <button class="nav-link" onclick="window.location.href='admin-auth'" data-i18n="nav_join">加入我们</button>
     </div>
     <button class="nav-link" id="langBtn" onclick="toggleLang()">English</button>
   </div>
@@ -281,6 +281,10 @@ body {
         <div class="cta-title" data-i18n="cta_about_t">了解我们<span class="arrow">→</span></div>
         <div class="cta-sub" data-i18n-html="cta_about_sub"><b>查看最新功能与更新动态</b><br>开发进度 · 持续迭代</div>
       </div>
+      <div class="cta-card glass" onclick="window.location.href='admin-auth'">
+        <div class="cta-title" data-i18n="cta_join_t">加入我们<span class="arrow">→</span></div>
+        <div class="cta-sub" data-i18n-html="cta_join_sub"><b>凭内推码注册成为管理员</b><br>与团队共建 · 管理平台</div>
+      </div>
     </div>
   </section>
 
@@ -305,7 +309,7 @@ const I18N = {
   nav_about: { zh: '了解我们', en: 'About' },
   nav_enter: { zh: '进入平台', en: 'Enter' },
   nav_admin: { zh: '管理后台', en: 'Admin' },
-  nav_admin_acct: { zh: '管理员账号', en: 'Admin Account' },
+  nav_join: { zh: '加入我们', en: 'Join Us' },
   badge_live: { zh: '自适应引擎在线 · BKT 画像实时更新', en: 'Adaptive engine online · BKT profile updating live' },
   h1_a: { zh: '让 SQL 学习', en: 'Make SQL learning' },
   data_q: { zh: '精选题目', en: 'curated questions' },
@@ -326,6 +330,9 @@ const I18N = {
   cta_about_t: { zh: '了解我们', en: 'About Us' },
   cta_about_sub: { zh: '<b>查看最新功能与更新动态</b><br>开发进度 · 持续迭代',
                    en: '<b>See the latest features & updates</b><br>Development progress · Continuous iteration' },
+  cta_join_t: { zh: '加入我们', en: 'Join Us' },
+  cta_join_sub: { zh: '<b>凭内推码注册成为管理员</b><br>与团队共建 · 管理平台',
+                  en: '<b>Register as an admin with a referral code</b><br>Build together · Manage the platform' },
   footer: { zh: '© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台 — <a href="login_glass.html">进入做题前端</a>',
             en: '© 2026 SQL Adaptive Training · A personalized SQL learning platform — <a href="login_glass.html">Enter Practice</a>' },
 };
