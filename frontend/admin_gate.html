@@ -359,7 +359,7 @@ async function doAdminLogin(e) {
     sessionStorage.setItem('admin_user', d.username || username);
     $('admBtn').textContent = '✓';
     toast('ok', t('ok_msg'), 'ok');
-    setTimeout(() => { window.location.href = 'admin.html'; }, 700);
+    setTimeout(() => { window.location.href = '/admin'; }, 700);
   } catch (err) {
     loading(false);
     toast('bad', t('net_error'), 'bad');

@@ -475,6 +475,11 @@ def get_user_progress(session_id):
 def admin_page():
     return send_from_directory(FRONTEND_DIR, 'admin.html')
 
+@app.route('/admin.html')
+def admin_page_alias():
+    """旧链接兜底：/admin.html 别名"""
+    return send_from_directory(FRONTEND_DIR, 'admin.html')
+
 @app.route('/admin-gate')
 def admin_gate_page():
     """管理员登录门（用户名 + 统一密钥）"""
