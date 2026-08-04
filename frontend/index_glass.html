@@ -224,10 +224,11 @@ body {
       <span>SQL 自适应训练</span>
     </div>
     <div class="nav-links">
-      <button class="nav-link active" onclick="scrollToId('top')">首页</button>
-      <button class="nav-link" onclick="window.location.href='about.html'">了解我们</button>
-      <button class="nav-link" onclick="window.location.href='login_glass.html'">进入平台</button>
+      <button class="nav-link active" onclick="scrollToId('top')" data-i18n="nav_home">首页</button>
+      <button class="nav-link" onclick="window.location.href='about.html'" data-i18n="nav_about">了解我们</button>
+      <button class="nav-link" onclick="window.location.href='login_glass.html'" data-i18n="nav_enter">进入平台</button>
     </div>
+    <button class="nav-link" id="langBtn" onclick="toggleLang()">English</button>
   </div>
 </nav>
 
@@ -238,43 +239,43 @@ body {
     <div class="hero-left">
       <div class="hero-head">
         <div class="fade-up" style="animation-delay:0s">
-          <span class="badge"><span class="pulse-dot"></span>自适应引擎在线 · BKT 画像实时更新</span>
+          <span class="badge"><span class="pulse-dot"></span><span data-i18n="badge_live">自适应引擎在线 · BKT 画像实时更新</span></span>
         </div>
         <div class="hero-title-wrap fade-up" style="animation-delay:0.06s">
         <h1 class="hero-title">
-          <span>让 SQL 学习</span><div class="hero-data">
-            <div class="hd"><div class="v">356+</div><div class="l">精选题目</div></div>
-            <div class="hd"><div class="v">100%</div><div class="l">免费使用</div></div>
+          <span data-i18n="h1_a">让 SQL 学习</span><div class="hero-data">
+            <div class="hd"><div class="v">356+</div><div class="l" data-i18n="data_q">精选题目</div></div>
+            <div class="hd"><div class="v">100%</div><div class="l" data-i18n="data_free">免费使用</div></div>
           </div><br>
-          <span>像打怪升级一样<span class="grad">千人千面</span></span>
+          <span data-i18n="h1_b">像打怪升级一样<span class="grad" data-i18n="h1_grad">千人千面</span></span>
         </h1>
       </div>
       </div>
-      <p class="hero-desc fade-up" style="animation-delay:0.14s">
+      <p class="hero-desc fade-up" style="animation-delay:0.14s" data-i18n="hero_desc">
         基于贝叶斯知识追踪（BKT）与 Thompson 采样构建的自适应刷题平台。
         系统读懂你的每一次作答，自动推送最适合当前水平的下一道题——答对了就往前走，答错了就陪你练到掌握。
       </p>
       <div class="hero-feats fade-up" style="animation-delay:0.2s">
         <div class="hero-feat">
-          <b>知识图谱驱动</b><span>37 个知识点 · 三层结构 · 前置依赖一目了然</span>
+          <b data-i18n="feat1_t">知识图谱驱动</b><span data-i18n="feat1_d">37 个知识点 · 三层结构 · 前置依赖一目了然</span>
         </div>
         <div class="hero-feat">
-          <b>自适应推荐引擎</b><span>冷启动 → 探索利用 → 精熟期，三阶段动态切换</span>
+          <b data-i18n="feat2_t">自适应推荐引擎</b><span data-i18n="feat2_d">冷启动 → 探索利用 → 精熟期，三阶段动态切换</span>
         </div>
         <div class="hero-feat">
-          <b>深度模式 · 举一反三</b><span>选择题答对自动推送同知识点填空题，概念到实战一步到位</span>
+          <b data-i18n="feat3_t">深度模式 · 举一反三</b><span data-i18n="feat3_d">选择题答对自动推送同知识点填空题，概念到实战一步到位</span>
         </div>
       </div>
     </div>
 
     <div class="hero-right fade-up" style="animation-delay:0.2s">
       <div class="cta-card glass" onclick="window.location.href='login_glass.html'">
-        <div class="cta-title">进入平台<span class="arrow">→</span></div>
-        <div class="cta-sub"><b>开始自适应 SQL 学习之旅</b><br>千人千面 · 智能推送 · 免费使用</div>
+        <div class="cta-title" data-i18n="cta_enter_t">进入平台<span class="arrow">→</span></div>
+        <div class="cta-sub" data-i18n-html="cta_enter_sub"><b>开始自适应 SQL 学习之旅</b><br>千人千面 · 智能推送 · 免费使用</div>
       </div>
       <div class="cta-card glass" onclick="window.location.href='about.html'">
-        <div class="cta-title">了解我们<span class="arrow">→</span></div>
-        <div class="cta-sub"><b>查看最新功能与更新动态</b><br>开发进度 · 持续迭代</div>
+        <div class="cta-title" data-i18n="cta_about_t">了解我们<span class="arrow">→</span></div>
+        <div class="cta-sub" data-i18n-html="cta_about_sub"><b>查看最新功能与更新动态</b><br>开发进度 · 持续迭代</div>
       </div>
     </div>
   </section>
@@ -282,7 +283,7 @@ body {
 </div>
 
 <!-- ========== 页脚 ========== -->
-<footer class="footer">
+<footer class="footer" data-i18n-html="footer">
   © 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台 —
   <a href="login_glass.html">进入做题前端</a>
 </footer>
@@ -291,6 +292,59 @@ body {
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
+/* ============================================================
+   中英双语（门户页）
+   ============================================================ */
+const I18N = {
+  page_title: { zh: 'SQL 自适应训练 · 智能学习平台', en: 'SQL Adaptive Training · Smart Learning Platform' },
+  nav_home: { zh: '首页', en: 'Home' },
+  nav_about: { zh: '了解我们', en: 'About' },
+  nav_enter: { zh: '进入平台', en: 'Enter' },
+  badge_live: { zh: '自适应引擎在线 · BKT 画像实时更新', en: 'Adaptive engine online · BKT profile updating live' },
+  h1_a: { zh: '让 SQL 学习', en: 'Make SQL learning' },
+  data_q: { zh: '精选题目', en: 'curated questions' },
+  data_free: { zh: '免费使用', en: 'free forever' },
+  h1_b: { zh: '像打怪升级一样', en: 'an adventure —' },
+  h1_grad: { zh: '千人千面', en: 'tailored to you' },
+  hero_desc: { zh: '基于贝叶斯知识追踪（BKT）与 Thompson 采样构建的自适应刷题平台。系统读懂你的每一次作答，自动推送最适合当前水平的下一道题——答对了就往前走，答错了就陪你练到掌握。',
+               en: 'An adaptive practice platform built on Bayesian Knowledge Tracing (BKT) and Thompson sampling. It reads every answer you give and recommends the next question at the right level — move forward when you get it right, drill until mastery when you don\'t.' },
+  feat1_t: { zh: '知识图谱驱动', en: 'Knowledge-graph driven' },
+  feat1_d: { zh: '37 个知识点 · 三层结构 · 前置依赖一目了然', en: '37 knowledge points · 3-tier structure · prerequisites at a glance' },
+  feat2_t: { zh: '自适应推荐引擎', en: 'Adaptive recommendation engine' },
+  feat2_d: { zh: '冷启动 → 探索利用 → 精熟期，三阶段动态切换', en: 'Cold start → explore–exploit → mastery, switching dynamically' },
+  feat3_t: { zh: '深度模式 · 举一反三', en: 'Deep mode · one-to-many practice' },
+  feat3_d: { zh: '选择题答对自动推送同知识点填空题，概念到实战一步到位', en: 'Answer an MCQ correctly and get a fill-in on the same topic — from concepts to practice' },
+  cta_enter_t: { zh: '进入平台', en: 'Enter Platform' },
+  cta_enter_sub: { zh: '<b>开始自适应 SQL 学习之旅</b><br>千人千面 · 智能推送 · 免费使用',
+                   en: '<b>Start your adaptive SQL journey</b><br>Personalized · Smart recommendations · Free' },
+  cta_about_t: { zh: '了解我们', en: 'About Us' },
+  cta_about_sub: { zh: '<b>查看最新功能与更新动态</b><br>开发进度 · 持续迭代',
+                   en: '<b>See the latest features & updates</b><br>Development progress · Continuous iteration' },
+  footer: { zh: '© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台 — <a href="login_glass.html">进入做题前端</a>',
+            en: '© 2026 SQL Adaptive Training · A personalized SQL learning platform — <a href="login_glass.html">Enter Practice</a>' },
+};
+
+let LANG = localStorage.getItem('lang') || 'zh';
+function t(key) { const e = I18N[key]; return e ? (e[LANG] || e.zh) : key; }
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n-html')); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.getAttribute('data-i18n-title')); });
+  document.title = t('page_title');
+  const btn = document.getElementById('langBtn');
+  if (btn) btn.textContent = LANG === 'zh' ? 'English' : '中文';
+  document.documentElement.lang = LANG === 'zh' ? 'zh-CN' : 'en';
+}
+
+function toggleLang() {
+  LANG = LANG === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('lang', LANG);
+  applyI18n();
+}
+applyI18n();
+
 /* ============================================================
    门户页交互（浅色玻璃拟态演示版）
    ============================================================ */
