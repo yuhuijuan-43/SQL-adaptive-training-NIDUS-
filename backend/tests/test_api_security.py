@@ -216,16 +216,28 @@ class TestAdminAccount:
             headers={'Authorization': 'Bearer test-admin-token'})
         assert r.status_code == 409
 
-    def test_users_list_syncs_admins(self, client):
+    def test_users_list_excludes_admins(self, client):
+        """管理后台 /api/admin/users 仅平台用户，不含管理员信息"""
         H = {'Authorization': 'Bearer test-admin-token'}
         client.post('/api/register', json={'username': 'learner1', 'password': 'Password1'})
         client.post('/api/admin/auth-register', json={
             'username': 'admin_sync', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
         users = client.get('/api/admin/users', headers=H).get_json()
-        by_name = {u['username']: u for u in users}
-        assert by_name['learner1']['role'] == 'user'
-        assert by_name['admin_sync']['role'] == 'admin'
-        assert 'last_active' in by_name['admin_sync']
+        names = [u['username'] for u in users]
+        assert 'learner1' in names and 'admin_sync' not in names
+        assert all('role' not in u for u in users)
+
+    def test_admin_accounts_syncs_admins(self, client):
+        """管理员面板 /api/admin/accounts 含平台用户+管理员（role 区分）"""
+        H = {'Authorization': 'Bearer test-admin-token'}
+        client.post('/api/register', json={'username': 'learner2', 'password': 'Password1'})
+        client.post('/api/admin/auth-register', json={
+            'username': 'admin_sync2', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
+        accounts = client.get('/api/admin/accounts', headers=H).get_json()
+        by_name = {u['username']: u for u in accounts}
+        assert by_name['learner2']['role'] == 'user'
+        assert by_name['admin_sync2']['role'] == 'admin'
+        assert 'last_active' in by_name['admin_sync2']
 
     def test_reset_admin_password_and_rollback(self, client):
         H = {'Authorization': 'Bearer test-admin-token'}
@@ -271,7 +283,7 @@ class TestAdminAccount:
             'username': 'u_k', 'new_password': 'UserNew1'}, headers=H)
         client.post('/api/admin/user-reset', json={
             'username': 'a_k', 'new_password': 'AdminNew1'}, headers=H)
-        users = client.get('/api/admin/users', headers=H).get_json()
+        users = client.get('/api/admin/accounts', headers=H).get_json()
         by_name = {u['username']: u for u in users}
         assert by_name['u_k']['rollback_count'] == 1
         assert by_name['a_k']['rollback_count'] == 1

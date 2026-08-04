@@ -311,6 +311,22 @@ def get_admin_users():
         (SELECT COUNT(*) FROM user_progress WHERE session_id=u.session_id) as answered,
         (SELECT COUNT(*) FROM user_progress WHERE session_id=u.session_id AND is_correct=1) as correct,
         (SELECT MAX(answered_at) FROM user_progress WHERE session_id=u.session_id) as last_active,
+        (SELECT COUNT(*) FROM user_password_history h WHERE h.username=u.username AND h.kind='user') as rollback_count
+        FROM users u ORDER BY u.created_at DESC''').fetchall()
+    users = []
+    for r in rows:
+        u = dict(r)
+        u['accuracy'] = round(u['correct'] / u['answered'] * 100, 1) if u['answered'] > 0 else 0
+        users.append(u)
+    return users
+
+def get_admin_accounts():
+    """管理员面板账号列表：平台用户 + 管理员（role 区分，供密码管理；不含管理后台）"""
+    conn = get_connection()
+    rows = conn.execute('''SELECT u.username, u.session_id, u.created_at,
+        (SELECT COUNT(*) FROM user_progress WHERE session_id=u.session_id) as answered,
+        (SELECT COUNT(*) FROM user_progress WHERE session_id=u.session_id AND is_correct=1) as correct,
+        (SELECT MAX(answered_at) FROM user_progress WHERE session_id=u.session_id) as last_active,
         (SELECT COUNT(*) FROM user_password_history h WHERE h.username=u.username AND h.kind='user') as rollback_count,
         'user' as role
         FROM users u ORDER BY u.created_at DESC''').fetchall()

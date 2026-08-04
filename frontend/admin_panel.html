@@ -479,7 +479,7 @@ function loadColleagues() {
 }
 
 function loadUsers() {
-  adminFetch('/admin/users')
+  adminFetch('/admin/accounts')
     .then(function(r) {
       if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
       return r.json();

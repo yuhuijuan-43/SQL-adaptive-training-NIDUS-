@@ -9,8 +9,8 @@ from repositories import (get_all_questions, get_exam_questions, get_question_by
     get_mastery, save_diagnostic_result, get_diagnostic_result,
     get_or_create_derived_question, get_derived_question_by_id,
     get_questions_by_node_and_type, get_node_id_for_question, is_mcq,
-    get_diagnostic_questions, get_admin_stats, get_admin_users, get_progress_summary,
-    reset_user_password, rollback_user_password)
+    get_diagnostic_questions, get_admin_stats, get_admin_users, get_admin_accounts,
+    get_progress_summary, reset_user_password, rollback_user_password)
 from auth import (login_user, register_user, login_or_register, check_username_exists,
     _is_authenticated, register_admin, login_admin, check_admin_username_exists,
     get_admin_colleagues, REFERRAL_CODE)
@@ -75,9 +75,9 @@ FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'fronten
 _PUBLIC_API_PATHS = {'/api/login', '/api/register', '/api/check-username',
                      '/api/graph', '/api/admin/login', '/api/admin/auth-register',
                      '/api/admin/auth-login', '/api/admin/auth-check-username',
-                     '/api/admin/stats', '/api/admin/users', '/api/admin/user-progress',
-                     '/api/admin/colleagues', '/api/admin/user-reset',
-                     '/api/admin/password-rollback', '/api/admin/key'}
+                     '/api/admin/stats', '/api/admin/users', '/api/admin/accounts',
+                     '/api/admin/user-progress', '/api/admin/colleagues',
+                     '/api/admin/user-reset', '/api/admin/password-rollback', '/api/admin/key'}
 
 def _request_session_id():
     """从请求体 / 查询参数 / 路径参数中提取 session_id"""
@@ -525,9 +525,18 @@ def admin_stats():
 @app.route('/api/admin/users')
 @limiter.limit("20 per minute")
 def admin_users():
+    """管理后台用户列表：仅平台用户（不含管理员信息）"""
     if not _check_admin_token():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     return jsonify(get_admin_users())
+
+@app.route('/api/admin/accounts')
+@limiter.limit("20 per minute")
+def admin_accounts():
+    """管理员面板账号列表：平台用户 + 管理员（role 区分，供密码管理）"""
+    if not _check_admin_token():
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    return jsonify(get_admin_accounts())
 
 @app.route('/api/admin/user-progress')
 @limiter.limit("30 per minute")
