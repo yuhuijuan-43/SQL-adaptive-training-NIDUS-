@@ -141,15 +141,16 @@
 
   </div>
 
-  <!-- USER TABLE -->
+  <!-- USER TABLE（含密码管理操作列） -->
   <div class="card p-3 mt-3">
     <div class="num-oswald text-xs tracking-wider opacity-60 mb-2">用户明细</div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>用户名</th><th>答题数</th><th>正确数</th><th>正确率</th><th>最后活跃</th></tr></thead>
-        <tbody id="userTableBody"><tr><td colspan="5" class="text-center opacity-50 py-4">加载中...</td></tr></tbody>
+        <thead><tr><th>用户名</th><th>答题数</th><th>正确数</th><th>正确率</th><th>最后活跃</th><th>操作</th></tr></thead>
+        <tbody id="userTableBody"><tr><td colspan="6" class="text-center opacity-50 py-4">加载中...</td></tr></tbody>
       </table>
     </div>
+    <div class="sec-tip">重置密码后请将新密码告知对方，新密码立即生效，旧密码失效；回退最多 3 次防误操作</div>
     <!-- 用户明细分页（每页 5 条） -->
     <div class="flex justify-between items-center mt-2" id="userPager" style="display:none">
       <span class="text-xs opacity-60" id="pagerInfo"></span>
@@ -158,18 +159,6 @@
         <button id="pagerNext" class="mini-btn" onclick="userPage(1)">下一页</button>
       </span>
     </div>
-  </div>
-
-  <!-- 用户与管理员密码管理（含管理员信息） -->
-  <div class="card p-3 mt-3">
-    <div class="card-title"><span class="ct-dot"></span>用户与管理员密码管理</div>
-    <div style="overflow-x:auto">
-      <table>
-        <thead><tr><th>角色</th><th>用户名</th><th>答题数</th><th>最后活跃</th><th>操作</th></tr></thead>
-        <tbody id="pwdAccountsBody"><tr><td colspan="5" class="text-center opacity-50 py-4">加载中...</td></tr></tbody>
-      </table>
-    </div>
-    <div class="sec-tip">重置密码后请将新密码告知对方，新密码立即生效，旧密码失效；回退最多 3 次防误操作</div>
   </div>
 
 </div>
@@ -369,7 +358,7 @@ function closeUserDetail() {
 function adminErrorMsg(e) {
   console.error('[admin] 加载失败:', e);
   // 无法连接（网络/CORS/后端未启动或未重启）
-  return '<tr><td colspan="5" class="text-center" style="color:#b04a4a">无法连接后端：请确认服务已启动；' +
+  return '<tr><td colspan="6" class="text-center" style="color:#b04a4a">无法连接后端：请确认服务已启动；' +
          '若刚更新过后端代码，请重启服务（CORS 配置需重启生效）</td></tr>';
 }
 
@@ -391,13 +380,20 @@ function renderUserTable() {
     var u = pageUsers[i];
     var lastActive = u.last_active ? new Date(u.last_active + ' UTC').toLocaleString() : '从未作答';
     var accClass = u.accuracy >= 60 ? '' : (u.accuracy > 0 ? 'style="color:var(--accent)"' : 'style="color:var(--error)"');
+    // 操作列：重置密码（+ 有历史时显示回退）；stopPropagation 避免触发行点击查看答题记录
+    var opBtn = '<button class="mini-btn danger" onclick="event.stopPropagation();openReset(\'' + escapeHtml(u.username) + '\')">重置密码</button>';
+    if (u.rollback_count > 0) {
+      opBtn += ' <button class="mini-btn" title="回退到上一个密码（最多 3 次）" onclick="event.stopPropagation();openRollback(\'' +
+               escapeHtml(u.username) + '\',' + u.rollback_count + ')">回退(' + u.rollback_count + ')</button>';
+    }
     html += '<tr style="cursor:pointer" onclick="openUserDetail(_allUsers[' + (start + i) + '])" title="查看答题记录"><td><strong>' + u.username + '</strong></td>';
     html += '<td class="num-oswald">' + u.answered + '</td>';
     html += '<td style="color:var(--text)">' + u.correct + '</td>';
     html += '<td class="num-oswald" ' + accClass + '>' + (u.answered > 0 ? u.accuracy + '%' : '-') + '</td>';
-    html += '<td style="font-size:0.65rem;color:#87867f">' + lastActive + '</td></tr>';
+    html += '<td style="font-size:0.65rem;color:#87867f">' + lastActive + '</td>';
+    html += '<td>' + opBtn + '</td></tr>';
   }
-  if (total === 0) html = '<tr><td colspan="5" class="text-center opacity-50 py-4">暂无用户数据</td></tr>';
+  if (total === 0) html = '<tr><td colspan="6" class="text-center opacity-50 py-4">暂无用户数据</td></tr>';
   document.getElementById('userTableBody').innerHTML = html;
 
   // 分页控件
@@ -443,53 +439,6 @@ function copyText(text) {
   try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
   document.body.removeChild(ta);
   return Promise.resolve(ok);
-}
-
-function loadAccounts() {
-  adminFetch('/admin/accounts')
-    .then(function(r) {
-      if (r.status === 401) {
-        sessionStorage.removeItem('admin_token');
-        document.getElementById('pwdAccountsBody').innerHTML =
-          '<tr><td colspan="5" class="text-center" style="color:#b04a4a">管理员 Token 无效，请刷新页面重新输入</td></tr>';
-        throw new Error('401');
-      }
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(function(accounts) {
-      var body = document.getElementById('pwdAccountsBody');
-      if (!accounts.length) {
-        body.innerHTML = '<tr><td colspan="5" class="text-center opacity-50 py-4">暂无账号数据</td></tr>';
-        return;
-      }
-      var html = '';
-      for (var i = 0; i < accounts.length; i++) {
-        var u = accounts[i];
-        var lastActive = u.last_active ? fmtTime(u.last_active) : '从未';
-        var isAdmin = u.role === 'admin';
-        var roleBadge = isAdmin
-          ? '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;color:#fff;background:var(--accent-grad);">管理员</span>'
-          : '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;color:var(--text2);background:var(--tag-bg);">学员</span>';
-        var opBtn = '<button class="mini-btn danger" onclick="openReset(\'' + escapeHtml(u.username) + '\')">重置密码</button>';
-        if (u.rollback_count > 0) {
-          opBtn += ' <button class="mini-btn" title="回退到上一个密码（最多 3 次）" onclick="openRollback(\'' +
-                   escapeHtml(u.username) + '\',' + u.rollback_count + ')">回退(' + u.rollback_count + ')</button>';
-        }
-        html += '<tr><td>' + roleBadge + '</td>' +
-                '<td><strong>' + escapeHtml(u.username) + '</strong></td>' +
-                '<td>' + u.answered + '</td>' +
-                '<td style="font-size:0.65rem;color:#87867f">' + lastActive + '</td>' +
-                '<td>' + opBtn + '</td></tr>';
-      }
-      body.innerHTML = html;
-    })
-    .catch(function(e) {
-      if (e.message !== '401') {
-        document.getElementById('pwdAccountsBody').innerHTML =
-          '<tr><td colspan="5" class="text-center" style="color:#b04a4a">无法连接后端，请确认服务已启动</td></tr>';
-      }
-    });
 }
 
 /* ---- 重置密码 ---- */
@@ -575,7 +524,7 @@ function confirmRollback() {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       closeRollback();
       toast('已回退到上一个密码：' + _rollbackTarget, 'ok');
-      loadAccounts();
+      loadAdmin();   // 刷新用户表，回退按钮次数同步更新
     })
     .catch(function(e) {
       if (e.message !== '401') toast('回退失败', 'bad');
@@ -590,7 +539,7 @@ async function loadAdmin() {
     if (statsRes.status === 401) {
       sessionStorage.removeItem('admin_token');
       document.getElementById('userTableBody').innerHTML =
-        '<tr><td colspan="5" class="text-center" style="color:#b04a4a">管理员 Token 无效，请刷新页面重新输入</td></tr>';
+        '<tr><td colspan="6" class="text-center" style="color:#b04a4a">管理员 Token 无效，请刷新页面重新输入</td></tr>';
       document.getElementById('userPager').style.display = 'none';
       return;
     }
@@ -613,8 +562,6 @@ async function loadAdmin() {
     // 用户明细：分页渲染（每页 5 条）
     _allUsers = users;
     renderUserTable();
-    // 密码管理账号表（独立加载，失败不影响主面板）
-    loadAccounts();
   } catch(e) {
     document.getElementById('userTableBody').innerHTML = adminErrorMsg(e);
     document.getElementById('userPager').style.display = 'none';
