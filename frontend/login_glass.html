@@ -610,6 +610,12 @@ async function doLogin(e) {
       return;
     }
     sessionStorage.setItem('sql_user', JSON.stringify({ name: d.username, session_id: d.session_id, loggedIn: true, loginAt: Date.now() }));
+    // 记住输入：勾选「记住我」保存，否则清除
+    if ($('rememberMe').checked) {
+      localStorage.setItem(RM_KEY, JSON.stringify({ username: user, password: pass }));
+    } else {
+      localStorage.removeItem(RM_KEY);
+    }
     $('loginBtn').textContent = t('login_ok');
     toast('ok', t('login_ok_msg'), 'ok');
     setTimeout(() => { window.location.href = 'index.html?new=1'; }, 800);
@@ -642,6 +648,8 @@ async function doRegister(e) {
       return;
     }
     sessionStorage.setItem('sql_user', JSON.stringify({ name: d.username, session_id: d.session_id, loggedIn: true, loginAt: Date.now() }));
+    // 注册成功同样记住输入，下次登录免输
+    localStorage.setItem(RM_KEY, JSON.stringify({ username: user, password: p1 }));
     $('regBtn').textContent = t('reg_ok');
     toast('ok', t('reg_ok_msg'), 'ok');
     setTimeout(() => { window.location.href = 'index.html?new=1'; }, 800);
@@ -660,13 +668,23 @@ function toast(msg, type) {
   setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3400);
 }
 
-/* 已登录用户直接进入做题页 */
-(function() {
+/* ---- 记住登录输入（「记住我」）：仅预填，不自动跳转 ----
+   登录/注册成功时按勾选保存；下次打开页面预填用户名/密码 */
+const RM_KEY = 'remembered_login';
+
+function rememberLogin() {
   try {
-    const raw = sessionStorage.getItem('sql_user');
-    if (raw) { const u = JSON.parse(raw); if (u && u.session_id && u.loggedIn) { window.location.href = 'index.html'; } }
+    const raw = localStorage.getItem(RM_KEY);
+    if (!raw) return;
+    const r = JSON.parse(raw);
+    if (r && r.username) {
+      $('inpUser').value = r.username;
+      if (r.password) $('inpPass').value = r.password;
+      $('rememberMe').checked = true;
+    }
   } catch (e) {}
-})();
+}
+rememberLogin();
 </script>
 </body>
 </html>
