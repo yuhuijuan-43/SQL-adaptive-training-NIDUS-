@@ -29,3 +29,11 @@ SQL自适应训练平台-功能与操作指南.pdf
 
 # 内部开发日志（含内部信息，本地保留）
 modification.md
+
+# 内部文档与工具（本地保留，不上传）
+新人接手指南.md
+文件/
+自适应算法指引.md
+no_desc_questions.txt
+niuke_scraper_config.json
+网络爬虫/
