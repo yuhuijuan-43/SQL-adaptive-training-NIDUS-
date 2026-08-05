@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>SQL 自适应训练平台 · 功能与操作指南</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Microsoft YaHei', '微软雅黑', 'PingFang SC', sans-serif;
+    color: #1f2937; line-height: 1.75; font-size: 14px;
+    background: #f6f8fc; padding: 32px 0;
+  }
+  .page { max-width: 860px; margin: 0 auto; background: #fff; padding: 56px 64px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  /* 封面 */
+  .cover { text-align: center; padding: 80px 0 60px; border-bottom: 3px solid #eef2ff; margin-bottom: 40px; }
+  .cover .logo { font-size: 15px; letter-spacing: 4px; color: #6b7280; margin-bottom: 18px; }
+  .cover h1 { font-size: 32px; background: linear-gradient(120deg, #4f46e5, #06b6d4); -webkit-background-clip: text; color: transparent; margin-bottom: 12px; }
+  .cover .sub { font-size: 16px; color: #4b5563; }
+  .cover .meta { margin-top: 28px; font-size: 13px; color: #9ca3af; }
+  /* 标题 */
+  h2 { font-size: 22px; color: #4338ca; margin: 48px 0 16px; padding-left: 12px; border-left: 5px solid #6366f1; }
+  h3 { font-size: 17px; color: #1e40af; margin: 28px 0 10px; }
+  h4 { font-size: 15px; color: #374151; margin: 16px 0 8px; }
+  p { margin-bottom: 10px; }
+  ul, ol { margin: 0 0 12px 22px; }
+  li { margin-bottom: 5px; }
+  /* 表格 */
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13.5px; }
+  th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; }
+  th { background: #eef2ff; color: #3730a3; font-weight: 600; }
+  tr:nth-child(even) td { background: #fafbff; }
+  /* 提示块 */
+  .tip { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 10px 14px; margin: 12px 0; border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  .warn { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 10px 14px; margin: 12px 0; border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  .key { background: #f5f3ff; border-left: 4px solid #8b5cf6; padding: 10px 14px; margin: 12px 0; border-radius: 0 8px 8px 0; font-size: 13.5px; }
+  /* 步骤 */
+  .step { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 18px; margin: 10px 0; }
+  .step b { color: #4f46e5; }
+  code { background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 4px; padding: 1px 6px; font-family: Consolas, monospace; font-size: 12.5px; color: #be185d; }
+  /* 目录 */
+  .toc { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px 28px; margin-bottom: 12px; }
+  .toc h3 { margin-top: 0; color: #4338ca; }
+  .toc a { color: #334155; text-decoration: none; }
+  .toc li { margin-bottom: 6px; }
+  .page-break { page-break-before: always; }
+  /* 打印 */
+  @media print {
+    body { background: none; padding: 0; }
+    .page { box-shadow: none; max-width: none; padding: 20px 36px; }
+    h2 { page-break-after: avoid; }
+    table, .tip, .warn, .key, .step, .toc { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ============ 封面 ============ -->
+  <div class="cover">
+    <div class="logo">NIDUS · SQL ADAPTIVE TRAINING</div>
+    <h1>SQL 自适应训练平台</h1>
+    <div class="sub">功能指南 · 操作指南</div>
+    <div class="meta">版本 2026-08 · 题库 515 题 + 真题 50 题 · 知识图谱 37 节点</div>
+  </div>
+
+  <!-- ============ 目录 ============ -->
+  <div class="toc">
+    <h3>📑 目录</h3>
+    <ol>
+      <li><a href="#s1">平台简介</a></li>
+      <li><a href="#s2">学员功能与操作指南</a>
+        <ul>
+          <li><a href="#s21">2.1 访问 · 登录 · 注册</a></li>
+          <li><a href="#s22">2.2 门户首页与多语言</a></li>
+          <li><a href="#s23">2.3 自适应进阶（核心 · 图谱点亮）</a></li>
+          <li><a href="#s24">2.4 自主练习</a></li>
+          <li><a href="#s25">2.5 真题测试</a></li>
+          <li><a href="#s26">2.6 错题集（翻页复习）</a></li>
+          <li><a href="#s27">2.7 知识图谱可视化</a></li>
+          <li><a href="#s28">2.8 了解我们</a></li>
+        </ul>
+      </li>
+      <li><a href="#s3">管理员功能与操作指南</a>
+        <ul>
+          <li><a href="#s31">3.1 管理后台登录门（双重验证）</a></li>
+          <li><a href="#s32">3.2 管理员账号体系（内推码注册）</a></li>
+          <li><a href="#s33">3.3 用户管理（重置 / 回退 / 删除）</a></li>
+          <li><a href="#s34">3.4 主管理员专属功能</a></li>
+          <li><a href="#s35">3.5 数据统计</a></li>
+        </ul>
+      </li>
+      <li><a href="#s4">部署与分发指南</a>
+        <ul>
+          <li><a href="#s41">4.1 本地启动</a></li>
+          <li><a href="#s42">4.2 打包发给他人</a></li>
+          <li><a href="#s43">4.3 公网访问（ngrok）</a></li>
+        </ul>
+      </li>
+      <li><a href="#s5">常见问题</a></li>
+      <li><a href="#s6">附录：技术概览</a></li>
+    </ol>
+  </div>
+
+  <!-- ============ 1 平台简介 ============ -->
+  <h2 id="s1">1. 平台简介</h2>
+  <p>SQL 自适应训练平台是一个<b>基于知识图谱点亮的 SQL 刷题平台</b>：系统按「分类 → 知识点」逐级出题，连续答对即可点亮知识点，29 个知识点 + 7 大分类 + 根节点逐级点亮整棵知识图谱，让学习成长看得见。</p>
+  <table>
+    <tr><th style="width:130px">项目</th><th>内容</th></tr>
+    <tr><td>产品形态</td><td>Web 应用（浏览器访问，零安装客户端）</td></tr>
+    <tr><td>题库规模</td><td><b>515 道练习题</b>（58 道选择题 + 457 道填空题）+ <b>50 道真题</b>，全部含标准答案与预期输出</td></tr>
+    <tr><td>知识图谱</td><td>37 个节点：1 根节点 + 7 大分类 + 29 个知识点（如 SELECT、内连接、窗口函数…）</td></tr>
+    <tr><td>核心玩法</td><td>自适应进阶（图谱点亮）、自主练习、真题测试、错题集复习</td></tr>
+    <tr><td>多语言</td><td>简体中文 · 繁體中文 · English · 日本語 · हिन्दी · Português（6 语言）</td></tr>
+    <tr><td>目标用户</td><td>零基础转行小白、计算机专业大学生、SQL 面试准备者</td></tr>
+  </table>
+
+  <!-- ============ 2 学员指南 ============ -->
+  <div class="page-break"></div>
+  <h2 id="s2">2. 学员功能与操作指南</h2>
+
+  <h3 id="s21">2.1 访问 · 登录 · 注册</h3>
+  <div class="step">
+    <b>操作步骤：</b>
+    <ol>
+      <li>浏览器打开平台地址（本地：<code>http://localhost:5000</code>），进入<b>门户首页</b>。</li>
+      <li>点击「进入平台」进入登录/注册页（或直接访问 <code>/login</code>）。</li>
+      <li>新用户点击「注册」选项卡，填写用户名 + 密码。密码需 <b>8-16 位</b>，含大小写字母与数字（特殊字符可选）。</li>
+      <li>不想想密码？点「随机安全密码」一键生成 16 位强密码；点「随机用户名」自动生成。</li>
+      <li>注册成功自动登录并进入做题主页。</li>
+    </ol>
+  </div>
+  <div class="tip"><b>提示：</b>注册页提供实时密码强度条（红→绿四色）与规则逐条点亮；用户名实时检查是否被占用；注册按钮在全部条件满足前不可点击。忘记密码时联系团队管理员协助重置（无需重新注册）。</div>
+
+  <h3 id="s22">2.2 门户首页与多语言</h3>
+  <ul>
+    <li><b>门户首页（/）</b>：浅色玻璃拟态风格，展示平台三大特性——知识图谱驱动 · 自适应推荐引擎 · 深度模式举一反三；右侧「进入平台 / 了解我们」双入口。</li>
+    <li><b>语言切换</b>：门户首页右上角「语言」下拉菜单，6 种语言一键切换，偏好自动记忆；其他页面自动跟随。</li>
+    <li><b>了解我们（/about）</b>：平台更新动态（分页展示，点击条目查看详情：概述 / 实现要点 / 开发思路 / 数据速览）+ 项目初心介绍。</li>
+  </ul>
+
+  <h3 id="s23">2.3 自适应进阶（核心 · 图谱点亮）</h3>
+  <p>这是平台的核心玩法：系统按知识图谱<b>逐级出题</b>，你答对的每一个知识点都会在图谱上<b>点亮一盏灯</b>。</p>
+
+  <h4>出题流程（系统自动）</h4>
+  <div class="key">
+    <b>双循环出题：</b>分类（枝节点）不放回 → 知识点（叶节点）不放回 → 每个知识点连续出 <b>5 题</b>（3 道选择题 + 2 道填空题，选择先行）。题目不足时同知识点题目循环复用。
+  </div>
+
+  <h4>点亮规则（叶节点——知识点，任一满足即点亮）</h4>
+  <table>
+    <tr><th>规则</th><th>条件</th><th>说明</th></tr>
+    <tr><td>规则 1</td><td><b>连续答对 3 题</b>（相邻两题间隔 ≤ 2 分钟）</td><td>立即点亮并<b>跳过该知识点剩余题目</b>，进入下一个知识点</td></tr>
+    <tr><td>规则 2</td><td>该知识点本轮 <b>5 题全部答对</b>（不计间隔）</td><td>5 题出满全对即点亮</td></tr>
+    <tr><td>规则 3</td><td><b>累计答对 10 道</b>该知识点题目（自适应 + 自主练习 + 真题测试都算）</td><td>每答对 2 道点亮 20%，知识点内显示 x/10 进度</td></tr>
+  </table>
+
+  <h4>点亮规则（枝 / 根节点）</h4>
+  <ul>
+    <li><b>分类（枝节点）</b>：圆圈内显示 <code>x/y</code>（已点亮知识点数 / 知识点总数），全部点亮后该分类点亮。</li>
+    <li><b>根节点</b>：显示 <code>x/7</code>（已点亮分类数 / 7），全部点亮后整棵图谱点亮。</li>
+  </ul>
+
+  <h4>一轮循环</h4>
+  <div class="step">
+    <b>操作步骤：</b>
+    <ol>
+      <li>做题主页点击「自适应进阶」→ 查看知识图谱点亮状态 → 点「开始适应」。</li>
+      <li>逐题作答：选择题点选选项即判分；填空题在 SQL 编辑器输入后提交（实时语法高亮、括号/引号错误检测）。</li>
+      <li>答对 3 连对 / 全对 / 累计达标 → 节点点亮，页面提示「已点亮「xxx」」。</li>
+      <li>一轮 = 刷完所有未点亮知识点（至多 145 题）→ 显示完成面板 → 返回图谱界面。</li>
+      <li>点亮状态<b>永久保留</b>，再次「开始适应」进入新一轮（已点亮知识点自动跳过）。</li>
+    </ol>
+  </div>
+  <div class="tip"><b>提示：</b>图谱中知识点节点上方的 <code>x/10</code> 是本知识点的累计答对进度；当前正在刷的知识点有红色发光标记；答题时可用右上角 👁 图标切换「色觉辅助模式」（蓝-橙-灰-紫高辨识度配色）。</div>
+
+  <h3 id="s24">2.4 自主练习</h3>
+  <ul>
+    <li>做题主页点击「自主练习」，浏览全部 515 道练习题（逐题浏览）。</li>
+    <li><b>分类筛选</b>：按官方 7 大分类 × 29 个子标签级联筛选（如「表连接 → 内连接」），也可按难度（简单 / 中等 / 困难）筛选。</li>
+    <li>选择题即时判分；填空题提交后在<b>内存数据库真实执行</b>比对结果集（等价写法如列顺序不同、COUNT(*) 与 COUNT(非空列) 均正确判对），答错给出「表不存在」「语法错误」等具体提示。</li>
+    <li>题目卡展示：表结构面板（可折叠）、测试数据可视化表格、预期输出表格。</li>
+  </ul>
+
+  <h3 id="s25">2.5 真题测试</h3>
+  <ul>
+    <li>做题主页点击「真题测试」，进入独立真题池（50 道），模拟真实笔试场景。</li>
+    <li>真题答题同样计入知识点累计答对（点亮规则 3 的进度来源之一）。</li>
+  </ul>
+
+  <h3 id="s26">2.6 错题集（翻页复习）</h3>
+  <ul>
+    <li>做题主页点击「错题集」，集中展示你在自适应进阶、自主练习、真题测试中<b>答错的全部题目</b>。</li>
+    <li><b>翻页模式</b>：每页 5 个错题，底部「上一页 / 下一页 + 第 x / y 页」翻页（首末页按钮自动禁用）。</li>
+    <li>点击错题卡片查看详情：题目原文 + 表结构 + 你的答案（红）vs 正确答案（绿）+ 解析；点「返回错题列表」回到原页码。</li>
+    <li>顶部「近期综合数据」（可折叠）：总答题数 / 正确数 / 错误数 / 正确率。</li>
+  </ul>
+
+  <h3 id="s27">2.7 知识图谱可视化</h3>
+  <ul>
+    <li>独立全屏图谱页（/knowledge-map），ECharts 力导向图展示 37 节点三层结构。</li>
+    <li>登录状态下自动进入<b>点亮模式</b>：已点亮节点彩色发光、未点亮灰色、部分点亮淡彩 + 红描边；顶部统计「点亮 x / 36」。</li>
+    <li>点击大分类节点展开 / 收起子知识点；「展开全部 / 重置视图」按钮调整视图。</li>
+  </ul>
+
+  <h3 id="s28">2.8 了解我们</h3>
+  <ul>
+    <li>更新动态按时间倒序分页展示（每页 4 条），点击条目弹详情：概述 / 实现要点 / 开发思路 / 数据速览，全部 6 语言版本。</li>
+    <li>置顶「项目初心」介绍平台缘起与设计理念。</li>
+  </ul>
+
+  <!-- ============ 3 管理员指南 ============ -->
+  <div class="page-break"></div>
+  <h2 id="s3">3. 管理员功能与操作指南</h2>
+
+  <h3 id="s31">3.1 管理后台登录门（双重验证）</h3>
+  <div class="step">
+    <b>操作步骤：</b>
+    <ol>
+      <li>访问管理后台（导航 → 管理后台，或 <code>/admin-gate</code>）。</li>
+      <li>输入<b>管理员账号 + 密码</b>，再输入<b>统一管理员密钥</b>（平台级密钥，主管理员可更换）。</li>
+      <li>双重验证通过后进入管理后台，可查看统计与用户明细。</li>
+    </ol>
+  </div>
+
+  <h3 id="s32">3.2 管理员账号体系（内推码注册）</h3>
+  <ul>
+    <li>管理后台 → 「管理员账号」页：用<b>内推码</b>注册管理员账号（页面上不显示码值，防泄露）。</li>
+    <li>内推码由<b>主管理员</b>统一管理（生成 / 查看 / 删除），注册时实时校验。</li>
+    <li>管理员账号登录后进入「管理员面板」：查看统一密钥（掩码显示可复制）、「我的同事」列表（用户名 + 最后上线时间）。</li>
+  </ul>
+
+  <h3 id="s33">3.3 用户管理（重置 / 回退 / 删除）</h3>
+  <h4>重置密码（忘记密码协助找回）</h4>
+  <div class="step">
+    <b>操作步骤：</b>
+    <ol>
+      <li>管理后台 → 用户明细 → 目标用户行点击「重置密码」。</li>
+      <li>设置新密码并确认；重置成功后立即生效，用户无需重新注册、答题数据保留。</li>
+      <li>重置前旧密码自动入档（最多保留 3 条），支持逐次回退。</li>
+    </ol>
+  </div>
+  <h4>回退密码</h4>
+  <p>用户在「重置密码」处选择「回退」，可逐次恢复历史密码（每账号最多回退 3 次；管理员账号仅主管理员可回退）。</p>
+  <h4>删除用户</h4>
+  <div class="warn"><b>注意：</b>删除为不可逆操作。流程：点击「删除」→ 弹窗确认（输入 confirm 确认）→ 删除成功。同步清理该用户的答题记录、掌握度、旅程、点亮状态与密码历史；管理员账号不会被删除。</div>
+
+  <h3 id="s34">3.4 主管理员专属功能</h3>
+  <p>主管理员（平台初始管理员，标记 is_primary）额外拥有以下权限，普通管理员不可见/不可操作：</p>
+  <table>
+    <tr><th>功能</th><th>说明</th></tr>
+    <tr><td>删除管理员</td><td>可删除其他管理员账号（不能删除自己/主管理员），需确认 + 操作者验证，同步清理其密码历史</td></tr>
+    <tr><td>重置 / 回退管理员密码</td><td>管理员账号的密码管理仅主管理员可执行</td></tr>
+    <tr><td>更换统一密钥</td><td>更换管理后台统一密钥（8-64 字符），更换后对全部管理员生效</td></tr>
+    <tr><td>内推码管理</td><td>查看全部内推码（码 + 备注 + 创建时间）、新增、删除（最后一个不允许删）</td></tr>
+  </table>
+
+  <h3 id="s35">3.5 数据统计</h3>
+  <ul>
+    <li>管理后台顶部数据速览：用户总数 / 答题总数 / 正确数 / 正确率 / 进行中旅程数。</li>
+    <li>难度分布直方图：按题目难度（简单/中等/困难）分组的答题量。</li>
+    <li>用户答题排行：单用户答题记录摘要（按用户查询）。</li>
+  </ul>
+
+  <!-- ============ 4 部署分发 ============ -->
+  <div class="page-break"></div>
+  <h2 id="s4">4. 部署与分发指南</h2>
+
+  <h3 id="s41">4.1 本地启动</h3>
+  <div class="step">
+    <b>操作步骤：</b>
+    <ol>
+      <li>双击 <code>start_server.bat</code>（Windows 一键启动）。</li>
+      <li>脚本自动探测本机 Python（多策略：PATH / py 启动器 / 常见安装目录 / 注册表），找不到时引导下载安装（默认 Python 3.13，可配置文件 <code>server_path.conf</code> 预设路径）。</li>
+      <li>自动安装依赖（flask / flask-cors / requests / bs4 / lxml / bcrypt / Flask-Limiter）。</li>
+      <li>启动完成后浏览器访问 <code>http://localhost:5000</code>。</li>
+    </ol>
+  </div>
+  <div class="tip"><b>手动启动：</b>已装 Python 3.10+ 的环境可执行 <code>pip install -r backend/requirements.txt</code> 后运行 <code>python backend/run.py</code>。</div>
+
+  <h3 id="s42">4.2 打包发给他人</h3>
+  <div class="key"><b>一致性保证：</b>整个项目文件夹压缩发送即可。前端资源已全部本地化（Font Awesome / CodeMirror 不再依赖外网），任何网络环境样式一致；对方残留旧版数据库时，启动会自动重建到最新题库（515 题）。</div>
+  <ul>
+    <li><b>推荐方式</b>：整个项目文件夹复制/压缩（含 <code>backend/questions.db</code>，数据与本地一致）。</li>
+    <li>不含数据库也正常：启动时自动从 <code>questions.json</code> 重建（题目与本地完全一致，用户答题数据从零开始）。</li>
+    <li>对方电脑若之前跑过旧版：启动时自动检测题数与题库文件不一致 → 自动重建，无需手动删库。</li>
+  </ul>
+
+  <h3 id="s43">4.3 公网访问（ngrok）</h3>
+  <div class="step">
+    <b>操作步骤：</b>
+    <ol>
+      <li>本地启动服务（默认端口 5000）。</li>
+      <li>运行 <code>ngrok http 5000</code>（项目自带 <code>ngrok/</code> 目录）获得公网地址。</li>
+      <li>把公网地址分享给同事/学员访问（首次使用需在 ngrok 官网注册 token）。</li>
+    </ol>
+  </div>
+
+  <!-- ============ 5 常见问题 ============ -->
+  <h2 id="s5">5. 常见问题</h2>
+  <table>
+    <tr><th style="width:200px">问题</th><th>解答</th></tr>
+    <tr><td>忘记密码怎么办？</td><td>联系团队管理员，验证身份后协助重置（新密码立即生效，旧密码留档可回退）。</td></tr>
+    <tr><td>图谱为什么点不亮？</td><td>点亮需要：连续答对 3 题（间隔 ≤2 分钟）/ 该知识点 5 题全对 / 累计答对 10 道。间隔超过 2 分钟或答错都会中断「连续」。</td></tr>
+    <tr><td>一轮刷完还能点亮吗？</td><td>可以。一轮完成后点亮状态保留，回到图谱重新开始新一轮，直至整棵图谱点亮。</td></tr>
+    <tr><td>填空题判定标准？</td><td>答案在内存数据库真实执行，与标准答案<b>结果集</b>比对（列顺序、行顺序、等价写法均正确判对）；语法错误会给出具体提示。</td></tr>
+    <tr><td>页面图标/编辑器显示异常？</td><td>资源已本地化，正常情况下无需联网。若仍异常请确认浏览器版本较新（玻璃拟态效果需 Chrome 76+）。</td></tr>
+    <tr><td>别人机器上题目和我不一样？</td><td>旧版数据库残留会导致题库停在旧版。现版本启动时自动检测并重建，请确认对方运行的是最新代码。</td></tr>
+  </table>
+
+  <!-- ============ 6 附录 ============ -->
+  <div class="page-break"></div>
+  <h2 id="s6">6. 附录：技术概览</h2>
+  <table>
+    <tr><th style="width:150px">层面</th><th>技术</th></tr>
+    <tr><td>后端</td><td>Python + Flask（分层：路由 app.py / 自适应引擎 engine.py / 查询层 repositories.py / 认证 auth.py / 播种 seeding.py）</td></tr>
+    <tr><td>数据库</td><td>SQLite 单文件（WAL 模式，零部署，启动自动建表/重建题库）</td></tr>
+    <tr><td>判题</td><td>内存 SQLite 真实执行 + 结果集比对，选择题文本比对（HTML 实体归一）</td></tr>
+    <tr><td>前端</td><td>纯 HTML/CSS/JS 零构建，玻璃拟态风格，CodeMirror + ECharts 本地化，6 语言 i18n</td></tr>
+    <tr><td>认证</td><td>bcrypt 密码（兼容旧 SHA-256 自动升级），会话 session_id</td></tr>
+    <tr><td>部署</td><td>Waitress WSGI / Flask dev server + start_server.bat 一键启动 + ngrok 公网</td></tr>
+    <tr><td>测试</td><td>pytest 115 用例（判题 / 点亮引擎 / API 安全 / 流程 / seed 重建）</td></tr>
+  </table>
+  <h3>核心 API</h3>
+  <table>
+    <tr><th>接口</th><th>用途</th></tr>
+    <tr><td><code>/api/journey/start · next · status</code></td><td>自适应进阶：开始 / 提交答案返回下一题（含点亮判定）/ 状态与图谱点亮数据</td></tr>
+    <tr><td><code>/api/questions</code> · <code>/api/submit</code></td><td>题目列表（分类/难度筛选）/ 提交判题（自主练习与真题）</td></tr>
+    <tr><td><code>/api/progress/&lt;sid&gt;</code></td><td>答题历史与正确率（错题集数据源）</td></tr>
+    <tr><td><code>/api/graph</code></td><td>知识图谱结构（节点 + 边）</td></tr>
+    <tr><td><code>/api/admin/*</code></td><td>管理后台：统计 / 用户 / 密码管理 / 管理员体系 / 密钥 / 内推码</td></tr>
+  </table>
+
+  <p style="text-align:center;color:#9ca3af;margin-top:48px;font-size:12px">NIDUS · SQL 自适应训练平台 · 功能与操作指南 · 2026-08</p>
+</div>
+</body>
+</html>

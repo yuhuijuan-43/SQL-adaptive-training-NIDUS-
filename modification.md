@@ -4,6 +4,347 @@
 
 ---
 
+## 2026-08-05：自适应进阶图谱点亮逻辑 + 新出题引擎（双循环 + 叶/枝/根三级点亮）
+
+**背景**：自适应进阶（Journey）原引擎为「三态题库 + 权重队列 + 题型解锁状态机」，与产品想要的「图谱点亮」体验脱节。本次完全替换出题逻辑，并实现知识图谱三级点亮。
+
+### 1. 新出题引擎（`backend/engine.py` 全量重写）
+
+- **双循环出题**：枝节点不放回（固定图谱顺序）→ 叶节点不放回 → 每叶连续 5 题（`[选择,选择,选择,填空,填空]` 选择先行）
+- **题池循环复用**：该叶题池不足 5 道时同题可重复出（user_progress 按记录条数计数）；填空池为空 → 填空槽回退选择题池（题库不足降级，本次不改题库）
+- **一轮规模**：29 叶 × 5 题 = 至多 145 题；全部刷完 → 保留点亮状态回到图谱界面，重新开始新一轮（已点亮叶不进新一轮）
+- 旧的 `tag_unlocked`/`queue`/权重队列/60% 推进/70% 掌握逻辑全部删除；`_record_answer_stats` 计数器保留（total_answered/total_correct/wrong_streak/avg_speed）
+
+### 2. 点亮规则
+
+- **叶节点**（任一满足即点亮）：
+  - 规则1：本轮该叶出的题中**连续答对 3 道**（相邻两题提交间隔 ≤2min，间隔取 user_progress.answered_at 差值）→ 点亮并跳过剩余题
+  - 规则2：本轮该叶**全部题均答对**（不计间隔）→ 点亮
+  - 规则3：**累计答对 10 道**该叶类型题（自适应+自主练习+真题测试跨池累计），每答对 2 道点亮 20%，节点内显示 `x/10`
+- **枝节点**：圆圈内显示 `x/y`（点亮叶/总叶），全部叶点亮 → 枝点亮
+- **根节点**：显示 `x/7`（点亮枝/总枝），全部枝点亮 → 根点亮
+
+### 3. 数据模型与 API
+
+- **新表 `user_lights`**（session_id + node_id PK，规则1/2 事件落库；规则3 由 user_progress 实时派生，不落库）
+- **`journey_state` 加列 `round_state`**（JSON：本轮 entries/指针/段内答题记录/点亮记录）
+- `/api/journey/status`、`/api/journey/next`：响应新增 `lights`（37 节点全量 {lit, correct|x, y}）、`round`（轮进度 pos/leaf_total/answered_total）、`round_complete`、`lit_now`（本次刚点亮节点）；**移除 `unlocked_nodes`**（两个前端消费点同步改造）
+- `save_answer` 返回 lastrowid（引擎作答登记用）；`delete_user` 同步清理 user_lights
+
+### 4. 前端
+
+- `knowledge_map.html`：改消费 `lights` 全量状态；未点亮叶显示 `name + x/10`（上方）、枝/根圆圈内显示 `x/y`、`x/7`；部分点亮（有进度未点亮）淡彩 + 红色描边；已点亮保持彩色发光
+- `index.html`：点亮统计改按 `lights`（root 不计入）；答题页节点名追加轮进度 `pos/leaf_total`；一轮完成显示完成面板（本轮点亮数 + 返回图谱）；答对点亮时提示「已点亮「xxx」」
+- **了解我们（about.html）**：新增「自适应进阶：知识图谱点亮系统」更新动态（日期最新置顶），UPDATES / UPDATES_EN / UPDATES_EXTRA（zh-TW·hi·pt·ja）六语言平行各 +1 条 → 16 条/语言；DeepSeek 翻译四语言版本
+
+### 5. 测试
+
+- 新增 `backend/tests/test_journey_lights.py` **15 用例**：双循环出题序列、池不足循环复用、规则1（连对3+间隔≤2min 点亮跳叶 / 间隔>2min 阻断 / 连对被错题打断）、规则2（全对点亮 / 有错不亮）、规则3（correct 计数 / 跨池累计 10 点亮 / 未开始 journey 也有 lights）、枝/根 x/y 推导、一轮完成 + 点亮保留 + 新一轮
+- `conftest.py` 追加 q5/q6（dml_select 基础选择 + 填空）；`test_journey_flow.py` 首题/答案/lights 断言更新；`test_journey_rules.py` 删除（旧引擎规则废弃）
+- **pytest 111 用例全绿**；真实题库副本 + 真实 HTTP 冒烟通过（连对3 → 点亮跳叶 → 一轮 143 题 → 新一轮 28 叶）
+
+### 6. 已知事项
+
+- 每叶 5 题中填空不足时降级为选择题（本次未补题库；后续按「每叶 3 选择 + 2 填空」目标补题）
+- 旧 `journey_state` 脏数据（queue/tag_unlocked/phase='cold'）自动忽略，无需迁移
+
+---
+
+## 2026-08-05：功能与操作指南 PDF
+
+- 生成 `SQL自适应训练平台-功能与操作指南.pdf`（项目根目录，11 页，中文字体嵌入）
+- 内容：平台简介 → 学员功能与操作指南（登录注册 / 门户与多语言 / 自适应进阶·图谱点亮 / 自主练习 / 真题测试 / 错题集翻页 / 图谱可视化 / 了解我们）→ 管理员指南（双重验证登录门 / 内推码管理员体系 / 重置回退删除 / 主管理员专属 / 统计）→ 部署分发（一键启动 / 打包一致性 / ngrok）→ 常见问题 → 技术概览
+- 源文件保留在 `docs/功能与操作指南.html`（可改后重新转 PDF：msedge --headless --print-to-pdf）
+
+---
+
+## 2026-08-05：错题集翻页模式（每页 5 个错题）
+
+- `frontend/index.html` 错题集改为可翻页：`WRONG_PAGE_SIZE = 5` 每页 5 条，`wrongPage` 当前页码
+- `renderWrongList()` 分页渲染（切片当前页）+ 底部翻页控件（上一页 / 「第 x / y 页」 / 下一页，首末页按钮禁用）；页码越界自动钳制
+- 重新进入错题集（loadWrongSet）重置回第 1 页；详情页「返回错题列表」改为 `renderWrongList()`——返回后停留在原页码，不再重新拉接口
+- 卡片 onclick 传全局下标（`start + i`），翻页不影响详情定位
+- 新增 6 语言词条 3 键：`上一页` / `下一页` / `第 {0} / {1} 页`（en/zh_tw/ja/hi/pt）
+- 验证：JS 语法通过；DOM 桩模拟 12 条错题 → 第 1/2 页各 5 卡、页码与按钮禁用正确、越界钳制、空态、详情返回保持页码
+- **了解我们（about.html）**：新增「错题集翻页：每页 5 题」更新动态（tag=优化，日期最新置顶），UPDATES / UPDATES_EN / UPDATES_EXTRA（zh-TW·ja·hi·pt）六语言平行各 +1 条 → 17 条/语言；DeepSeek 翻译四语言版本；校验 17=17=17=17=17=17、JS 语法与 pick 渲染通过
+
+---
+
+## 2026-08-05：打包分发一致性修复（CDN 离线化 + 旧库自动重建）
+
+**背景**：项目打包发给他人电脑解压启动后效果与本地不一致，两类表现：
+- ① 页面样式不同（图标空白、代码编辑器降级为普通文本框）→ 前端依赖国外 CDN
+- ② 题目/自适应行为不同 → 对方电脑残留旧版 `questions.db`，seed 因 `count>0` 跳过导入，题库永远停在旧版
+
+### 1. CDN 资源本地化（彻底离线）
+
+- **下载到 `frontend/lib/`**：Font Awesome 6.4.0（`font-awesome/css/all.min.css` + `webfonts/` 6 个字体）+ CodeMirror 5.65.16（`codemirror/` css + 3 个 js）
+- **6 个页面引用改相对路径**（共 10 处）：`admin` / `format_sample` / `index` / `index_ngrok` / `login` / `login_ngrok`——不再依赖 cdnjs.cloudflare.com
+- **新增路由 `GET /lib/<path>`**（app.py，`static_folder=None` 无默认静态目录）：`send_from_directory(frontend/lib)`
+- 校验：8 个 lib 资源全部 200；6 页面外部引用残留 0
+
+### 2. seed 题库版本校验（旧库自动重建）
+
+- `seed_questions()` / `seed_exam_questions()`：`count>0` 跳过逻辑改为**条数比对**——库内题数与题库文件（questions.json / exam_questions.json）不一致时自动重建题库表（DELETE + 重置 `sqlite_sequence` + 重导，题目 id 从 1 按文件顺序与本地/全新库一致）
+- 重建后清理指向不存在题目的答题记录（`user_progress`），用户数据保留
+- **测试**：新增 `backend/tests/test_seed_rebuild.py` 4 用例（练习库重建 / 真题库重建 / 条数一致跳过不覆盖 / 答题记录保留）；E2E 模拟旧库 2 题 → 启动自动重建 515 题 + 用户数据保留
+- pytest 115 用例全绿
+
+### 3. 已知事项
+
+- 打包分发建议：整个项目文件夹复制/压缩（含 `backend/questions.db` 或不含均可——不含则自动重建，含则数据与本地一致；对方若残留旧库，启动时会自动重建）
+- 对方浏览器过旧（backdrop-filter 需 Chrome 76+）仍可能出现玻璃拟态样式差异，属浏览器能力问题
+
+---
+
+## 2026-08-05：做题前端导航布局跳动修复（错题集/分类筛选触发）
+
+- **现象**：点击「错题集」或分类标签后，导航栏（自适应进阶/自主练习/真题测试/错题集一行）发生上下位移
+- **根因一（嵌套被破坏）**：此前删除 langBtn 时在 header 里多留了一个 `</div>`，导致 main-wrap 提前闭合——导航与三个页面 div 变成了 body 的 flex 直接子项；内容变短时 `.main-wrap { flex: 1 0 auto }`（body 为 flex 列布局）被拉长，把导航往下顶（实测错题集视图导航下移 56px）
+- **根因二（滚动条宽度导致的换行）**：header 品牌文字（SQL 自适应训练 ADAPTIVE PRACTICE）随滚动条出现/消失改变可用宽度而换行/取消换行，卡片高度 86↔62px 跳动，导航随之上下移动（实测 24px）
+- **修复**：① 删掉 header 中多余的 `</div>`，恢复 main-wrap → card/导航/页面 的正确嵌套（导航回到 main-wrap 内部）；② 品牌行加 `white-space:nowrap`，卡片高度恒定
+- **验证**（无头 Edge + CDP 实测，全新 profile）：导航位置在 自适应进阶 / 错题集 / 自主练习(515题) / 分类筛选(11题) 四种状态下恒定 78px；筛选栏高度恒定 34px（✕ 标签出现不换行）；0 运行时异常
+
+---
+
+## 2026-08-04（深夜修复）：做题前端「自主练习/真题测试」按钮无响应——恢复被误删的 API_BASE
+
+- **现象**：index.html 的「自主练习」「真题测试」按钮点击无响应（自适应进阶/错题集正常）
+- **根因**：与上一处同源——「语言切换入口仅保留在主界面」的改动把 index.html 脚本头部 `const API_BASE = '/api'` 也误删了。页面加载到 `validateSessionSilently()`（第 775 行调用）时抛 `ReferenceError: API_BASE is not defined`，脚本在此中断，后续顶层定义（`let currentPool` 等）全部未执行——两个练习按钮的 onclick 引用 `currentPool` 时直接报错，故无响应；自适应进阶/错题集走的是函数声明（已提升），不受影响
+- **修复**：按 HEAD 版本恢复 `const API_BASE = '/api'`（含原注释）
+- **验证**（无头 Edge + CDP 实测）：全新 profile 加载 index.html 无任何运行时异常；四个导航按钮逐一点击均正常——自主练习（515 题）、真题测试（50 题）、自适应进阶、错题集全部切换成功
+- **防漏扫**：对比 HEAD 与工作区 7 个页面全部顶层声明（const/let/var/function/class），无其他「HEAD 有而工作区缺失且仍被引用」的定义
+
+---
+
+## 2026-08-04（深夜修复）：登录/注册/管理员页面无响应——恢复被误删的脚本头部定义
+
+- **现象**：管理员账号页、用户登录/注册页按钮全部无响应、选项卡无法切换；管理员面板整页脚本中断
+- **根因**：此前「语言切换入口仅保留在主界面」的改动误删了三个页面 `<script>` 头部的辅助定义，导致页面一加载即 ReferenceError，后续所有事件处理全部失效：
+  - `login_glass.html` / `admin_auth.html`：删除 `const API_BASE = '/api'` 与 `const $ = id => document.getElementById(id)`（`$(` 全页使用 39/34 次）
+  - `admin_panel.html`：除上述两项外还删了会话变量 `var ADMIN_TOKEN` / `var ADMIN_USER` 与无 token 重定向守卫（`$(` 使用 41 次）
+- **修复**：按 HEAD 版本原样恢复三个页面的 `API_BASE`、`$`、ADMIN 会话变量（admin_gate/index_glass 的 `$` 未被删，未动）
+- **校验**：7 页内联 JS `node --check` 通过；DOM 桩模拟完整执行 7 页脚本全部 LOAD OK（admin_panel 存在 setInterval 计时器，模拟时需强制退出，非缺陷）
+
+---
+
+## 2026-08-04（深夜追加）：先导页语言主导 + 全站 6 语言跟随
+
+### 1. 语言设置主从关系（7 页统一）
+
+- **先导页（index_glass.html）为主导**：语言下拉菜单仅保留在先导页（门户页），选择写入 `localStorage.lang`
+- **其余 6 页跟随**：`const LANG = 'zh'` → `let LANG = localStorage.getItem('lang') || 'zh'`，打开即按先导页所选语言渲染（index / login_glass / about / admin_auth / admin_gate / admin_panel）
+- **补 `langKey()` 定义**：admin_gate / admin_panel 此前 t() 已调用 `langKey()` 但未定义（页面加载即 ReferenceError 报错），统一补 `function langKey() { return LANG === 'zh-TW' ? 'zh_tw' : LANG; }`（index_glass 已有，其余 5 页同步补入）
+- **t() 回退链统一**：`e[langKey()] || e.en || e.zh`（缺失词条回退英文→中文兜底）；`documentElement.lang` 支持 zh-TW（`zh-TW` / `zh-CN` / `en`）
+
+### 2. 补 4 语言词条（此前仅中英的页面）
+
+- **login_glass 61 键**、**about 19 键**、**admin_auth 52 键** 的 I18N 字典全部补 `zh_tw/ja/hi/pt` 四语言值；**index.html 97 键**（中文原文为键）同步补入——术语与 admin_gate/admin_panel/index_glass 已有翻译保持统一（管理者/アドミン/एडमिन 等）
+- 多行词条（注册/登录互切链接等）保留原 HTML 结构，仅翻译锚点文案
+- 词条完整性校验：7 页全部「zh=en=zh_tw=ja=hi=pt=键数」通过
+
+### 3. 做题前端（index.html）配套
+
+- t() 重写：zh→中文原文 / zh_tw→繁体词条 / en→英文 / ja·hi·pt→对应词条（缺失回退英文→原文）
+- 新增 `KG_LABELS_TW`（23 个中文分类标签繁体版），`catLabel` 分支：繁体→繁体标签、日/印/葡→英文标签（SQL 关键字全球通用不翻译）
+- about.html 的 `UPDATES_EXTRA`/`VISION_EXTRA` 键为 `'zh-TW'`，与 LANG 直接匹配，无需改动
+
+### 4. 校验
+
+- 7 页内联 JS `node --check` 全部通过（OK 7 / FAIL 0）；词条 6 语言键完整性逐页核对通过
+
+---
+
+## 2026-08-04（晚间追加）：UPDATES_EXTRA 补 date + 项目初心 VISION 4 语言
+
+- **UPDATES_EXTRA 补 date**：4 语言 × 15 条此前缺 date 字段（切换语言后日期空白），按索引与 UPDATES 一一对应补入（`{date:"2026-08-04",title:...` 对象内正确位置）；排查修复 date 误插对象外导致的语法错误
+- **项目初心 VISION 4 语言**：DeepSeek 翻译 zh-TW/ja/hi/pt（title/desc/overview/points/thinking/stats 全字段），新增 `VISION_EXTRA` 对象；新增 `pickVision()`（zh/en 走原 VISION/VISION_EN，其余查 VISION_EXTRA 回退中文），渲染调用 2 处替换
+- 校验：about.html JS 通过；VISION_EXTRA 4 键齐备
+
+## 2026-08-04（晚间追加）：了解我们新增「全站 6 语言上线」动态
+
+- about.html 六个数组（UPDATES / UPDATES_EN / UPDATES_EXTRA 的 zh-TW·hi·pt·ja）头部各新增一条「全站 6 语言上线」动态（15 条平行，顺序一一对应，pick 按 idx 取值）
+- 条目覆盖 6 语言全文（标题/简介/概述/思路/要点/数据速览：6 语言 · 7 页面 · 14 条动态）；JS 校验通过、条数一致性验证（15=15=15=15=15=15）
+- 项目方案手册功能清单补「全站 6 语言」行
+
+## 2026-08-04（晚间追加）：了解我们动态内容 6 语言 + 语言菜单修复
+
+### 1. 了解我们更新动态多语言（frontend/about.html）
+
+- **UPDATES 14 条动态 × 4 新语言**（繁體中文/日本語/हिन्दी/Português）由 DeepSeek 全量翻译（title/desc/overview/thinking/points/stats 六字段，技术术语与数字保留），新增 `UPDATES_EXTRA` 对象（4 语言 × 14 条平行数组）
+- `pick(u, en, idx)` 升级为 6 语言选择：zh→中文 / en→英文 / 其余→`UPDATES_EXTRA[LANG][idx]`（缺失回退中文）；渲染调用处补 idx 参数
+- 排查过程修复：损坏块残留（游离 ja 数组、重复块）→ 逐段定位删除，恢复单份正确数据
+
+### 2. 语言菜单遮挡修复（7 页统一）
+
+- **根因**：`setLang` 直接 `location.reload()` 未先关闭菜单，慢加载时菜单残留遮住下方卡片；`applyI18n` 旧逻辑把按钮文本覆盖为旧二态（English/中文）
+- **修复**：`setLang` 先关闭菜单再 reload；按钮文本改为显示当前语言名（`LANGS[LANG] ▾`）
+
+### 3. 验证
+
+- 全站 7 页 JS 语法校验通过；UPDATES_EXTRA 4 语言 × 14 条结构与顺序验证一致；pick 6 语言分支生效
+
+---
+
+## 2026-08-04（晚间追加）：全站 6 语言支持（语言下拉菜单）
+
+### 设计目标
+
+右上角语言按钮升级为**「语言」下拉菜单**（点击/悬停展开）：英语 English · 简体中文 · 繁體中文 · 日本語 · हिन्दी · Português，7 个页面全部词条翻译并接入。
+
+### 1. 语言下拉框架（7 页统一注入）
+
+- `#langBtn` 替换为 `#langWrap`（按钮 + 下拉菜单 `#langMenu`，6 项，点击 `setLang(code)` 切换 + reload）
+- 统一引擎注入：`LANGS` 映射、`setLang`（存 localStorage `lang`，含 `zh-TW` 代码）、`toggleLangMenu`、`langKey()`（`zh-TW` → 字典键 `zh_tw`）、点击外部关闭菜单
+- 导航页 `#langBtn { margin-left:auto }` 右对齐规则转移至 `#langWrap`；`let LANG` 重复声明去重；`t()` 查表升级：`e[langKey()] || e.en || e.zh`（index.html 原文即键模式同步升级）
+
+### 2. 词条翻译（353 条 × 4 新语言）
+
+- 提取 7 页全部 353 个词条（key + 中英对照）→ 调 **DeepSeek 批量翻译**（6 批）→ zh_tw / ja / hi / pt 全量翻译（技术术语/占位符/HTML 标签保留）
+- 程序化注入：字典每词条追加 `'zh_tw'/'ja'/'hi'/'pt'` 四语言值；页面分布：index 101 · admin_panel 66 · login_glass 61 · admin_auth 52 · admin_gate 28 · index_glass 26 · about 19
+
+### 3. 问题排查记录
+
+| 问题 | 根因 | 修复 |
+|---|---|---|
+| 注入后 JS 语法错误 | 字典注入插入点在 en 闭合引号之前，引号错乱 | 修正插入点（闭引号之后）并还原重注入 |
+| 4 个词条仍错乱（foot_login 等） | 含 `\'` 转义单引号的词条在还原正则 `.*?` 处提前截断 | 手工修正 admin_auth ×2 / login_glass ×2（含 onclick="switchTab('...')" 的词条） |
+
+### 4. 验证
+
+- 7 页全部 JS 语法校验通过；下拉菜单与引擎注入确认（7 处 langWrap）；字典注入数与原词条数一致（353/353）
+
+---
+
+## 2026-08-04（晚间追加）：选择题判题修复（HTML 实体归一）
+
+### 问题
+
+用户反馈"选择正确的答案也算错"。定位：58 道导入的静态选择题中 **7 道（484/489/490/504/510/513/515）的选项文本在数据库里存为 HTML 实体**（如 `&gt;`）。前端选项按钮经浏览器渲染后 DOM `textContent` 已是真字符（`>`），而 `correct_answer` 仍是实体串 → 文本比对失败 → 选对判错。（后端直查比对正常，浏览器场景必现。）
+
+### 修复（backend/app.py）
+
+- 选择题判题（`/api/submit` 与 `/api/journey/next` 两处）改为**双向 `html.unescape` 归一**后比较：浏览器 textContent（真字符）与 DB 实体串统一后再比对，任何客户端提交形式均可正确判题
+- 数据无需清洗（归一化覆盖）；58 题 correct_answer 与选项（unescape 后）全量校验通过
+
+### 测试（pytest 103 → 104）
+
+- `test_mcq_html_entity_normalization`：浏览器视角（`>`）与 DB 视角（`&gt;`）均判对；错误选项仍判错
+- 排查过程中发现并修正了测试自身数据错误（correct_answer 截断），真实库 7 道实体题浏览器提交全对
+
+---
+
+## 2026-08-04（晚间）：自适应抽题引擎按「用户题库三态」新规则整体替换
+
+### 设计目标
+
+将原 BKT/Thompson 引擎替换为产品新规则：**用户题库三态（未解锁/已解锁/已完成）+ 权重待做队列 + 标签题型解锁状态机**。
+
+### 1. 题库数据（58 静态选择题导入后端）
+
+- **关键发现**：后端 457 题全部为填空题，58 道静态选择题只存在于前端 JS —— 新规则的前提（基础/进阶选择题）需要它们进入后端题库
+- CSV（官方标签/难度）+ 前端 STATIC_QUESTIONS（题干/选项/答案）合并生成 58 题：**29 基础选择 + 29 进阶选择**（`q_level` 标记），29 个官方标签每标签恰好 1 基础 + 1 进阶；写入 `questions.json`（457→515）+ 真实库迁移（幂等），qk 全量映射
+- `questions.json` 新增 `q_level` 字段；`seed_questions` 入库携带
+
+### 2. 新引擎（backend/engine.py 全量重写）
+
+| 规则 | 实现 |
+|---|---|
+| **三态题库** | 已完成 = progress 答对；已解锁 = 答错过的 + 待做队列；未解锁 = 其余（初始全部） |
+| **初次进标签先给基础选择题** | `_ensure_tag_entry` 只解锁 mcq；`_rebuild_queue` 按 基础选择→进阶选择→填空 分层 |
+| **基础选择做对 → 解锁全部选择+填空；做错 → 只解锁选择** | `_apply_answer_unlocks` 状态机（tag_unlocked 持久化） |
+| **首次做对进阶选择 → 立即推填空** | 状态机返回 force_fillin，主流程换本标签填空题（仅一次） |
+| **首次做对填空 → 解锁全部填空，题型不限** | `fillin=True` 后队列混排 |
+| **做对过的选择题再推概率大大调低（×0.05）、填空略微调低（×0.5）** | 复习分支权重；答错 ×1.5 强化 |
+| **刚做对的题绝对不重推** | `_update_queue` 作答即移出队列 + `_pick_question` 排除 just_answered + 复习分支排除 |
+| **掌握 = 做对过 ≥70% 仅含该标签的题（正确率不设限）** | `_mastered`（多标签题不计入分母/分子） |
+| **推进门槛 = 做对 ≥60% 当前标签才能推下一知识点** | `_pick_tag` 未达标强制停留；达标自动推进（未进入/完成率最低优先） |
+| **多标签题** | 仅当所有涉及标签对应题型解锁才推送（当前数据无多标签题，防御逻辑） |
+
+- 批量 qk 映射（`_qk_map` 一次查询），避免逐题查库；对外接口（journey/start、next、status 响应字段）保持兼容
+
+### 3. 存储与判题（backend/db.py + app.py）
+
+- `questions.q_level` 列；`journey_state.tag_unlocked`（题型解锁状态）、`queue`（权重队列）JSON 列
+- **选择题判题分支**：`options` 非空 → 选项文本比对（概念题非 SQL，跳过 judge_sql）——submit 与 journey/next 均适配
+
+### 4. 前端（frontend/index.html）
+
+- 自主练习不再前端合并 STATIC_QUESTIONS（后端 515 题已含，避免重复）；静态概念题（source=static_*）不触发「举一反三」衍生题
+- journey 选择题渲染/提交兼容（选项文本提交 → 后端文本比对）
+
+### 5. 测试（pytest 95 → 103）
+
+- conftest 题库扩展：q1 进阶选择 + q2 填空 + q3 基础选择（select_basic）+ q4 填空（join_inner）
+- 新增 `test_journey_rules.py`（8 例）：首题必为基础选择 / 基础做错只解锁选择 / 基础做对解锁全部 / 进阶首对立即推填空 / **刚做对绝不重推** / <60% 强制停留 / 100% 掌握解锁新标签 / 答错不计掌握
+- 旧用例适配：phase cold→active、第一题为基础选择、选择题文本判题、select_basic 展开 4 题（含学习边后代）
+
+### 6. 真实库端到端验证
+
+- start → 基础选择题（q_level=basic）→ 答错 → 下一题仍为选择题（只解锁选择题）→ 刚做的题未重推 ✓
+
+---
+
+## 2026-08-04（晚间追加）：练习详情页「下一题」按筛选顺序跳转
+
+- 自主练习/真题测试**题目详情页**新增常驻「下一题」按钮（静态题与动态题渲染末尾均有），点击**按当前筛选结果顺序**（搜索/题型/难度/分类过滤后的顺序）跳转到下一道题
+- `renderPracticeList()` 记录 `_filteredOrder`（当前筛选顺序的 qid 数组）；`nextPracticeQuestion()` 按 `_filteredOrder` 定位当前题并跳下一道；不在筛选结果中（筛选已变化）→ 回列表；已是最后一题 → 提示「已经是最后一题」
+- **修正原「下一题」按钮行为**：答完题后结果框的「下一题」（`onPracticeNext` 非衍生分支）原为返回列表，现改为真正跳下一题；答对选择题时仍显示「举一反三 →」进入衍生题
+- 双语新增词条「已经是最后一题」
+
+---
+
+## 2026-08-04（晚间追加）：练习列表答题状态着色（对=绿 / 错=红 / 未做=白）
+
+- 自主练习/真题测试题目列表按答题状态着色：**已做对 → 绿色卡片 + ✓ 角标、做错 → 红色卡片 + ✗ 角标、未做 → 保持白色**
+- `loadPracticeQuestions()`：并行拉取 `/api/progress/<session_id>` 构建 `_progressMap`（question_id → 1/0），每次进列表刷新
+- `renderPracticeList()`：按 `_progressMap`（动态题）或 `_staticStatus`（静态题本地判分）着色，新增 `.q-done`/`.q-wrong` 卡片样式与 `.q-status` 圆形角标（绿 ✓ / 红 ✗）
+- 状态即时生效：`submitPracticeAnswer` 成功后更新 `_progressMap`、`checkStaticAnswer` 记录 `_staticStatus`、`backToPracticeList` 返回时重渲染
+- 真题池（exam）同样生效（progress 按题 id 匹配）；静态 58 题经本地判分记录参与着色
+
+---
+
+## 2026-08-04（晚间追加）：移除进阶过程中的知识图谱可视化折叠面板
+
+- 知识图谱已独立为自适应进阶入口视图（图谱树点亮小灯），做题区（journeyQuiz）内重复的「📊 知识图谱可视化」折叠面板删除：
+  - HTML：`#journeyVizPanel` 卡片（标题/折叠按钮/420px iframe）
+  - JS：`toggleJourneyViz()`、`journeyVizExpanded` 变量
+  - CSS：`#journeyVizPanel` 下移 0.75em 规则；I18N '📊 知识图谱可视化' 词条
+- **保留**：自适应进阶入口的图谱 iframe（`#journeyMapFrame`，560px 点亮版）与「开始适应」流程不受影响；独立页 `/knowledge-map` 仍可访问
+
+---
+
+## 2026-08-04（晚间追加）：自适应图谱独立为入口视图（知识图谱树点亮小灯）
+
+### 设计目标
+
+**把现有「知识图谱可视化」（ECharts 力导向树图）作为自适应进阶的第一步入口**：每次点进自适应训练，先展示知识图谱树与已点亮（解锁）的全部节点；初始默认 0 点亮，总节点数为 **36**（29 子标签 + 7 大分类之和）；点击「开始适应」按钮进入自适应刷题状态。
+
+### 1. 后端（backend/app.py）
+
+- `/api/journey/status` 不再对未开始的用户返回 404：未开始时返回 200（`state=null`、`unlocked_nodes=[]`、graph 仍完整返回），供图谱入口视图渲染"初始 0 点亮"；已开始时行为不变（返回解锁节点）
+
+### 2. 图谱点亮（frontend/knowledge_map.html）
+
+- 支持 URL 参数 `?session_id=`（入口 iframe 传入）：调 `/api/journey/status` 拉取解锁节点，**在 ECharts 力导向树上点亮小灯**——解锁节点彩色 + 发光（shadowBlur 光晕），未解锁节点暗灰
+- **官方标签 id → 图内节点 id 映射表** `TAG_TO_NODE_ID`（36 项：`dml_select`→`cat-2748`…`top_dml`→`top-255`…，图中节点为 modb 内部 id）
+- **点亮规则**：仅子标签（`cat-*`）参与点亮（unlocked 含 root/大分类，因无题自动掌握，直接映射会导致初始全亮）；**父节点点亮 = 其下全部子标签点亮**（推导）
+- header 新增统计 `点亮 X / 36`（有 session_id 时显示）；无参数独立访问保持原全彩样式
+
+### 3. 前端图谱入口视图（frontend/index.html）
+
+- **移除**旧 `#journeyStart` 介绍卡，**新增** `#journeyMapView`：顶部说明 + **点亮统计** `点亮 X / 36 节点` + **图谱 iframe**（`/knowledge-map?session_id=<sid>&t=<时间戳>`，560px 高）+ **「开始适应」**按钮 → 进入刷题
+- `loadJourneyMap()`：进 journey 页时调 status 计算点亮数（**只计子标签，父节点按子全亮推导**，与图内规则一致；未开始 = 0），并刷新 iframe（时间戳防缓存）
+- 刷题全部掌握后新增**「返回图谱」**按钮（`backToJourneyMap()`）；做题区的「知识图谱可视化」折叠面板保留不动
+- 双语：新增 4 个词条（图谱说明/节点已点亮/开始适应/返回图谱），说明段落含 HTML 的 data-i18n 键按完整文本定义
+
+### 4. 测试（pytest 94 → 95）
+
+- `test_status_before_start_returns_map_data`：未开始 status 200 + state=null + unlocked 空 + 图谱 37 节点仍可获取
+- 验证：TAG_TO_NODE_ID 36 项全部映射且目标存在于图数据；模拟点亮计算（已开始用户 15 子 + 2 父 = 17/36）规则正确
+
+---
+
 ## 2026-08-04（晚间追加）：刷题前端中英双语（index.html）
 
 ### 设计目标
