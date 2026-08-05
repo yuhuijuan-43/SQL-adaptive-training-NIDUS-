@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SQL 自适应练习</title>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" rel="stylesheet">
+<link href="lib/font-awesome/css/all.min.css" rel="stylesheet">
+<link href="lib/codemirror/codemirror.min.css" rel="stylesheet">
 <style>
   :root { --bg: #eef3fc; --card: rgba(255,255,255,0.72); --text: #1b2747; --text2: #48577c; --border: rgba(88,110,170,0.16); --accent: #4a7dff; --accent-hover: #6a90ff; --tag-bg: rgba(88,110,170,0.08); --code-bg: rgba(255,255,255,0.75); --success: #0ea678; --error: #e04a55; --accent-grad: linear-gradient(135deg, #4a7dff 0%, #8b5bff 100%); }
   * { box-sizing: border-box; }
@@ -70,6 +70,15 @@
   .filter-bar select:focus { border-color: var(--accent); }
   .filter-bar input { height: 34px; padding: 0 0.75rem; font-family: inherit; font-size: 0.8rem; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 0.375rem; outline: none; }
   .filter-bar input:focus { border-color: var(--accent); }
+  /* 图谱入口视图（自适应图谱点亮统计） */
+  .map-stats { margin: 0.6rem 0 0.2rem; font-size: 0.8rem; font-weight: 700; color: var(--text2); }
+  /* 练习列表答题状态着色：对=绿 / 错=红 / 未做=白 */
+  .question-item { position: relative; transition: border-color 0.2s, background 0.2s; }
+  .question-item.q-done { border-color: var(--success); background: rgba(14, 166, 120, 0.07); }
+  .question-item.q-wrong { border-color: var(--error); background: rgba(224, 74, 85, 0.06); }
+  .q-status { position: absolute; top: 10px; right: 12px; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.62rem; color: #fff; }
+  .q-status.q-ok { background: var(--success); box-shadow: 0 2px 6px rgba(14, 166, 120, 0.4); }
+  .q-status.q-bad { background: var(--error); box-shadow: 0 2px 6px rgba(224, 74, 85, 0.4); }
   /* 级联分类 */
   .cat-parent-btn { display:inline-flex;align-items:center;height:34px;padding:0 0.55rem;font-size:0.75rem;font-weight:600;color:var(--text2);cursor:pointer;border:1px solid transparent;border-radius:0.25rem;transition:all 0.12s;white-space:nowrap;user-select:none; }
   .cat-parent-btn:hover { color:var(--accent);background:var(--tag-bg);border-color:var(--border); }
@@ -104,8 +113,6 @@
   .nav-btn { transform: translateY(0.75em); }
   /* 导航下方三个模块（自适应进阶/自主练习/真题/错题集页面）下移 0.5 字符高度 */
   #page-journey, #page-practice, #page-wrongset { transform: translateY(0.5em); }
-  /* 知识图谱可视化面板下移 0.75 字符高度 */
-  #journeyVizPanel { transform: translateY(0.75em); }
   .opt-explain { font-size: 0.7rem; padding: 0.4rem 0.6rem; border-radius: 0.375rem; margin-bottom: 2px; display: flex; align-items: flex-start; gap: 6px; }
   .opt-explain .mark { flex-shrink: 0; font-weight: 700; font-size: 0.85rem; }
   .data-table { margin:0 0 0.5rem 0; border-collapse:collapse; font-size:0.7rem; font-family:'SF Mono','Consolas',monospace; }
@@ -230,6 +237,8 @@
   body.cb-mode .nav-btn.active { background: #0044CC; color: #FFFFFF; border: 2px solid #000; }
   body.cb-mode .nav-btn { color: #333; }
   body.cb-mode .btn-primary { background: #0044CC; color: #FFF; border: 2px solid #000; }
+  /* 下一题/开始适应/举一反三等 accent 按钮：与 btn-primary 一致的色盲配色（高对比蓝 + 黑边框形状编码） */
+  body.cb-mode .btn-accent { background: #0044CC; color: #FFF; border: 2px solid #000; box-shadow: none; }
   /* SQL 高亮 — 色盲辅助模式：对比度降低20%，形状编码保留 */
   body.cb-mode .cm-s-default .cm-keyword   { color: #1A5DB5; font-weight: 700; }
   body.cb-mode .cm-s-default .cm-builtin   { color: #B85A18; font-weight: 700; text-decoration: underline; text-decoration-style: solid; text-underline-offset: 2px; }
@@ -258,10 +267,9 @@
   <!-- HEADER -->
   <div class="card" style="padding:0.75rem 1rem;">
     <div class="flex justify-between items-center">
-      <div><span style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;">SQL</span><span data-i18n="自适应训练" style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;color:var(--accent);"> 自适应训练</span><span style="font-size:0.6rem;color:var(--text2);margin-left:0.5rem;">ADAPTIVE PRACTICE</span></div>
+      <div style="white-space:nowrap;"><span style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;">SQL</span><span data-i18n="自适应训练" style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;color:var(--accent);"> 自适应训练</span><span style="font-size:0.6rem;color:var(--text2);margin-left:0.5rem;">ADAPTIVE PRACTICE</span></div>
       <span style="display:flex;align-items:center;gap:8px;">
         <span id="cbToggle" title="色觉辅助模式" style="cursor:pointer;font-size:1rem;color:var(--text2);opacity:0.5;transition:opacity 0.15s;display:none;" onclick="toggleColorblind()"><i class="fas fa-eye"></i></span>
-        <span id="langBtn" onclick="toggleLang()" style="cursor:pointer;font-size:0.65rem;color:var(--text2);border:1px solid var(--border);padding:2px 9px;border-radius:999px;user-select:none;transition:all 0.15s;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--text2)';this.style.borderColor='var(--border)'">English</span>
         <span style="font-size:0.65rem;color:var(--text2);" id="headerUserInfo">V1.0</span>
       </span>
     </div>
@@ -276,21 +284,22 @@
     <button class="nav-btn" data-page="practice" data-i18n="自主练习" onclick="currentPool='practice';showPage('practice')"><i class="fas fa-code mr-1"></i> 自主练习</button>
     <button class="nav-btn" data-page="practice" data-i18n="真题测试" onclick="currentPool='exam';showPage('practice')"><i class="fas fa-file-alt mr-1"></i> 真题测试</button>
     <button class="nav-btn" data-page="wrongset" data-i18n="错题集" onclick="showPage('wrongset')"><i class="fas fa-exclamation-triangle mr-1"></i> 错题集</button>
+    <button class="nav-btn" data-i18n="返回主页" onclick="window.location.href='index_glass.html'"><i class="fas fa-home mr-1"></i> 返回主页</button>
   </div>
 
   <!-- ============ 自适应进阶 Journey ============ -->
   <div id="page-journey" class="page">
-    <div id="journeyStart" class="card p-4 md:p-5">
+    <!-- 图谱入口视图：自适应图谱 + 点亮节点 + 开始适应 -->
+    <div id="journeyMapView" class="card p-4 md:p-5">
       <div class="highlight-box">
-        <p class="text-sm leading-relaxed" data-i18n="基于知识图谱动态追踪你的掌握程度。答对自动进阶到更高阶知识点，答错溯源至薄弱前置知识点精准巩固。"><strong>自适应进阶模式</strong> 基于知识图谱动态追踪你的掌握程度。答对自动进阶到更高阶知识点，答错溯源至薄弱前置知识点精准巩固。</p>
+        <p class="text-sm leading-relaxed" data-i18n="<strong>自适应图谱</strong> 展示全部 36 个知识节点（7 大分类 + 29 个子标签）。开始适应后，解锁的知识点将逐一点亮。"><strong>自适应图谱</strong> 展示全部 36 个知识节点（7 大分类 + 29 个子标签）。开始适应后，解锁的知识点将逐一点亮。</p>
       </div>
-      <div class="flex gap-2 mt-3 text-xs text-[#2c241b] opacity-60">
-        <span><i class="fas fa-check-circle accent mr-1"></i> <span data-i18n="从 SELECT 基础出发">从 SELECT 基础出发</span></span>
-        <span><i class="fas fa-arrow-right accent mr-1"></i> <span data-i18n="图谱递进">图谱递进</span></span>
-        <span><i class="fas fa-bolt accent mr-1"></i> <span data-i18n="因错施教">因错施教</span></span>
+      <div class="map-stats">
+        <span class="num-oswald" id="mapLitCount" style="font-size:1.3rem;color:var(--accent)">0</span><span style="opacity:0.55"> / <span id="mapTotalCount">36</span> <span data-i18n="节点已点亮">节点已点亮</span></span>
       </div>
-      <div class="mt-3">
-        <button class="btn btn-accent" data-i18n="开始进阶之旅" onclick="startJourney()"><i class="fas fa-play mr-1"></i> 开始进阶之旅</button>
+      <iframe id="journeyMapFrame" src="/knowledge-map" style="width:100%;height:560px;border:1px solid var(--border);border-radius:0.75rem;background:#fff;margin-top:0.5rem" title="SQL知识图谱"></iframe>
+      <div class="text-center mt-4">
+        <button class="btn btn-accent" data-i18n="开始适应" style="margin-top:0.5em" onclick="startJourney()"><i class="fas fa-play mr-1"></i> 开始适应</button>
       </div>
     </div>
 
@@ -311,15 +320,6 @@
         <div id="journeyQuestion" class="fade-in"></div>
         <div class="text-center mt-3">
           <button class="btn btn-accent" id="journeyNextBtn" data-i18n="继续进阶" onclick="nextJourney()" style="display:none"><i class="fas fa-arrow-right mr-1"></i> 继续进阶</button>
-        </div>
-      </div>
-      <div class="card p-3 md:p-4" id="journeyVizPanel">
-        <div class="flex justify-between items-center mb-0" style="cursor:pointer;user-select:none" onclick="toggleJourneyViz()">
-          <span class="num-oswald text-xs tracking-wider opacity-60" data-i18n="📊 知识图谱可视化">📊 知识图谱可视化</span>
-          <span id="journeyVizToggle"><i class="fas fa-chevron-down"></i></span>
-        </div>
-        <div id="journeyVizFrame" style="display:none;margin-top:8px">
-          <iframe src="/knowledge-map" style="width:100%;height:420px;border:1px solid var(--border);border-radius:0.5rem;" title="SQL知识图谱"></iframe>
         </div>
       </div>
     </div>
@@ -392,121 +392,126 @@
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="lib/codemirror/codemirror.min.js"></script>
+<script src="lib/codemirror/sql.min.js"></script>
+<script src="lib/codemirror/matchbrackets.min.js"></script>
 <script>
 // 使用相对路径，同时支持本机、局域网和 ngrok 公网访问
 const API_BASE = '/api';
 
-// ===== 中英双语（原文即键：I18N 只存英文译文，中文为默认原文）=====
 const I18N = {
   // 导航
-  '自适应训练': { en: 'Adaptive Training' },
-  '自适应进阶': { en: 'Adaptive Journey' },
-  '自主练习': { en: 'Practice' },
-  '真题测试': { en: 'Exam' },
-  '错题集': { en: 'Wrong Answers' },
+  '自适应训练': { en: 'Adaptive Training','zh_tw':'自適應訓練','ja':'アダプティブトレーニング','hi':'अनुकूली प्रशिक्षण','pt':'Treinamento adaptativo' },
+  '自适应进阶': { en: 'Adaptive Journey','zh_tw':'自適應進階','ja':'アダプティブジャーニー','hi':'अनुकूली यात्रा','pt':'Jornada adaptativa' },
+  '自主练习': { en: 'Practice','zh_tw':'自主練習','ja':'練習','hi':'अभ्यास','pt':'Prática' },
+  '真题测试': { en: 'Exam','zh_tw':'真題測試','ja':'本番テスト','hi':'वास्तविक परीक्षा','pt':'Exame' },
+  '错题集': { en: 'Wrong Answers','zh_tw':'錯題集','ja':'間違い問題集','hi':'गलत उत्तर संग्रह','pt':'Erros' },
   // Journey
-  '自适应进阶模式': { en: 'Adaptive Journey Mode' },
-  '基于知识图谱动态追踪你的掌握程度。答对自动进阶到更高阶知识点，答错溯源至薄弱前置知识点精准巩固。': { en: 'Track your mastery through the knowledge graph. Correct answers advance you to higher nodes; wrong answers trace back to weak prerequisites for precise reinforcement.' },
-  '从 SELECT 基础出发': { en: 'Start from basic SELECT' },
-  '图谱递进': { en: 'Graph progression' },
-  '因错施教': { en: 'Learn from mistakes' },
-  '开始进阶之旅': { en: 'Start Journey' },
-  '深度掌握': { en: 'Deep mode' },
-  '继续进阶': { en: 'Continue' },
-  '📊 知识图谱可视化': { en: '📊 Knowledge Graph' },
-  '进阶': { en: 'Advance' }, '巩固': { en: 'Consolidate' }, '降难度': { en: 'Easier' },
-  '开始': { en: 'Start' }, '练习': { en: 'Practice' }, '跳级': { en: 'Skip' },
-  '复习': { en: 'Review' }, '填空题': { en: 'Fill-in' },
-  '加载失败，请确保后端已启动': { en: 'Load failed — make sure the backend is running' },
-  '所有知识点已掌握！🎉': { en: 'All knowledge points mastered! 🎉' },
+  '自适应进阶模式': { en: 'Adaptive Journey Mode','zh_tw':'自適應進階模式','ja':'アダプティブジャーニーモード','hi':'अनुकूली यात्रा मोड','pt':'Modo de jornada adaptativa' },
+  '基于知识图谱动态追踪你的掌握程度。答对自动进阶到更高阶知识点，答错溯源至薄弱前置知识点精准巩固。': { en: 'Track your mastery through the knowledge graph. Correct answers advance you to higher nodes; wrong answers trace back to weak prerequisites for precise reinforcement.','zh_tw':'基於知識圖譜動態追蹤你的掌握程度。答對自動進階到更高階知識點，答錯溯源至薄弱前置知識點精準鞏固。','ja':'ナレッジグラフで習熟度を動的に追跡。正解で上位ノードへ進み、不正解は弱点の前提ノードに遡って重点的に強化します。','hi':'नॉलेज ग्राफ़ के माध्यम से आपकी महारत को गतिशील रूप से ट्रैक करें। सही उत्तर आपको उच्च नोड्स तक बढ़ाते हैं; गलत उत्तर कमज़ोर पूर्वापेक्षाओं का पता लगाकर सटीक सुदृढ़ीकरण करते हैं।','pt':'Acompanhe sua evolução pelo grafo de conhecimento. Acertos avançam para nós superiores; erros rastreiam pré-requisitos fracos para reforço preciso.' },
+  '从 SELECT 基础出发': { en: 'Start from basic SELECT','zh_tw':'從 SELECT 基礎出發','ja':'SELECT の基本から始める','hi':'SELECT बुनियाद से शुरू करें','pt':'Comece pelo básico de SELECT' },
+  '图谱递进': { en: 'Graph progression','zh_tw':'圖譜遞進','ja':'グラフで段階前進','hi':'ग्राफ़ प्रगति','pt':'Progressão no grafo' },
+  '因错施教': { en: 'Learn from mistakes','zh_tw':'因錯施教','ja':'間違いから学ぶ','hi':'गलतियों से सीखें','pt':'Aprender com os erros' },
+  '开始进阶之旅': { en: 'Start Journey','zh_tw':'開始進階之旅','ja':'ジャーニーを始める','hi':'यात्रा शुरू करें','pt':'Começar jornada' },
+  '深度掌握': { en: 'Deep mode','zh_tw':'深度掌握','ja':'深い習得','hi':'गहन मोड','pt':'Domínio profundo' },
+  '继续进阶': { en: 'Continue','zh_tw':'繼續進階','ja':'続ける','hi':'जारी रखें','pt':'Continuar' },
+  '📊 知识图谱可视化': { en: '📊 Knowledge Graph','zh_tw':'📊 知識圖譜視覺化','ja':'📊 ナレッジグラフ','hi':'📊 नॉलेज ग्राफ़','pt':'📊 Grafo de conhecimento' },
+  '进阶': { en: 'Advance','zh_tw':'進階','ja':'進む','hi':'आगे बढ़ें','pt':'Avançar' }, '巩固': { en: 'Consolidate','zh_tw':'鞏固','ja':'定着させる','hi':'मज़बूत करें','pt':'Consolidar' }, '降难度': { en: 'Easier','zh_tw':'降難度','ja':'難易度を下げる','hi':'आसान करें','pt':'Mais fácil' },
+  '开始': { en: 'Start','zh_tw':'開始','ja':'開始','hi':'शुरू','pt':'Iniciar' }, '练习': { en: 'Practice','zh_tw':'練習','ja':'練習','hi':'अभ्यास','pt':'Praticar' }, '跳级': { en: 'Skip','zh_tw':'跳級','ja':'スキップ','hi':'छोड़ें','pt':'Pular' },
+  '复习': { en: 'Review','zh_tw':'複習','ja':'復習','hi':'पुनरावृत्ति','pt':'Revisar' }, '填空题': { en: 'Fill-in','zh_tw':'填空題','ja':'穴埋め問題','hi':'फिल-इन','pt':'Preenchimento' },
+  '加载失败，请确保后端已启动': { en: 'Load failed — make sure the backend is running','zh_tw':'載入失敗，請確保後端已啟動','ja':'読み込みに失敗しました。バックエンドが起動しているか確認してください','hi':'लोड विफल — सुनिश्चित करें कि बैकएंड चालू है','pt':'Falha ao carregar — verifique se o backend está em execução' },
+  '所有知识点已掌握！🎉': { en: 'All knowledge points mastered! 🎉','zh_tw':'所有知識點已掌握！🎉','ja':'すべての知識ポイントを習得しました！🎉','hi':'सभी ज्ञान बिंदुओं में महारत! 🎉','pt':'Todos os pontos de conhecimento dominados! 🎉' },
   // 筛选
-  '全部题型': { en: 'All types' },
-  '选择题': { en: 'MCQ' },
-  '填空题': { en: 'Fill-in' },
-  '分类': { en: 'Category' },
-  '全部难度': { en: 'All levels' },
-  '简单': { en: 'Easy' },
-  '中等': { en: 'Medium' },
-  '困难': { en: 'Hard' },
-  '全部': { en: 'All' },
+  '全部题型': { en: 'All types','zh_tw':'全部題型','ja':'すべての問題タイプ','hi':'सभी प्रकार','pt':'Todos os tipos' },
+  '选择题': { en: 'MCQ','zh_tw':'選擇題','ja':'選択問題','hi':'बहुविकल्पी','pt':'Múltipla escolha' },
+  '填空题': { en: 'Fill-in','zh_tw':'填空題','ja':'穴埋め問題','hi':'फिल-इन','pt':'Preenchimento' },
+  '分类': { en: 'Category','zh_tw':'分類','ja':'カテゴリ','hi':'श्रेणी','pt':'Categoria' },
+  '全部难度': { en: 'All levels','zh_tw':'全部難度','ja':'すべての難易度','hi':'सभी स्तर','pt':'Todos os níveis' },
+  '简单': { en: 'Easy','zh_tw':'簡單','ja':'簡単','hi':'आसान','pt':'Fácil' },
+  '中等': { en: 'Medium','zh_tw':'中等','ja':'中級','hi':'मध्यम','pt':'Médio' },
+  '困难': { en: 'Hard','zh_tw':'困難','ja':'難しい','hi':'कठिन','pt':'Difícil' },
+  '全部': { en: 'All','zh_tw':'全部','ja':'すべて','hi':'सभी','pt':'Todos' },
   // 题卡与答案
-  '提交答案': { en: 'Submit' },
-  '已提交': { en: 'Submitted' },
-  '手动输入你的 SQL 语句...': { en: 'Type your SQL here...' },
-  '请先输入或选择答案': { en: 'Please enter or select an answer first' },
-  '请先输入 SQL 语句': { en: 'Please type a SQL statement first' },
-  '提交失败': { en: 'Submit failed' },
-  '回答正确': { en: 'Correct!' },
-  '回答错误': { en: 'Wrong' },
-  '回答正确！': { en: 'Correct!' },
-  '正确答案：': { en: 'Correct answer: ' },
-  '这是正确答案': { en: 'This is the correct answer' },
-  '举一反三 →': { en: 'One more: fill-in →' },
-  '下一题': { en: 'Next question' },
-  '已掌握该选择题，进入举一反三': { en: 'MCQ mastered — go deeper with a fill-in' },
-  '预期输出': { en: 'Expected output' },
-  '题': { en: ' Qs' },
-  '暂无符合条件的题目': { en: 'No matching questions' },
-  '加载中...': { en: 'Loading...' },
-  '加载失败': { en: 'Load failed' },
-  '生成失败': { en: 'Generation failed' },
-  '你的答案：': { en: 'Your answer: ' },
-  '你的答案': { en: 'Your answer' },
-  '正确答案': { en: 'Correct answer' },
-  '✗ 答错': { en: '✗ Wrong' },
-  '暂无错题，继续保持！': { en: 'No wrong answers — keep it up!' },
-  '错题集为空': { en: 'No wrong answers yet' },
-  '近期综合数据': { en: 'Recent overview' },
-  '总答题数': { en: 'Total answered' },
-  '正确数': { en: 'Correct' },
-  '答错数': { en: 'Wrong' },
-  '正确率': { en: 'Accuracy' },
-  '返回题目列表': { en: 'Back to list' },
+  '提交答案': { en: 'Submit','zh_tw':'提交答案','ja':'回答を送信','hi':'उत्तर सबमिट करें','pt':'Enviar' },
+  '已提交': { en: 'Submitted','zh_tw':'已提交','ja':'送信済み','hi':'सबमिट हो गया','pt':'Enviado' },
+  '手动输入你的 SQL 语句...': { en: 'Type your SQL here...','zh_tw':'手動輸入你的 SQL 語句...','ja':'SQL を手動で入力...','hi':'अपना SQL यहाँ टाइप करें...','pt':'Digite seu SQL aqui...' },
+  '请先输入或选择答案': { en: 'Please enter or select an answer first','zh_tw':'請先輸入或選擇答案','ja':'まず回答を入力または選択してください','hi':'कृपया पहले उत्तर दर्ज करें या चुनें','pt':'Digite ou selecione uma resposta primeiro' },
+  '请先输入 SQL 语句': { en: 'Please type a SQL statement first','zh_tw':'請先輸入 SQL 語句','ja':'まず SQL を入力してください','hi':'कृपया पहले SQL लिखें','pt':'Digite uma instrução SQL primeiro' },
+  '提交失败': { en: 'Submit failed','zh_tw':'提交失敗','ja':'送信に失敗しました','hi':'सबमिट विफल','pt':'Falha no envio' },
+  '回答正确': { en: 'Correct!','zh_tw':'回答正確','ja':'正解！','hi':'सही उत्तर!','pt':'Correto!' },
+  '回答错误': { en: 'Wrong','zh_tw':'回答錯誤','ja':'不正解','hi':'गलत','pt':'Errado' },
+  '回答正确！': { en: 'Correct!','zh_tw':'回答正確！','ja':'正解！','hi':'सही!','pt':'Correto!' },
+  '正确答案：': { en: 'Correct answer: ','zh_tw':'正確答案：','ja':'正解：','hi':'सही उत्तर: ','pt':'Resposta correta: ' },
+  '这是正确答案': { en: 'This is the correct answer','zh_tw':'這是正確答案','ja':'これが正解です','hi':'यह सही उत्तर है','pt':'Esta é a resposta correta' },
+  '举一反三 →': { en: 'One more: fill-in →','zh_tw':'舉一反三 →','ja':'発展問題 →','hi':'एक और: फिल-इन →','pt':'Aprofundar →' },
+  '下一题': { en: 'Next question','zh_tw':'下一題','ja':'次の問題','hi':'अगला प्रश्न','pt':'Próxima pergunta' },
+  '已掌握该选择题，进入举一反三': { en: 'MCQ mastered — go deeper with a fill-in','zh_tw':'已掌握該選擇題，進入舉一反三','ja':'この選択問題を習得、発展問題へ','hi':'MCQ में महारत — फिल-इन से गहराई बढ़ाएं','pt':'MCQ dominado — aprofunde com um preenchimento' },
+  '预期输出': { en: 'Expected output','zh_tw':'預期輸出','ja':'期待される出力','hi':'अपेक्षित आउटपुट','pt':'Saída esperada' },
+  '题': { en: ' Qs','zh_tw':'題','ja':'問','hi':' प्रश्न','pt':' questões' },
+  '暂无符合条件的题目': { en: 'No matching questions','zh_tw':'暫無符合條件的題目','ja':'条件に合う問題がありません','hi':'कोई मेल खाता प्रश्न नहीं','pt':'Nenhuma pergunta correspondente' },
+  '加载中...': { en: 'Loading...','zh_tw':'載入中...','ja':'読み込み中...','hi':'लोड हो रहा है...','pt':'Carregando...' },
+  '加载失败': { en: 'Load failed','zh_tw':'載入失敗','ja':'読み込み失敗','hi':'लोड विफल','pt':'Falha ao carregar' },
+  '生成失败': { en: 'Generation failed','zh_tw':'生成失敗','ja':'生成に失敗しました','hi':'जनरेशन विफल','pt':'Falha na geração' },
+  '你的答案：': { en: 'Your answer: ','zh_tw':'你的答案：','ja':'あなたの回答：','hi':'आपका उत्तर: ','pt':'Sua resposta: ' },
+  '你的答案': { en: 'Your answer','zh_tw':'你的答案','ja':'あなたの回答','hi':'आपका उत्तर','pt':'Sua resposta' },
+  '正确答案': { en: 'Correct answer','zh_tw':'正確答案','ja':'正解','hi':'सही उत्तर','pt':'Resposta correta' },
+  '✗ 答错': { en: '✗ Wrong','zh_tw':'✗ 答錯','ja':'✗ 不正解','hi':'✗ गलत','pt':'✗ Errado' },
+  '暂无错题，继续保持！': { en: 'No wrong answers — keep it up!','zh_tw':'暫無錯題，繼續保持！','ja':'間違いはありません。この調子で！','hi':'कोई गलत उत्तर नहीं — जारी रखें!','pt':'Nenhum erro — continue assim!' },
+  '上一页': { en: 'Previous','zh_tw':'上一頁','ja':'前へ','hi':'पिछला','pt':'Anterior' },
+  '下一页': { en: 'Next','zh_tw':'下一頁','ja':'次へ','hi':'अगला','pt':'Próximo' },
+  '第 {0} / {1} 页': { en: 'Page {0} / {1}','zh_tw':'第 {0} / {1} 頁','ja':'{0} / {1} ページ','hi':'पृष्ठ {0} / {1}','pt':'Página {0} / {1}' },
+  '错题集为空': { en: 'No wrong answers yet','zh_tw':'錯題集為空','ja':'間違い問題はありません','hi':'अभी कोई गलत उत्तर नहीं','pt':'Sem erros ainda' },
+  '近期综合数据': { en: 'Recent overview','zh_tw':'近期綜合數據','ja':'最近のデータ概要','hi':'हालिया सारांश','pt':'Visão geral recente' },
+  '总答题数': { en: 'Total answered','zh_tw':'總答題數','ja':'総回答数','hi':'कुल उत्तर','pt':'Total respondido' },
+  '正确数': { en: 'Correct','zh_tw':'正確數','ja':'正解数','hi':'सही','pt':'Corretas' },
+  '答错数': { en: 'Wrong','zh_tw':'答錯數','ja':'不正解数','hi':'गलत','pt':'Erradas' },
+  '正确率': { en: 'Accuracy','zh_tw':'正確率','ja':'正解率','hi':'सटीकता','pt':'Precisão' },
+  '返回题目列表': { en: 'Back to list','zh_tw':'返回題目列表','ja':'一覧に戻る','hi':'सूची पर वापस','pt':'Voltar à lista' },
   // CodeMirror 校验
-  '单引号未闭合，字符串值需用一对引号包裹': { en: 'Unclosed single quote — string values need a pair of quotes' },
-  '字符串值需加引号': { en: 'String value needs quotes' },
-  '中文字符串需加引号': { en: 'Chinese string needs quotes' },
-  '括号不匹配': { en: 'Unbalanced parentheses' },
+  '单引号未闭合，字符串值需用一对引号包裹': { en: 'Unclosed single quote — string values need a pair of quotes','zh_tw':'單引號未閉合，字串值需用一對引號包裹','ja':'シングルクォートが閉じられていません。文字列は引用符で囲む必要があります','hi':'बंद न किया गया सिंगल कोट — स्ट्रिंग मान को कोट्स की जोड़ी चाहिए','pt':'Aspas simples sem fechamento — valores de string precisam de um par de aspas' },
+  '字符串值需加引号': { en: 'String value needs quotes','zh_tw':'字串值需加引號','ja':'文字列には引用符が必要です','hi':'स्ट्रिंग मान को कोट्स चाहिए','pt':'Valor de string precisa de aspas' },
+  '中文字符串需加引号': { en: 'Chinese string needs quotes','zh_tw':'中文字串需加引號','ja':'中国語の文字列には引用符が必要です','hi':'चीनी स्ट्रिंग को कोट्स चाहिए','pt':'String em chinês precisa de aspas' },
+  '括号不匹配': { en: 'Unbalanced parentheses','zh_tw':'括號不匹配','ja':'括弧が一致しません','hi':'असंतुलित कोष्ठक','pt':'Parênteses desbalanceados' },
   // 用户区
-  '登录 / 注册': { en: 'Log in / Sign up' },
-  '切换用户': { en: 'Switch user' },
+  '登录 / 注册': { en: 'Log in / Sign up','zh_tw':'登入 / 註冊','ja':'ログイン / 登録','hi':'लॉगिन / पंजीकरण','pt':'Entrar / Cadastrar' },
+  '切换用户': { en: 'Switch user','zh_tw':'切換用戶','ja':'ユーザー切り替え','hi':'उपयोगकर्ता बदलें','pt':'Trocar usuário' },
   // 大分类（KG_GROUPS / 级联）
-  '函数': { en: 'Functions' },
-  '表连接': { en: 'Joins' },
-  '约束': { en: 'Constraints' },
-  '子查询': { en: 'Subqueries' },
-  '（全部）': { en: ' (all)' },
+  '函数': { en: 'Functions','zh_tw':'函數','ja':'関数','hi':'फ़ंक्शन','pt':'Funções' },
+  '表连接': { en: 'Joins','zh_tw':'表連接','ja':'結合','hi':'जॉइन','pt':'Junções' },
+  '约束': { en: 'Constraints','zh_tw':'約束','ja':'制約','hi':'बाधाएँ','pt':'Restrições' },
+  '子查询': { en: 'Subqueries','zh_tw':'子查詢','ja':'サブクエリ','hi':'सबक्वेरी','pt':'Subconsultas' },
+  '（全部）': { en: ' (all)','zh_tw':'（全部）','ja':'（すべて）','hi':' (सभी)','pt':' (todos)' },
   // 页脚
-  '千人千面的 SQL 学习平台': { en: 'A personalized SQL learning platform' },
-  'SQL 自适应练习': { en: 'SQL Adaptive Practice' },
+  '千人千面的 SQL 学习平台': { en: 'A personalized SQL learning platform','zh_tw':'千人千面的 SQL 學習平台','ja':'一人ひとりに合わせた SQL 学習プラットフォーム','hi':'हर किसी के लिए व्यक्तिगत SQL सीखने का मंच','pt':'Uma plataforma personalizada de aprendizado de SQL' },
+  'SQL 自适应练习': { en: 'SQL Adaptive Practice','zh_tw':'SQL 自適應練習','ja':'SQL アダプティブ練習','hi':'SQL अनुकूली अभ्यास','pt':'Prática adaptativa de SQL' },
   // 补充
-  '🔍 搜索题目...': { en: '🔍 Search questions...' },
-  '记录你在自适应进阶和练习中答错的题目，方便集中复习巩固。': { en: 'Questions you answered wrong in the adaptive journey and practice are collected here for focused review.' },
-  '🎯 真题测试': { en: '🎯 Exam' },
-  '📝 自主练习': { en: '📝 Practice' },
-  '点击清除分类筛选': { en: 'Click to clear category filter' },
-  '展开 SQL': { en: 'Show SQL' },
-  '收起 SQL': { en: 'Hide SQL' },
-  '生成中...': { en: 'Generating...' },
-  '已掌握该知识点': { en: 'Node mastered' },
-  '推荐下一题': { en: 'Recommended next question' },
-  '返回错题列表': { en: 'Back to wrong answers' },
-  '共 {0} 行，仅显示前 {1} 行': { en: '{0} rows total, showing first {1}' },
-  '举一反三': { en: 'One More' },
-  '这是根据你刚做对的选择题生成的填空题，请手动编写 SQL 语句。': { en: 'A fill-in generated from the MCQ you just aced — write the SQL yourself.' },
-  '开始练习': { en: 'Start practicing' },
-  '该知识点已全部掌握，可返回列表选择其他题目': { en: 'This node is fully mastered — pick another question from the list' },
-  '总答题': { en: 'Answered' },
-  '正确': { en: 'Correct' },
-  '错误': { en: 'Wrong' },
+  '🔍 搜索题目...': { en: '🔍 Search questions...','zh_tw':'🔍 搜尋題目...','ja':'🔍 問題を検索...','hi':'🔍 प्रश्न खोजें...','pt':'🔍 Buscar perguntas...' },
+  '记录你在自适应进阶和练习中答错的题目，方便集中复习巩固。': { en: 'Questions you answered wrong in the adaptive journey and practice are collected here for focused review.','zh_tw':'記錄你在自適應進階和練習中答錯的題目，方便集中複習鞏固。','ja':'アダプティブジャーニーと練習で間違えた問題をまとめて、集中的に復習できます。','hi':'अनुकूली यात्रा और अभ्यास में गलत उत्तर वाले प्रश्न यहाँ एकत्र हैं, केंद्रित समीक्षा के लिए।','pt':'Perguntas que você errou na jornada adaptativa e na prática ficam reunidas aqui para revisão focada.' },
+  '🎯 真题测试': { en: '🎯 Exam','zh_tw':'🎯 真題測試','ja':'🎯 本番テスト','hi':'🎯 परीक्षा','pt':'🎯 Exame' },
+  '📝 自主练习': { en: '📝 Practice','zh_tw':'📝 自主練習','ja':'📝 練習','hi':'📝 अभ्यास','pt':'📝 Prática' },
+  '点击清除分类筛选': { en: 'Click to clear category filter','zh_tw':'點擊清除分類篩選','ja':'クリックでカテゴリ絞り込みを解除','hi':'श्रेणी फ़िल्टर साफ़ करने के लिए क्लिक करें','pt':'Clique para limpar o filtro de categoria' },
+  '展开 SQL': { en: 'Show SQL','zh_tw':'展開 SQL','ja':'SQL を展開','hi':'SQL दिखाएं','pt':'Mostrar SQL' },
+  '收起 SQL': { en: 'Hide SQL','zh_tw':'收起 SQL','ja':'SQL を折りたたむ','hi':'SQL छिपाएं','pt':'Ocultar SQL' },
+  '生成中...': { en: 'Generating...','zh_tw':'生成中...','ja':'生成中...','hi':'जनरेट हो रहा है...','pt':'Gerando...' },
+  '已掌握该知识点': { en: 'Node mastered','zh_tw':'已掌握該知識點','ja':'このノードを習得','hi':'नोड में महारत','pt':'Nó dominado' },
+  '推荐下一题': { en: 'Recommended next question','zh_tw':'推薦下一題','ja':'おすすめの次の問題','hi':'अनुशंसित अगला प्रश्न','pt':'Próxima pergunta recomendada' },
+  '返回错题列表': { en: 'Back to wrong answers','zh_tw':'返回錯題列表','ja':'間違い問題一覧に戻る','hi':'गलत उत्तरों पर वापस','pt':'Voltar aos erros' },
+  '共 {0} 行，仅显示前 {1} 行': { en: '{0} rows total, showing first {1}','zh_tw':'共 {0} 行，僅顯示前 {1} 行','ja':'全{0}行、先頭{1}行のみ表示','hi':'{0} पंक्तियाँ कुल, पहली {1} दिखाई जा रही हैं','pt':'{0} linhas no total, mostrando as primeiras {1}' },
+  '举一反三': { en: 'One More','zh_tw':'舉一反三','ja':'発展問題','hi':'एक और','pt':'Um a mais' },
+  '这是根据你刚做对的选择题生成的填空题，请手动编写 SQL 语句。': { en: 'A fill-in generated from the MCQ you just aced — write the SQL yourself.','zh_tw':'這是根據你剛做對的選擇題生成的填空題，請手動編寫 SQL 語句。','ja':'正解した選択問題から生成された穴埋め問題です。SQL を自分で書いてください。','hi':'आपके सही उत्तर वाले MCQ से बना फिल-इन — SQL खुद लिखें।','pt':'Um preenchimento gerado do MCQ que você acertou — escreva o SQL você mesmo.' },
+  '开始练习': { en: 'Start practicing','zh_tw':'開始練習','ja':'練習を始める','hi':'अभ्यास शुरू करें','pt':'Começar a praticar' },
+  '该知识点已全部掌握，可返回列表选择其他题目': { en: 'This node is fully mastered — pick another question from the list','zh_tw':'該知識點已全部掌握，可返回列表選擇其他題目','ja':'このノードは完全に習得済みです。一覧から他の問題を選べます','hi':'यह नोड पूरी तरह महारत में है — सूची से दूसरा प्रश्न चुनें','pt':'Este nó está totalmente dominado — escolha outra pergunta da lista' },
+  '总答题': { en: 'Answered','zh_tw':'總答題','ja':'回答数','hi':'उत्तर दिए','pt':'Respondidas' },
+  '正确': { en: 'Correct','zh_tw':'正確','ja':'正解','hi':'सही','pt':'Corretas' },
+  '错误': { en: 'Wrong','zh_tw':'錯誤','ja':'不正解','hi':'गलत','pt':'Erradas' },
 };
-let LANG = localStorage.getItem('lang') || 'zh';
+let LANG = localStorage.getItem('lang') || 'zh';   // 跟随先导页（index_glass）语言设置
+function langKey() { return LANG === 'zh-TW' ? 'zh_tw' : LANG; }
 function t(text) {
-  if (LANG !== 'zh' && I18N[text]) return I18N[text].en || text;
-  return text;
+  const e = I18N[text];
+  if (!e) return text;
+  if (LANG === 'zh') return text;
+  return e[langKey()] || e.en || text;
 }
 function tf(text) {
   const s = t(text);
@@ -518,9 +523,8 @@ function applyI18n() {
   document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
   document.querySelectorAll('[data-i18n-title]').forEach(function(el) { el.title = t(el.getAttribute('data-i18n-title')); });
   var btn = document.getElementById('langBtn');
-  if (btn) btn.textContent = LANG === 'zh' ? 'English' : '中文';
   document.title = t('SQL 自适应练习');
-  document.documentElement.lang = LANG === 'zh' ? 'zh-CN' : 'en';
+  document.documentElement.lang = LANG === 'zh-TW' ? 'zh-TW' : (LANG === 'zh' ? 'zh-CN' : 'en');
 }
 function toggleLang() {
   LANG = LANG === 'zh' ? 'en' : 'zh';
@@ -528,6 +532,21 @@ function toggleLang() {
   // 全量重载：题目卡、分类标签等动态内容统一按新语言渲染
   window.location.reload();
 }
+
+
+function tf(text) {
+  const s = t(text);
+  const args = Array.prototype.slice.call(arguments, 1);
+  return s.replace(/\{(\d+)\}/g, function(m, i) { return args[+i] != null ? args[+i] : m; });
+}
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(function(el) { el.innerHTML = t(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
+  document.querySelectorAll('[data-i18n-title]').forEach(function(el) { el.title = t(el.getAttribute('data-i18n-title')); });
+  document.title = t('SQL 自适应练习');
+  document.documentElement.lang = LANG === 'zh-TW' ? 'zh-TW' : (LANG === 'zh' ? 'zh-CN' : 'en');
+}
+function toggleLang() { /* 语言切换入口仅保留在主界面 */ }
 
 // ===== 性能指示器 =====
 var _perfEl = null;
@@ -781,6 +800,8 @@ function updateUserUI() {
   if (cbToggle) cbToggle.style.display = 'inline';
 }
 let practiceQuestions = [];
+var _progressMap = {};    // question_id → 1 对 / 0 错（后端答题记录，列表着色用）
+var _staticStatus = {};   // 'static_N' → 1 对 / 0 错（静态题本地判分记录）
 let currentPracticeQ = null;
 let currentDerivedQ = null;
 let currentPrototypeQ = null;
@@ -2354,9 +2375,23 @@ const KG_LABELS_EN = {
   'select_basic':'Basic SELECT: columns, aliases, constants','where_basic':'WHERE conditions',
   'group_by':'Aggregates & GROUP BY','having':'HAVING clause'
 };
-// 分类 ID → 官方中文/英文子标签名（题干标签显示用；未知 ID 原样回退）
+// 分类 ID → 繁体中文子标签名（繁体模式用；SQL 关键字与英文一致）
+const KG_LABELS_TW = {
+  'top_func':'函數','top_join':'表連接',
+  'top_constraint':'約束','top_subquery':'子查詢',
+  'string_func':'字串函數','numeric_func':'數字函數','aggregate_func':'聚合函數',
+  'cast_func':'轉換函數','window_func':'視窗函數',
+  'join_inner':'內連接','join_outer':'外連接','join_self':'自連接','join_cross':'交叉連接',
+  'constraint_primary_key':'主鍵','constraint_foreign_key':'外鍵',
+  'subquery_scalar':'標量子查詢','subquery_column':'列子查詢',
+  'subquery_table':'表子查詢','subquery_in':'IN 子查詢',
+  'select_basic':'基本 SELECT：欄位、別名、常量','where_basic':'WHERE 條件篩選',
+  'group_by':'聚合函數與 GROUP BY','having':'HAVING 子句'
+};
+// 分类 ID → 官方中文/英文子标签名（题干标签显示用；未知 ID 原样回退；日/印/葡用英文标签）
 function catLabel(cat) {
-  if (LANG === 'en' && KG_LABELS_EN[cat]) return KG_LABELS_EN[cat];
+  if (LANG === 'zh-TW' && KG_LABELS_TW[cat]) return KG_LABELS_TW[cat];
+  if (LANG !== 'zh' && KG_LABELS_EN[cat]) return KG_LABELS_EN[cat];
   return (KG_LABELS[cat] || cat);
 }
 // 预计算所有包含"全部子类"的根节点展开集合
@@ -2851,8 +2886,32 @@ function renderQuestion(q, prefix) {
 var journeyData = null;
 var currentJourneyQid = null;
 
+/* ---- 图谱入口视图：知识图谱树（iframe 点亮小灯）+ 点亮统计 + 开始适应 ---- */
+var MAP_TOTAL_NODES = 36;   // 29 子标签 + 7 大分类
+
+async function loadJourneyMap() {
+  // 点亮统计：29 叶 + 7 枝（lights 为后端全量点亮状态，root 不计入）
+  var litCount = 0;
+  try {
+    var resp = await apiPost('/journey/status', { session_id: sessionId });
+    var lights = resp.lights || {};
+    Object.keys(lights).forEach(function(nid) { if (nid !== 'root' && lights[nid].lit) litCount++; });
+  } catch (e) { /* 统计失败保持 0 */ }
+  document.getElementById('mapLitCount').textContent = litCount;
+  document.getElementById('mapTotalCount').textContent = MAP_TOTAL_NODES;
+  // 刷新图谱 iframe（时间戳防缓存；knowledge_map.html 按 session_id 点亮小灯）
+  var frame = document.getElementById('journeyMapFrame');
+  frame.src = '/knowledge-map?session_id=' + encodeURIComponent(sessionId) + '&t=' + Date.now();
+}
+
+function backToJourneyMap() {
+  document.getElementById('journeyQuiz').style.display = 'none';
+  document.getElementById('journeyMapView').style.display = 'block';
+  loadJourneyMap();
+}
+
 async function startJourney() {
-  document.getElementById('journeyStart').style.display = 'none';
+  document.getElementById('journeyMapView').style.display = 'none';
   document.getElementById('journeyQuiz').style.display = 'block';
   document.getElementById('journeyResult').style.display = 'none';
   try {
@@ -2867,7 +2926,11 @@ async function startJourney() {
 function showJourneyQuestion(data) {
   journeyQuestionStart = Date.now();
   var actionMap = { advance: t('进阶'), consolidate: t('巩固'), easier: t('降难度'), start: t('开始'), fallback: t('练习'), skip: t('跳级'), review: t('复习'), fillin: t('填空题') };
-  document.getElementById('journeyNodeLabel').textContent = data.current_node ? getNodeName(data.current_node, data.graph) : t('加载中...');
+  // 当前叶节点轮进度（已出题数/每叶题数）
+  var posText = (data.round && data.round.leaf && data.round.leaf_total) ? ' ' + data.round.pos + '/' + data.round.leaf_total : '';
+  document.getElementById('journeyNodeLabel').textContent = data.current_node
+    ? getNodeName(data.current_node, data.graph) + posText
+    : (data.round_complete ? t('本轮完成') : t('加载中...'));
   document.getElementById('journeyStats').textContent = (data.total_answered || 0) + t('题');
   var progress = data.total_answered > 0 ? Math.min(100, (data.total_correct || 0) / Math.max(1, data.total_answered) * 100) : 0;
   document.getElementById('journeyProgress').style.width = progress + '%';
@@ -2881,7 +2944,15 @@ function showJourneyQuestion(data) {
   currentJourneyQid = null;
   document.getElementById('journeyNextBtn').style.display = 'none';
   var el = document.getElementById('journeyQuestion');
-  if (data.question) {
+  if (data.round_complete) {
+    // 一轮完成：保留点亮节点，回到图谱界面重新开始新一轮
+    var litRoundN = data.round && data.round.lit_round ? data.round.lit_round.length : 0;
+    el.innerHTML = '<div class="text-center py-4">' +
+      '<p class="text-base font-medium opacity-90 mb-2">🎉 ' + t('本轮刷题完成！') + '</p>' +
+      '<p class="text-sm opacity-70 mb-4">' + t('本轮点亮节点：') + litRoundN + t(' 个，点亮状态已保留') + '</p>' +
+      '<button class="btn btn-accent" onclick="backToJourneyMap()"><i class="fas fa-map mr-1"></i> ' + t('返回图谱') + '</button></div>';
+    document.getElementById('journeyNextBtn').style.display = 'none';
+  } else if (data.question) {
     currentJourneyQid = data.question.id;
     // attach fillin_mode and hint to question object so renderQuestion can use them
     data.question.fillin_mode = data.fillin_mode || false;
@@ -2890,7 +2961,8 @@ function showJourneyQuestion(data) {
     var ta = el.querySelector('textarea');
     if (ta) ta.focus();
   } else {
-    el.innerHTML = '<p class="text-sm opacity-60 text-center py-4">' + t('所有知识点已掌握！🎉') + '</p>';
+    el.innerHTML = '<p class="text-sm opacity-60 text-center py-4">' + t('所有知识点已掌握！🎉') + '</p>' +
+      '<div class="text-center mt-2"><button class="btn btn-accent" onclick="backToJourneyMap()"><i class="fas fa-map mr-1"></i> ' + t('返回图谱') + '</button></div>';
     document.getElementById('journeyNextBtn').style.display = 'none';
   }
 }
@@ -2933,6 +3005,7 @@ async function submitJourneyAnswer(qid) { saveAllCM();
       }
     }
     if (resp.explanation) resultBox.innerHTML += '<div class="explanation"><i class="fas fa-lightbulb mr-1"></i> ' + resp.explanation + '</div>';
+    if (resp.lit_now) resultBox.innerHTML += '<div class="mt-1" style="color:#1a8a5c;font-weight:600;">✨ ' + t('已点亮「') + getNodeName(resp.lit_now, resp.graph) + t('」') + '</div>';
     var submitBtn = document.querySelector('#journeyQuestion .btn-primary');
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('已提交'); }
     journeyData = resp;
@@ -2940,12 +3013,6 @@ async function submitJourneyAnswer(qid) { saveAllCM();
   } catch (e) { alert(t('提交失败')); }
 }
 
-var journeyVizExpanded = false;
-function toggleJourneyViz() {
-  journeyVizExpanded = !journeyVizExpanded;
-  document.getElementById('journeyVizFrame').style.display = journeyVizExpanded ? 'block' : 'none';
-  document.getElementById('journeyVizToggle').innerHTML = journeyVizExpanded ? '<i class="fas fa-chevron-up"></i>' : '<i class="fas fa-chevron-down"></i>';
-}
 
 function nextJourney() {
   showJourneyQuestion(journeyData);
@@ -2974,11 +3041,18 @@ async function loadPracticeQuestions() {
   document.getElementById('practiceList').style.display = 'block';
   try {
     params.push('pool=' + currentPool);
-    var data = await apiGet('/questions?' + params.join('&'));
+    // 并行拉取题目列表与答题状态（列表着色：对=绿 / 错=红 / 未做=白）
+    var results = await Promise.all([
+      apiGet('/questions?' + params.join('&')),
+      apiGet('/progress/' + sessionId).catch(function() { return null; })
+    ]);
+    var data = results[0];
+    var prog = results[1];
+    // 58 道静态选择题已导入后端题库（515 题），不再前端合并，避免重复
     practiceQuestions = data.questions;
-    // Merge static questions into practice pool
-    if (currentPool === 'practice') {
-      practiceQuestions = practiceQuestions.concat(STATIC_QUESTIONS);
+    _progressMap = {};
+    if (prog && prog.progress) {
+      prog.progress.forEach(function(p) { _progressMap[p.question_id] = p.is_correct ? 1 : 0; });
     }
     renderPracticeList();
   } catch (e) {
@@ -3025,6 +3099,10 @@ function renderPracticeList() {
     });
   }
   document.getElementById('poolCount').textContent = filtered.length + t('题');
+  // 记录当前筛选后的题目顺序（详情页「下一题」按此顺序跳转）
+  _filteredOrder = filtered.map(function(q) {
+    return q.id != null ? q.id : ('static_' + practiceQuestions.indexOf(q));
+  });
 
   if (!filtered.length) {
     el.innerHTML = '<div class="text-center text-sm py-4 opacity-50">' + t('暂无符合条件的题目') + '</div>';
@@ -3038,7 +3116,13 @@ function renderPracticeList() {
     var hasOpts = q.options && (typeof q.options === 'string' ? q.options.trim() : q.options.length);
     var desc = (q.description || '').replace(/\n/g, ' ').substring(0, 80);
     var qid = q.id != null ? q.id : ('static_' + practiceQuestions.indexOf(q));
-    html += '<div class="card p-3 question-item" onclick="showPracticeDetail(\'' + qid + '\')">';
+    // 答题状态着色：1 对=绿 / 0 错=红 / 未做=白
+    var st = q.id != null ? _progressMap[q.id] : _staticStatus[qid];
+    var cardCls = 'card p-3 question-item';
+    var stIcon = '';
+    if (st === 1) { cardCls += ' q-done'; stIcon = '<span class="q-status q-ok" title="' + t('回答正确') + '"><i class="fas fa-check"></i></span>'; }
+    else if (st === 0) { cardCls += ' q-wrong'; stIcon = '<span class="q-status q-bad" title="' + t('回答错误') + '"><i class="fas fa-times"></i></span>'; }
+    html += '<div class="' + cardCls + '" onclick="showPracticeDetail(\'' + qid + '\')">' + stIcon;
     html += '<div class="flex gap-2 flex-wrap mb-1">';
     html += '<span class="tag">' + catLabel(q.category) + '</span>';
     html += '<span class="tag ' + (diffClass[q.difficulty] || '') + '">' + (diffMap[q.difficulty] || q.difficulty) + '</span>';
@@ -3070,6 +3154,19 @@ function showPracticeDetail(qid) {
   setTimeout(function() { var ta = document.querySelector('#practiceQuestion textarea'); if (ta && ta._cm) ta._cm.focus(); else if (ta) ta.focus(); }, 150);
 }
 
+var _filteredOrder = [];   // 当前筛选后的题目顺序（详情页「下一题」按此顺序跳转）
+
+// 按当前分类筛选顺序跳转到下一道题（自主练习/真题测试详情页）
+function nextPracticeQuestion() {
+  if (!currentPracticeQ) return;
+  var qid = currentPracticeQ.id != null ? currentPracticeQ.id : ('static_' + practiceQuestions.indexOf(currentPracticeQ));
+  var idx = _filteredOrder.indexOf(qid);
+  if (idx === -1) { backToPracticeList(); return; }   // 不在当前筛选结果中（如筛选变化）→ 回列表
+  var nextQid = _filteredOrder[idx + 1];
+  if (nextQid === undefined) { alert(t('已经是最后一题')); return; }
+  showPracticeDetail(nextQid);
+}
+
 function renderPracticeQuestion(q) {
   var diffMap = { easy: t('简单'), medium: t('中等'), hard: t('困难') };
   var diffClass = { easy: 'tag-easy', medium: 'tag-medium', hard: 'tag-hard' };
@@ -3095,6 +3192,7 @@ function renderPracticeQuestion(q) {
       html += '</div>';
     }
     html += '<div id="prac_res_static" class="result-box" style="display:none"></div>';
+    html += '<div class="mt-3 text-center"><button class="btn btn-accent" onclick="nextPracticeQuestion()">' + t('下一题') + ' <i class="fas fa-arrow-right mr-1"></i></button></div>';
     return html;
   }
 
@@ -3111,7 +3209,11 @@ function renderPracticeQuestion(q) {
     html += '<textarea class="code-input" id="prac_inp_' + q.id + '" placeholder="' + t('手动输入你的 SQL 语句...') + '"></textarea>';
   }
   html += '<div id="prac_res_' + q.id + '" class="result-box" style="display:none"></div>';
-  html += '<div class="mt-2"><button class="btn btn-primary" id="prac_btn_' + q.id + '" onclick="submitPracticeAnswer(' + q.id + ')"><i class="fas fa-paper-plane mr-1"></i> ' + t('提交答案') + '</button></div>';
+  // 按钮组：提交答案在上、下一题在下（上下紧邻）
+  html += '<div class="mt-3" style="display:flex;flex-direction:column;align-items:center;gap:calc(10px + 0.75em)">';
+  html += '<button class="btn btn-primary" id="prac_btn_' + q.id + '" style="margin-top:0.5em" onclick="submitPracticeAnswer(' + q.id + ')"><i class="fas fa-paper-plane mr-1"></i> ' + t('提交答案') + '</button>';
+  html += '<button class="btn btn-accent" id="pracNextBtn" onclick="nextPracticeQuestion()">' + t('下一题') + ' <i class="fas fa-arrow-right mr-1"></i></button>';
+  html += '</div>';
   return html;
 }
 
@@ -3120,6 +3222,9 @@ function checkStaticAnswer(key, btn) {
   if (!q) return;
   var correct = q.answer || q.correct_answer;
   var isCorrect = (key === correct);
+  // 记录静态题答题状态（列表着色用）
+  var staticIdx = practiceQuestions.indexOf(q);
+  if (staticIdx >= 0) _staticStatus['static_' + staticIdx] = isCorrect ? 1 : 0;
   // Disable all option buttons
   var allBtns = document.querySelectorAll('#prac_opts_static .option-btn');
   for (var i = 0; i < allBtns.length; i++) { allBtns[i].disabled = true; }
@@ -3153,6 +3258,8 @@ async function submitPracticeAnswer(qid) { saveAllCM();
   }
   if (!input) return alert(t('请先输入或选择答案'));
   var result = await apiPost('/submit', { session_id: sessionId, question_id: qid, answer: input });
+  // 更新答题状态（列表着色：返回列表立即生效）
+  if (typeof qid === 'number') _progressMap[qid] = result.is_correct ? 1 : 0;
   var resultBox = document.getElementById('prac_res_' + qid);
   resultBox.style.display = 'block';
   resultBox.className = 'result-box ' + (result.is_correct ? 'correct' : 'wrong');
@@ -3165,8 +3272,12 @@ async function submitPracticeAnswer(qid) { saveAllCM();
   }
   var btn = document.getElementById('prac_btn_' + qid);
   if (btn) { btn.disabled = true; btn.textContent = t('已提交'); }
+  // 答完后隐藏常驻「下一题」按钮，由结果框内的动作按钮接管（避免重复）
+  var pracNextBtn = document.getElementById('pracNextBtn');
+  if (pracNextBtn) pracNextBtn.style.display = 'none';
   var isMcq = q && q.options && (typeof q.options === 'string' ? q.options.trim() : q.options.length);
-  var showDerivedNext = result.is_correct && isMcq;
+  // 静态概念题（source=static_*）无表结构，不触发衍生题
+  var showDerivedNext = result.is_correct && isMcq && !(q && q.source && q.source.indexOf('static_') === 0);
   if (showDerivedNext) {
     currentPrototypeQ = q;
   } else {
@@ -3185,7 +3296,7 @@ function onPracticeNext() {
     currentPrototypeQ = null;
     startDerivedPractice(pid);
   } else {
-    backToPracticeList();
+    nextPracticeQuestion();   // 答完后「下一题」：按当前筛选顺序跳下一道
   }
 }
 
@@ -3316,11 +3427,14 @@ function backToPracticeList() {
   document.getElementById('questionDetail').classList.remove('visible');
   document.getElementById('questionDetail').style.display = 'none';
   document.getElementById('practiceList').style.display = 'block';
+  renderPracticeList();   // 重渲染，答题状态着色即时生效
 }
 
 // ==================== 错题集 ====================
 var wrongQuestions = [];
 var summaryExpanded = false;
+var wrongPage = 1;              // 错题集翻页：当前页码
+var WRONG_PAGE_SIZE = 5;        // 每页 5 个错题
 
 function toggleSummary() {
   summaryExpanded = !summaryExpanded;
@@ -3334,6 +3448,7 @@ async function loadWrongSet() {
   try {
     var data = await apiGet('/progress/' + encodeURIComponent(sessionId));
     wrongQuestions = data.progress.filter(function(p) { return !p.is_correct; });
+    wrongPage = 1;              // 重新进入错题集从第 1 页开始
     renderWrongSummary(data);
     renderWrongList();
   } catch (e) {
@@ -3369,10 +3484,17 @@ function renderWrongList() {
     el.innerHTML = '<div class="text-center text-sm py-6 opacity-50"><i class="fas fa-check-circle mr-1" style="color:#2c241b"></i> ' + t('暂无错题，继续保持！') + '</div>';
     return;
   }
+  // 翻页：每页 5 个，页码钳制到有效范围
+  var totalPages = Math.ceil(wrongQuestions.length / WRONG_PAGE_SIZE);
+  if (wrongPage < 1) wrongPage = 1;
+  if (wrongPage > totalPages) wrongPage = totalPages;
+  var start = (wrongPage - 1) * WRONG_PAGE_SIZE;
+  var pageItems = wrongQuestions.slice(start, start + WRONG_PAGE_SIZE);
   var html = '';
-  for (var i = 0; i < wrongQuestions.length; i++) {
-    var w = wrongQuestions[i];
-    html += '<div class="card p-3" style="cursor:pointer" onclick="showWrongDetail(' + i + ')">';
+  for (var i = 0; i < pageItems.length; i++) {
+    var w = pageItems[i];
+    var idx = start + i;   // 全局下标（详情/返回不受翻页影响）
+    html += '<div class="card p-3" style="cursor:pointer" onclick="showWrongDetail(' + idx + ')">';
     html += '<div class="flex gap-2 flex-wrap mb-1">';
     html += '<span class="tag">' + catLabel(w.category) + '</span>';
     html += '<span class="tag" style="background:rgba(176,74,74,0.12);color:#b04a4a">' + t('✗ 答错') + '</span>';
@@ -3381,6 +3503,12 @@ function renderWrongList() {
     html += '<p style="font-size:0.75rem;color:#666">' + t('你的答案：') + '<code style="font-family:Oswald,Consolas,monospace">' + (w.user_answer || '').replace(/</g, '&lt;') + '</code></p>';
     html += '</div>';
   }
+  // 分页控件：上一页 / 第 x / y 页 / 下一页
+  html += '<div class="flex justify-center items-center gap-3 pt-3">';
+  html += '<button class="btn btn-primary" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="wrongPage--;renderWrongList()"' + (wrongPage <= 1 ? ' disabled' : '') + '><i class="fas fa-chevron-left mr-1"></i>' + t('上一页') + '</button>';
+  html += '<span class="text-sm opacity-60">' + tf('第 {0} / {1} 页', wrongPage, totalPages) + '</span>';
+  html += '<button class="btn btn-primary" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="wrongPage++;renderWrongList()"' + (wrongPage >= totalPages ? ' disabled' : '') + '>' + t('下一页') + '<i class="fas fa-chevron-right ml-1"></i></button>';
+  html += '</div>';
   el.innerHTML = html;
 }
 
@@ -3404,7 +3532,7 @@ function showWrongDetail(idx) {
   if (w.explanation) html += '<div class="text-xs mt-2" style="color:#666"><i class="fas fa-lightbulb mr-1"></i> ' + w.explanation + '</div>';
   html += '</div></div>';
   var el = document.getElementById('wrongList');
-  el.innerHTML = '<a class="back-link" onclick="loadWrongSet()" style="cursor:pointer;margin-bottom:0.5rem;display:inline-block"><i class="fas fa-arrow-left mr-1"></i> ' + t('返回错题列表') + '</a>' + html;
+  el.innerHTML = '<a class="back-link" onclick="renderWrongList()" style="cursor:pointer;margin-bottom:0.5rem;display:inline-block"><i class="fas fa-arrow-left mr-1"></i> ' + t('返回错题列表') + '</a>' + html;
 }
 
 // update showPage to load wrong set
@@ -3416,7 +3544,8 @@ showPage = function(name) {
   var btns = document.querySelectorAll('.nav-btn[data-page="' + name + '"]');
   if (btns.length > 1 && currentPool === 'exam') btns[1].classList.add('active');
   else if (btns.length > 0) btns[0].classList.add('active');
-  if (name === 'practice') { document.getElementById('poolLabel').textContent = currentPool === 'exam' ? t('🎯 真题测试') : t('📝 自主练习'); if (!_catSelectBuilt) { buildCategorySelect(); _catSelectBuilt = true; } loadPracticeQuestions(); }
+  if (name === 'journey') { loadJourneyMap(); }
+  else if (name === 'practice') { document.getElementById('poolLabel').textContent = currentPool === 'exam' ? t('🎯 真题测试') : t('📝 自主练习'); if (!_catSelectBuilt) { buildCategorySelect(); _catSelectBuilt = true; } loadPracticeQuestions(); }
   else if (name === 'wrongset') { summaryExpanded = false; document.getElementById('summaryBody').style.display = 'none'; document.getElementById('summaryToggle').innerHTML = '<i class="fas fa-chevron-down"></i>'; loadWrongSet(); }
 };
 

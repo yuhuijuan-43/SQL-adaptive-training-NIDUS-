@@ -35,7 +35,6 @@ body { background: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Seg
 <body>
 <div id="loading"><div style="text-align:center"><div class="spinner"></div><div style="margin-top:12px">加载中...</div></div></div>
 <div id="tooltip-info"></div>
-<a href="/" style="position:fixed;top:12px;right:20px;z-index:9999;background:rgba(255,255,255,.9);color:#1a1a2e;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.15);">← 返回主页</a>
 <div id="app">
   <div id="header">
     <div>
@@ -46,6 +45,7 @@ body { background: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Seg
 <span>节点 <strong id="stat-nodes">-</strong></span>
           <span>关系 <strong id="stat-edges">-</strong></span>
           <span>分类 <strong id="stat-content">-</strong></span>
+          <span id="stat-lit-wrap" style="display:none">点亮 <strong id="stat-lit" style="color:#ffd54f">0</strong> / 36</span>
     </div>
   </div>
   <div id="chart"></div>
@@ -66,16 +66,72 @@ let chart = null
 let graphData = null
 let expanded = {}
 
+// 自适应点亮：官方标签 id → 本图节点 id（modb 内部 id）
+const TAG_TO_NODE_ID = {
+  'top_dml': 'top-255', 'top_ddl': 'top-257', 'top_func': 'top-256',
+  'top_join': 'top-264', 'top_constraint': 'top-265', 'top_subquery': 'top-266', 'top_select': 'top-273',
+  'dml_select': 'cat-2748', 'dml_insert': 'cat-2749', 'dml_update': 'cat-2750', 'dml_delete': 'cat-2751',
+  'ddl_create': 'cat-2774', 'ddl_alter': 'cat-2781', 'ddl_drop': 'cat-2776',
+  'ddl_truncate': 'cat-2777', 'ddl_rename': 'cat-2778', 'ddl_comment': 'cat-2779',
+  'string_func': 'cat-2760', 'numeric_func': 'cat-2764', 'aggregate_func': 'cat-2766',
+  'cast_func': 'cat-2769', 'window_func': 'cat-2771',
+  'join_inner': 'cat-2786', 'join_outer': 'cat-2787', 'join_self': 'cat-2788', 'join_cross': 'cat-2789',
+  'constraint_primary_key': 'cat-275', 'constraint_foreign_key': 'cat-276',
+  'subquery_scalar': 'cat-2791', 'subquery_column': 'cat-2792',
+  'subquery_table': 'cat-2793', 'subquery_in': 'cat-2794',
+  'select_basic': 'cat-2795', 'where_basic': 'cat-2796',
+  'group_by': 'cat-2797', 'having': 'cat-2798',
+}
+let litIds = null   // 点亮节点集合（null = 不启用点亮模式，全彩展示）
+let litMap = {}     // modb id → {lit, correct | x, y} 点亮详情（进度 x/10、x/y 显示用）
+
+// 从 URL 取 session_id（iframe 入口由 index.html 传入），拉取全量点亮状态
+// 有 session_id 时一律进入点亮模式：未开始/拉取失败 = 空集（全灰熄灭）
+// 后端 lights 为 root/枝/叶全量状态（规则1/2 落库 ∪ 规则3 跨池派生），经 TAG_TO_NODE_ID 映射
+function loadLitState(sessionId) {
+  if (!sessionId) return Promise.resolve()   // 无 session_id（独立访问）：litIds 保持 null = 全彩
+  return fetch('/api/journey/status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId }),
+  }).then(r => r.json()).then(d => {
+    const lit = new Set()
+    litMap = {}
+    const lights = d.lights || {}
+    Object.keys(lights).forEach(tag => {
+      const mapped = TAG_TO_NODE_ID[tag]
+      if (mapped) {
+        litMap[mapped] = lights[tag]
+        if (lights[tag].lit) lit.add(mapped)
+      }
+    })
+    litIds = lit
+  }).catch(() => { litIds = new Set() })
+}
+
 function loadGraph() {
+  const sessionId = new URLSearchParams(window.location.search).get('session_id')
   Promise.resolve(EMBEDDED_GRAPH).then(data => {
     graphData = data
         document.getElementById('stat-nodes').textContent = data.nodes.length
         document.getElementById('stat-edges').textContent = data.edges.length
         document.getElementById('stat-content').textContent = data.nodes.filter(n => n.level === 2).length
-    renderChart()
+    return loadLitState(sessionId).then(() => {
+      if (litIds) {
+        document.getElementById('stat-lit-wrap').style.display = ''
+        renderLitCount()
+      }
+      renderChart()
+    })
   }).catch(e => {
     document.getElementById('loading').innerHTML = '<div style="color:#e94560">加载失败: ' + e.message + '</div>'
   })
+}
+
+function renderLitCount() {
+  let count = 0
+  graphData.nodes.forEach(n => { if (n.level >= 1 && litIds.has(n.id)) count++ })
+  document.getElementById('stat-lit').textContent = count
 }
 
 function buildEChartsData(data, showAll) {
@@ -106,15 +162,47 @@ function buildEChartsData(data, showAll) {
       const catId = n.level === 1 ? n.id : (topIdByName[n.parent] ?? null)
       const ci = catId && catIndex[catId] != null ? catIndex[catId] : 0
       const size = n.level === 0 ? 60 : n.level === 1 ? 40 : n.level === 2 ? 22 : 8
+      // 点亮模式：已点亮节点彩色发光（小灯），未点亮暗灰，进行中（部分进度）淡彩+红描边
+      // 叶节点（level 2）加重轮廓，层级一眼可辨
+      const lit = litIds ? litIds.has(n.id) : true
+      const isLeaf = n.level === 2
+      const info = litMap[n.id] || {}
+      // 部分点亮：叶有累计答对（correct>0）/ 枝有点亮子叶（x>0）/ 根有点亮枝 → 淡彩进度样式
+      const partLit = !lit && ((isLeaf && (info.correct || 0) > 0)
+        || (n.level === 1 && (info.x || 0) > 0)
+        || (n.level === 0 && (info.x || 0) > 0))
+      // label 文本：枝/根圆圈内显示 x/y（x/7），叶未点亮时上方追加 x/10 进度
+      let labelText = n.name
+      if (n.level === 1) labelText = expanded[n.id] ? `${n.name} ▾` : `${n.name} ▸`
+      if (litIds) {
+        if (n.level === 2) {
+          if (!lit && (info.correct || 0) > 0) labelText = `${labelText}\n${Math.min(info.correct, 10)}/10`
+        } else if (n.level >= 1) {
+          labelText = `${labelText}\n${info.x || 0}/${info.y || 0}`
+        }
+      }
       const item = {
         id: n.id,
-        name: n.level === 1 ? (expanded[n.id] ? `${n.name} ▾` : `${n.name} ▸`) : (n.level <= 2 ? n.name : ''),
+        name: labelText,
         value: n.name,
         category: ci,
         symbolSize: size,
-        label: { show: n.level <= 2, fontSize: n.level === 0 ? 16 : 11, fontWeight: n.level <= 1 ? 'bold' : 'normal' },
-        itemStyle: { color: n.level === 0 ? '#e94560' : COLORS[ci % COLORS.length] },
+        label: {
+          show: n.level <= 2,
+          position: (litIds && n.level >= 1) ? 'inside' : 'top',   // 枝/根的 x/y 进度在圆圈内
+          formatter: labelText,
+          fontSize: n.level === 0 ? 13 : 11,
+          fontWeight: n.level <= 1 ? 'bold' : 'normal',
+          color: lit ? '#333' : '#b5b5b5',
+          lineHeight: n.level >= 1 ? 13 : undefined,
+        },
+        itemStyle: lit
+          ? { color: n.level === 0 ? '#e94560' : COLORS[ci % COLORS.length], shadowBlur: 14, shadowColor: n.level === 0 ? 'rgba(233,69,96,0.55)' : 'rgba(233,69,96,0.45)', borderWidth: isLeaf ? 2.5 : 1, borderColor: '#ffffff' }
+          : partLit
+            ? { color: n.level === 0 ? '#e94560' : COLORS[ci % COLORS.length], opacity: 0.4, borderWidth: isLeaf ? 2.5 : 1, borderColor: '#e94560' }
+            : { color: '#cfd4da', borderWidth: isLeaf ? 2.5 : 1, borderColor: isLeaf ? '#939ba5' : '#d5d9de' },
         _raw: n,
+        _lit: lit,
       }
       if (n.level === 3) {
         item.symbol = 'circle'
