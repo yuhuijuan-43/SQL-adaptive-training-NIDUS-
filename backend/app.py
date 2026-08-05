@@ -1,4 +1,4 @@
-import uuid, os, random
+import json, uuid, os, random
 
 from flask import Flask, jsonify, redirect, request, send_from_directory
 from flask_cors import CORS
@@ -16,7 +16,7 @@ from auth import (login_user, register_user, login_or_register, check_username_e
     _is_authenticated, register_admin, login_admin, check_admin_username_exists,
     get_admin_colleagues, get_admin_profile, get_admin_key, set_admin_key,
     get_referral_codes, add_referral_code, delete_referral_code)
-from engine import init_journey, journey_next, get_journey_state, _get_unlocked_nodes
+from engine import init_journey, journey_next, get_journey_state, compute_lights
 from seeding import seed_questions, seed_exam_questions, seed_knowledge_graph
 
 app = Flask(__name__, static_folder=None)
@@ -76,6 +76,11 @@ def _is_primary_operator(data):
     return bool(profile and profile.get('is_primary'))
 
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
+
+@app.route('/lib/<path:filename>')
+def lib_assets(filename):
+    """本地化前端依赖（Font Awesome / CodeMirror，2026-08-05 CDN 离线化）"""
+    return send_from_directory(os.path.join(FRONTEND_DIR, 'lib'), filename)
 
 # ---- 登录门槛：游客不允许读题/答题 ----
 # 公开端点白名单：登录注册、用户名检查、知识图谱结构、背景装饰标题、admin（自行校验 token）
@@ -288,9 +293,16 @@ def submit_answer():
         else:
             return jsonify({"error": "题目不存在"}), 404
     correct = q['correct_answer'].strip()
-    # 真实执行判题：内存 SQLite 构建题目环境，比较用户 SQL 与标准答案的结果集
-    is_correct, _rows, judge_error = judge_sql(
-        user_answer, correct, q.get('table_schema'), q.get('initial_data'))
+    if q.get('options') and str(q.get('options', '')).strip():
+        # 选择题：选项文本比对（概念题非 SQL，不执行 judge_sql）
+        # 双向 HTML 实体归一：DB 选项存 &gt; 等实体，浏览器 textContent 已是 >，需统一后再比
+        import html as _html
+        is_correct = _html.unescape(user_answer.strip()).lower() == _html.unescape(correct).lower()
+        judge_error = None
+    else:
+        # 真实执行判题：内存 SQLite 构建题目环境，比较用户 SQL 与标准答案的结果集
+        is_correct, _rows, judge_error = judge_sql(
+            user_answer, correct, q.get('table_schema'), q.get('initial_data'))
     save_answer(session_id, save_qid, user_answer, is_correct)
     resp = {
         "is_correct": is_correct,
@@ -374,13 +386,20 @@ def journey_next_route():
         return jsonify({"error": "缺少 session_id"}), 400
     # grade answer
     is_correct = None
+    row_id = None
     if question_id and user_answer:
         q = get_question_by_id(question_id)
         if q:
-            is_correct, _rows, _err = judge_sql(
-                user_answer, q['correct_answer'], q.get('table_schema'), q.get('initial_data'))
-            save_answer(session_id, question_id, user_answer, is_correct, duration or 0)
-    result = journey_next(session_id, just_answered_qid=question_id, was_correct=is_correct, duration=duration)
+            if q.get('options') and str(q.get('options', '')).strip():
+                # 选择题：选项文本比对（双向 HTML 实体归一，浏览器 textContent 与 DB 实体统一后比较）
+                import html as _html
+                is_correct = _html.unescape(user_answer.strip()).lower() == _html.unescape(q['correct_answer'].strip()).lower()
+            else:
+                is_correct, _rows, _err = judge_sql(
+                    user_answer, q['correct_answer'], q.get('table_schema'), q.get('initial_data'))
+            row_id = save_answer(session_id, question_id, user_answer, is_correct, duration or 0)
+    result = journey_next(session_id, just_answered_qid=question_id, was_correct=is_correct,
+                          duration=duration, just_answered_id=row_id)
     if result.get('question'):
         shuffle_options(result['question'])
     result['last_answer_correct'] = is_correct
@@ -388,24 +407,26 @@ def journey_next_route():
 
 @app.route('/api/journey/status', methods=['POST'])
 def journey_status():
+    """旅程状态 + 图谱解锁数据。未开始时也返回 200（state=null），供图谱入口视图展示「初始 0 点亮」"""
     data = request.get_json()
     session_id = data.get('session_id')
     if not session_id:
         return jsonify({"error": "缺少 session_id"}), 400
     state = get_journey_state(session_id)
-    if not state:
-        return jsonify({"error": "尚未开始 Journey"}), 404
     graph = get_graph()
     mastery = get_mastery(session_id)
-    unlocked = _get_unlocked_nodes(session_id)
-    progress = get_progress(session_id)
+    # 点亮状态始终计算（未开始 journey 也显示规则3 跨池点亮）
+    lights = compute_lights(session_id)
+    round_state = json.loads(state['round_state']) if state and state.get('round_state') else None
+    progress = get_progress(session_id) if state else []
     total = len(progress)
     correct = sum(1 for p in progress if p['is_correct'])
     return jsonify({
         "state": state,
         "graph": graph,
         "mastery": mastery,
-        "unlocked_nodes": unlocked,
+        "lights": lights,
+        "round": round_state,
         "total_answered": total,
         "total_correct": correct,
         "accuracy": round(correct / total * 100, 1) if total > 0 else 0

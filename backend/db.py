@@ -46,6 +46,8 @@ def init_db():
     except: pass
     try: c.execute("ALTER TABLE questions ADD COLUMN pool TEXT DEFAULT 'practice'")
     except: pass
+    try: c.execute("ALTER TABLE questions ADD COLUMN q_level TEXT")
+    except: pass
     # 真题测试题库（独立表，schema 同 questions）
     c.execute('''CREATE TABLE IF NOT EXISTS exam_questions (
         id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT NOT NULL,
@@ -92,6 +94,20 @@ def init_db():
         avg_speed REAL DEFAULT 0,
         speed_count INTEGER DEFAULT 0,
         started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    try: c.execute("ALTER TABLE journey_state ADD COLUMN tag_unlocked TEXT DEFAULT '{}'")
+    except: pass
+    try: c.execute("ALTER TABLE journey_state ADD COLUMN queue TEXT DEFAULT '[]'")
+    except: pass
+    try: c.execute("ALTER TABLE journey_state ADD COLUMN round_state TEXT DEFAULT NULL")
+    except: pass
+    # 图谱点亮状态（规则1/2 事件落库；规则3 由 user_progress 派生，不落库）
+    c.execute('''CREATE TABLE IF NOT EXISTS user_lights (
+        session_id TEXT NOT NULL,
+        node_id TEXT NOT NULL REFERENCES knowledge_nodes(id),
+        lit INTEGER NOT NULL DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (session_id, node_id))''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_ul_session ON user_lights(session_id)')
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,

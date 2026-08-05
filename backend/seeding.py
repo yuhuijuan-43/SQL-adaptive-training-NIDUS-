@@ -414,9 +414,6 @@ def get_seed_questions():
 
 def seed_questions():
     conn = get_connection()
-    count = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
-    if count > 0:
-        return
     # 优先从 questions.json 加载（纯JSON，直接 json.load）；回退到 questions.py（旧格式，正则解析）
     qpath_json = os.path.join(os.path.dirname(__file__), '..', 'questions.json')
     qpath_py = os.path.join(os.path.dirname(__file__), '..', 'questions.py')
@@ -435,29 +432,50 @@ def seed_questions():
         print(f"Loaded {len(questions)} questions from questions.py (legacy, consider migrating to .json)")
     if not questions:
         questions = get_seed_questions()
+    # 数据校验：库内题数与题库文件不一致（旧库残留/题库更新）→ 自动重建题库
+    # 题目 id 按文件顺序从 1 重导（与本地/全新库一致）；重建后清理指向已不存在题目的答题记录
+    count = conn.execute('SELECT COUNT(*) FROM questions').fetchone()[0]
+    if count > 0:
+        if count == len(questions):
+            return
+        print(f"[seed] 题库版本不一致（库内 {count} 题 vs 文件 {len(questions)} 题），自动重建题库...")
+        conn.execute('DELETE FROM question_knowledge')
+        conn.execute('DELETE FROM questions')
+        # 重置 AUTOINCREMENT 序列：重建后 id 从 1 起按文件顺序重导，与本地/全新库一致（旧答题记录保持有效）
+        conn.execute("DELETE FROM sqlite_sequence WHERE name='questions'")
+        conn.commit()
     for q in questions:
             # 分类 → 官方标签，难度按标签星级（★ 简单 / ★★ 中等 / ★★★ 困难）
             category = map_category(q['category'], q['title'])
             difficulty = TAG_DIFFICULTY.get(category, q['difficulty'])
-            conn.execute('''INSERT INTO questions (source,category,difficulty,title,description,table_schema,initial_data,correct_answer,explanation,options,option_explanations,expected_output,pool)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)''',
+            conn.execute('''INSERT INTO questions (source,category,difficulty,title,description,table_schema,initial_data,correct_answer,explanation,options,option_explanations,expected_output,pool,q_level)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
             (q['source'],category,difficulty,q['title'],q['description'],
-             q.get('table_schema'),q.get('initial_data'),q['correct_answer'],q.get('explanation'),q.get('options'), q.get('option_explanations'), q.get('expected_output'), 'practice'))
+             q.get('table_schema'),q.get('initial_data'),q['correct_answer'],q.get('explanation'),q.get('options'), q.get('option_explanations'), q.get('expected_output'), 'practice', q.get('q_level')))
+    conn.commit()
+    # 清理引用已不存在题目的答题记录（题库重建后 id 可能错位，保守清理）
+    conn.execute("DELETE FROM user_progress WHERE question_id NOT IN (SELECT id FROM questions)")
     conn.commit()
     print(f"Seeded {len(questions)} practice questions.")
 
 def seed_exam_questions():
     """Load exam questions from exam_questions.json into exam_questions table."""
     conn = get_connection()
-    count = conn.execute('SELECT COUNT(*) FROM exam_questions').fetchone()[0]
-    if count > 0:
-        return
     qpath = os.path.join(os.path.dirname(__file__), '..', 'exam_questions.json')
     if not os.path.exists(qpath):
         print("exam_questions.json not found, skipping exam seed.")
         return
     with open(qpath, 'r', encoding='utf-8') as f:
         questions = json.load(f)
+    # 数据校验：库内真题数与文件不一致 → 自动重建（同 seed_questions）
+    count = conn.execute('SELECT COUNT(*) FROM exam_questions').fetchone()[0]
+    if count > 0:
+        if count == len(questions):
+            return
+        print(f"[seed] 真题库版本不一致（库内 {count} 题 vs 文件 {len(questions)} 题），自动重建...")
+        conn.execute('DELETE FROM exam_questions')
+        conn.execute("DELETE FROM sqlite_sequence WHERE name='exam_questions'")
+        conn.commit()
     for q in questions:
         # 分类 → 官方标签，难度按标签星级
         category = map_category(q['category'], q['title'])

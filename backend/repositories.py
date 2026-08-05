@@ -214,9 +214,9 @@ def invalidate_graph_cache():
 def save_answer(session_id, question_id, user_answer, is_correct, duration=0):
     # 未登录用户不记录答题记录
     if not _is_authenticated(session_id):
-        return
+        return None
     conn = get_connection()
-    conn.execute('INSERT INTO user_progress (session_id,question_id,user_answer,is_correct,duration) VALUES (?,?,?,?,?)',
+    cur = conn.execute('INSERT INTO user_progress (session_id,question_id,user_answer,is_correct,duration) VALUES (?,?,?,?,?)',
                  (session_id, question_id, user_answer, 1 if is_correct else 0, duration))
     # update mastery for related nodes (BKT: Beta distribution)
     nodes = conn.execute('SELECT node_id FROM question_knowledge WHERE question_id = ?', (question_id,)).fetchall()
@@ -233,6 +233,7 @@ def save_answer(session_id, question_id, user_answer, is_correct, duration=0):
             conn.execute('INSERT INTO user_mastery (session_id,node_id,correct_count,total_count,alpha,beta) VALUES (?,?,?,?,?,?)',
                          (session_id, nid, 1 if is_correct else 0, 1, a, b))
     conn.commit()
+    return cur.lastrowid
 
 def get_mastery(session_id):
     conn = get_connection()
@@ -355,6 +356,7 @@ def delete_user(username):
     conn.execute('DELETE FROM user_progress WHERE session_id=?', (sid,))
     conn.execute('DELETE FROM user_mastery WHERE session_id=?', (sid,))
     conn.execute('DELETE FROM journey_state WHERE session_id=?', (sid,))
+    conn.execute('DELETE FROM user_lights WHERE session_id=?', (sid,))
     conn.execute('DELETE FROM diagnostic_results WHERE session_id=?', (sid,))
     conn.execute("DELETE FROM user_password_history WHERE username=? AND kind='user'", (username,))
     conn.execute('DELETE FROM users WHERE id=?', (row['id'],))

@@ -1,141 +1,337 @@
-"""Journey 自适应引擎：BKT 掌握度建模 + Thompson 采样选题"""
+"""Journey 自适应引擎（2026-08 图谱点亮版）：双循环出题 + 叶/枝/根三级点亮
+
+核心规则（产品需求）：
+- 出题：枝节点不放回（固定图谱顺序）→ 叶节点不放回 → 每叶连续 5 题（3 选择 + 2 填空，选择先行）
+- 题池不足时循环复用（同题可重复出，user_progress 按记录条数计数）；填空池为空回退选择题池
+- 点亮规则（叶节点，任一满足即点亮）：
+  1. 本轮该叶出的题中连续答对 3 道（相邻两题提交间隔 ≤2min）→ 点亮并跳过剩余题目
+  2. 本轮该叶全部题均答对（不计间隔）→ 点亮
+  3. 累计答对 10 道该叶类型题（跨自适应/自主/真题）→ 点亮；每答对 2 道点亮 20%，节点内显示 x/10
+- 枝节点：x/y（点亮叶数/叶总数），全部叶点亮后枝点亮；根节点：x/7（点亮枝数/枝总数），全亮后点亮
+- 一轮 = 所有未点亮且有题叶节点刷完（至多 145 题）；完成后保留点亮状态，重新开始新一轮
+"""
 import json
-import random
 
 from db import get_connection
-from repositories import (get_all_questions, get_question_by_id, get_questions_by_node,
-                          get_progress, get_mastery, get_graph)
+from repositories import get_question_by_id, get_mastery, get_graph
+from seeding import OFFICIAL_TAGS
+
+# 出题与点亮常量
+SEQ_TYPES = ['mcq', 'mcq', 'mcq', 'fillin', 'fillin']   # 每叶 5 题：3 选择 + 2 填空，选择先行
+LEAF_Q = 5            # 每叶节点题数
+STREAK = 3            # 规则1 连续答对数
+GAP_MAX = 120         # 规则1 相邻两题提交间隔上限（秒，≤2min）
+CORRECT_LIT = 10      # 规则3 累计答对数
+
+# 枝/叶固定顺序（图谱声明序，不放回）
+TOP_ORDER = list(OFFICIAL_TAGS.keys())
+LEAF_ORDER = {top: [t[0] for t in leaves] for top, (_, leaves) in OFFICIAL_TAGS.items()}
+
+
+# ==================== 状态读写 ====================
 
 def get_journey_state(session_id):
     conn = get_connection()
     row = conn.execute('SELECT * FROM journey_state WHERE session_id=?', (session_id,)).fetchone()
     return dict(row) if row else None
 
+
+def _load_round_state(state):
+    """本轮状态 JSON：{status, entries, idx, pos, answers, answered_total, lit_round}"""
+    try:
+        return json.loads(state.get('round_state') or 'null')
+    except Exception:
+        return None
+
+
+def _save_round_state(session_id, rs):
+    conn = get_connection()
+    conn.execute('UPDATE journey_state SET round_state=? WHERE session_id=?',
+                 (json.dumps(rs), session_id))
+    conn.commit()
+
+
 def init_journey(session_id, diagnostic_data=None):
+    """初始化旅程（本轮状态留空，首次 journey_next 自动建轮）"""
     conn = get_connection()
     existing = conn.execute('SELECT * FROM journey_state WHERE session_id=?', (session_id,)).fetchone()
     if existing:
-            return dict(existing)
-    # Determine starting level based on diagnostic results
-    start_level = 0
-    phase = 'cold'
-    if diagnostic_data:
-        acc = diagnostic_data.get('accuracy', 0)
-        skipped = diagnostic_data.get('skipped', 0)
-        total = diagnostic_data.get('total', 3)
-        if skipped >= 2 or total == 0:
-            start_level = 0; phase = 'cold'
-        elif acc >= 80:
-            start_level = 2; phase = 'exploration'  # high performer
-        elif acc >= 50:
-            start_level = 1; phase = 'exploration'
-        else:
-            start_level = 0; phase = 'cold'
-        # Pre-seed alpha/beta for nodes the user answered correctly/incorrectly in diagnostic
-        details = diagnostic_data.get('details', [])
-        for d in details:
-            if d.get('skipped'): continue
-            nid = d.get('node_id')
-            if not nid: continue
-            existing_m = conn.execute('SELECT * FROM user_mastery WHERE session_id=? AND node_id=?', (session_id, nid)).fetchone()
-            if not existing_m:
-                a = 2 if d.get('is_correct') else 1
-                b = 1 if d.get('is_correct') else 2
-                conn.execute('INSERT INTO user_mastery (session_id,node_id,correct_count,total_count,alpha,beta) VALUES (?,?,?,?,?,?)',
-                             (session_id, nid, 1 if d.get('is_correct') else 0, 1, a, b))
-    all_nodes = [dict(r) for r in conn.execute('SELECT id, level FROM knowledge_nodes ORDER BY level, id').fetchall()]
-    first_nodes = [n['id'] for n in all_nodes if n['level'] == start_level]
-    if not first_nodes:
-        first_nodes = ['select_basic']
-    queue_json = json.dumps(first_nodes)
-    conn.execute('''INSERT INTO journey_state (session_id,current_node,node_queue,skipped_nodes,fillin_queue,fillin_pending,deep_mode,phase,recent_modules)
-        VALUES (?,?,?,?,?,?,?,?,?)''',
-                 (session_id, None, queue_json, json.dumps([]), json.dumps([]), 0, 1, phase, json.dumps([])))
+        return dict(existing)
+    conn.execute('''INSERT INTO journey_state (session_id,current_node,deep_mode,phase,recent_modules,total_answered,total_correct)
+        VALUES (?,?,?,?,?,?,?)''',
+        (session_id, None, 1, 'active', '[]', 0, 0))
     conn.commit()
     return get_journey_state(session_id)
 
-def _node_has_questions(node_id):
-    """节点是否挂有题目（官方图谱的大分类/根节点无题，视为自动掌握）"""
+
+def _is_mcq(q):
+    return bool(q.get('options') and str(q.get('options', '')).strip())
+
+
+# ==================== 出题（双循环 + 循环复用） ====================
+
+def _node_pools(leaf):
+    """该叶节点的选择题/填空题 id 列表（基础选择先行，其次按 id）"""
     conn = get_connection()
-    return conn.execute('SELECT COUNT(*) FROM question_knowledge WHERE node_id=?', (node_id,)).fetchone()[0] > 0
+    rows = conn.execute('''SELECT q.id, q.q_level, q.options FROM questions q
+        JOIN question_knowledge qk ON q.id = qk.question_id WHERE qk.node_id=?''', (leaf,)).fetchall()
+    mcq, fillin = [], []
+    for r in rows:
+        if _is_mcq(dict(r)):
+            mcq.append(dict(r))
+        else:
+            fillin.append(dict(r))
+    mcq.sort(key=lambda x: (x.get('q_level') != 'basic', x['id']))
+    return [q['id'] for q in mcq], [q['id'] for q in fillin]
 
-def _get_unlocked_nodes(session_id):
-    """Return node_ids the user has unlocked based on mastery of prerequisites.
-    无题目的节点（根/大分类）自动视为已掌握，保证其下标签可解锁。"""
+
+def _leaf_plan(mcq_ids, fillin_ids):
+    """按 [选择×3, 填空×2] 生成 5 题序列；池不足循环复用，填空池为空回退选择题池"""
+    plan = []
+    mcq_i = fill_i = 0
+    for t in SEQ_TYPES:
+        if t == 'mcq':
+            pool = mcq_ids or fillin_ids
+        else:
+            pool = fillin_ids or mcq_ids
+        if not pool:
+            break
+        plan.append(pool[mcq_i % len(pool)] if t == 'mcq' else pool[fill_i % len(pool)])
+        if t == 'mcq':
+            mcq_i += 1
+        else:
+            fill_i += 1
+    return plan
+
+
+# ==================== 点亮判定 ====================
+
+def _correct_counts(session_id):
+    """规则3 派生：跨池（自适应/自主/真题）累计答对每叶节点题数（幂等）"""
     conn = get_connection()
-    graph = [dict(r) for r in conn.execute('SELECT * FROM knowledge_edges').fetchall()]
-    mastery = {r['node_id']: dict(r) for r in conn.execute('SELECT * FROM user_mastery WHERE session_id=?', (session_id,)).fetchall()}
-    all_nodes = [dict(r)['id'] for r in conn.execute('SELECT id FROM knowledge_nodes ORDER BY level').fetchall()]
+    rows = conn.execute('''SELECT qk.node_id AS node_id, COUNT(*) AS c
+        FROM user_progress up JOIN question_knowledge qk ON up.question_id = qk.question_id
+        WHERE up.session_id=? AND up.is_correct=1 GROUP BY qk.node_id''', (session_id,)).fetchall()
+    return {r['node_id']: r['c'] for r in rows}
 
-    def is_mastered(nid):
-        if not _node_has_questions(nid):
-            return True
-        return _mastery_prob(mastery.get(nid)) >= 0.7
 
-    def node_has_unlocked_prereqs(nid):
-        prereqs = [e['from_node'] for e in graph if e['to_node'] == nid]
-        if not prereqs: return True
-        return all(is_mastered(p) for p in prereqs)
-
-    unlocked = [nid for nid in all_nodes if node_has_unlocked_prereqs(nid)]
-    return unlocked
-
-def _recommend_weak_prereq(session_id, node_id):
-    """Find the weakest prerequisite of node_id that isn't mastered."""
+def _lit_leaves(session_id, counts=None):
+    """已点亮叶节点：user_lights 落库（规则1/2）∪ 规则3 派生（累计 ≥10）"""
     conn = get_connection()
-    prereqs = [dict(r)['from_node'] for r in conn.execute('SELECT from_node FROM knowledge_edges WHERE to_node=?', (node_id,)).fetchall()]
-    mastery = {r['node_id']: dict(r) for r in conn.execute('SELECT * FROM user_mastery WHERE session_id=?', (session_id,)).fetchall()}
-    weakest = None; weakest_prob = 1.0
-    for pid in prereqs:
-        if not _node_has_questions(pid):
-            continue   # 无题的大分类节点跳过
-        prob = _mastery_prob(mastery.get(pid))
-        if prob < weakest_prob:
-            weakest_prob = prob
-            weakest = pid
-    return weakest if weakest_prob < 0.7 else None
+    stored = {r['node_id'] for r in conn.execute(
+        'SELECT node_id FROM user_lights WHERE session_id=? AND lit=1', (session_id,)).fetchall()}
+    counts = counts if counts is not None else _correct_counts(session_id)
+    return stored | {nid for nid, c in counts.items() if c >= CORRECT_LIT}
 
-def _mastery_prob(m):
-    """BKT: Beta distribution mean."""
-    if not m: return 0.5
-    a = m.get('alpha', 1)
-    b = m.get('beta', 1)
-    return a / (a + b)
 
-def _mastery_uncertainty(m):
-    """BKT: Beta distribution variance (exploration score)."""
-    if not m: return 0.5
-    a = m.get('alpha', 1)
-    b = m.get('beta', 1)
-    s = a + b
-    return (a * b) / (s * s * (s + 1))
+def _set_lit(session_id, node_id):
+    """规则1/2 点亮落库（幂等 upsert）"""
+    conn = get_connection()
+    conn.execute('''INSERT INTO user_lights (session_id, node_id, lit) VALUES (?,?,1)
+        ON CONFLICT(session_id, node_id) DO UPDATE SET lit=1, updated_at=CURRENT_TIMESTAMP''',
+        (session_id, node_id))
+    conn.commit()
 
-def _is_mastered(node_id, mastery):
-    """Mastered if mastery probability >= 0.7. 无题节点（根/大分类）自动视为已掌握，不会成为候选"""
-    if not _node_has_questions(node_id):
-        return True
-    m = mastery.get(node_id)
-    return _mastery_prob(m) >= 0.7
 
-def _thompson_score(node_id, mastery, total_answered, phase='exploration'):
-    """Compute Thompson sampling score for a knowledge node."""
-    m = mastery.get(node_id)
-    prob = _mastery_prob(m)
-    unc = _mastery_uncertainty(m)
-    # Exploitation: want nodes with low mastery (high learning potential)
-    exploit = 1 - prob
-    # Exploration: want nodes with high uncertainty
-    explore = unc
-    # Dynamic exploration rate λ
-    lam = max(0.1, 0.5 * (2.718 ** (-total_answered / 15)))
-    if phase == 'cold':
-        lam = 0.6  # more exploration in cold start
-    elif phase == 'mastery':
-        lam = 0.1  # less exploration in mastery phase
-    return lam * explore + (1 - lam) * exploit
+def _gap_seconds(ts1, ts2):
+    """相邻两题提交间隔（秒）；时间戳解析失败视为 0（同秒语义）"""
+    from datetime import datetime
+    def _parse(ts):
+        try:
+            return datetime.strptime(str(ts)[:19], '%Y-%m-%d %H:%M:%S')
+        except Exception:
+            return None
+    a, b = _parse(ts1), _parse(ts2)
+    if a is None or b is None:
+        return 0
+    return abs((b - a).total_seconds())
+
+
+def _refresh_answer_ts(answers):
+    """判定前从 DB 刷新段内答题时间戳（间隔以 user_progress 记录为准，而非作答瞬间快照）"""
+    if not answers:
+        return
+    conn = get_connection()
+    for a in answers:
+        row = conn.execute('SELECT answered_at FROM user_progress WHERE id=?', (a.get('pid'),)).fetchone()
+        if row:
+            a['ts'] = row['answered_at']
+
+
+def _rule1_hit(answers):
+    """规则1：段内尾部连续 3 道答对且相邻两题提交间隔 ≤2min"""
+    if len(answers) < STREAK:
+        return False
+    tail = answers[-STREAK:]
+    if not all(a['ok'] for a in tail):
+        return False
+    for i in range(1, len(tail)):
+        if _gap_seconds(tail[i - 1]['ts'], tail[i]['ts']) > GAP_MAX:
+            return False
+    return True
+
+
+def compute_lights(session_id):
+    """全量点亮状态：叶 {lit, correct}；枝 {lit, x, y}；根 {lit, x, y}（journey 与 status 共用）"""
+    conn = get_connection()
+    stored = {r['node_id'] for r in conn.execute(
+        'SELECT node_id FROM user_lights WHERE session_id=? AND lit=1', (session_id,)).fetchall()}
+    counts = _correct_counts(session_id)
+    out = {}
+    for top in TOP_ORDER:
+        for leaf in LEAF_ORDER[top]:
+            c = counts.get(leaf, 0)
+            out[leaf] = {'lit': leaf in stored or c >= CORRECT_LIT, 'correct': c}
+    for top in TOP_ORDER:
+        leaves = LEAF_ORDER[top]
+        x = sum(1 for lf in leaves if out[lf]['lit'])
+        out[top] = {'lit': len(leaves) > 0 and x == len(leaves), 'x': x, 'y': len(leaves)}
+    lit_tops = sum(1 for t in TOP_ORDER if out[t]['lit'])
+    out['root'] = {'lit': lit_tops == len(TOP_ORDER), 'x': lit_tops, 'y': len(TOP_ORDER)}
+    return out
+
+
+# ==================== 一轮构建 ====================
+
+def _build_round(session_id):
+    """新一轮：枝→叶固定顺序，跳过已点亮/无题叶节点，每叶生成 5 题序列"""
+    lit = _lit_leaves(session_id)
+    entries = []
+    for top in TOP_ORDER:
+        for leaf in LEAF_ORDER[top]:
+            if leaf in lit:
+                continue
+            mcq, fill = _node_pools(leaf)
+            if not mcq and not fill:
+                continue
+            entries.append({'branch': top, 'leaf': leaf, 'plan': _leaf_plan(mcq, fill)})
+    return {'status': 'active', 'entries': entries, 'idx': 0, 'pos': 0,
+            'answers': [], 'answered_total': 0, 'lit_round': []}
+
+
+def _progress_row(row_id):
+    """按 user_progress 主键取答题记录（作答登记用）"""
+    conn = get_connection()
+    row = conn.execute('SELECT question_id, is_correct, answered_at FROM user_progress WHERE id=?',
+                       (row_id,)).fetchone()
+    return dict(row) if row else None
+
+
+# ==================== 主流程 ====================
+
+def journey_next(session_id, just_answered_qid=None, was_correct=None, duration=None,
+                 just_answered_id=None):
+    """自适应选题引擎（2026-08 图谱点亮版）"""
+    state = get_journey_state(session_id)
+    if not state:
+        init_journey(session_id)
+        state = get_journey_state(session_id)
+
+    # 1. 记录答题统计（保留计数器）
+    if was_correct is not None:
+        _record_answer_stats(session_id, state, was_correct, duration)
+        state = get_journey_state(session_id)
+
+    rs = _load_round_state(state)
+    lit_now = None
+    if rs is None or rs['status'] == 'complete':
+        # 首轮 / 上轮完成 → 新一轮（点亮状态保留）
+        rs = _build_round(session_id)
+        _save_round_state(session_id, rs)
+        if not rs['entries']:
+            # 所有叶节点已点亮
+            rs['status'] = 'complete'
+            _save_round_state(session_id, rs)
+            return _response(session_id, state, rs, question=None, round_complete=True, lit_now=lit_now)
+
+    entry = rs['entries'][rs['idx']] if rs['idx'] < len(rs['entries']) else None
+
+    # 2. 作答登记：本轮该叶计划内的题才计入（防陈旧/重复提交污染）
+    if just_answered_id is not None and was_correct is not None and entry is not None:
+        if just_answered_qid in entry['plan']:
+            row = _progress_row(just_answered_id)
+            if row:
+                rs['answers'].append({'qid': row['question_id'], 'ok': bool(row['is_correct']),
+                                      'ts': row['answered_at'], 'pid': just_answered_id})
+                rs['answered_total'] += 1
+                _refresh_answer_ts(rs['answers'])
+                if _rule1_hit(rs['answers']):
+                    # 规则1：连对 3 + 间隔≤2min → 点亮并跳过剩余
+                    _set_lit(session_id, entry['leaf'])
+                    lit_now = entry['leaf']
+                elif _correct_counts(session_id).get(entry['leaf'], 0) >= CORRECT_LIT:
+                    # 规则3：跨池累计答对 10 道 → 点亮并跳过剩余
+                    lit_now = entry['leaf']
+                if lit_now:
+                    if entry['leaf'] not in rs['lit_round']:
+                        rs['lit_round'].append(entry['leaf'])
+                    rs['pos'] = len(entry['plan'])
+                    rs['answers'] = []
+                _save_round_state(session_id, rs)
+
+    # 3. 双 while 推进：本叶 5 题出完 → 规则2 判定 → 下一叶；全部叶完成 → 一轮结束
+    while True:
+        if rs['idx'] >= len(rs['entries']):
+            rs['status'] = 'complete'
+            _save_round_state(session_id, rs)
+            return _response(session_id, state, rs, question=None, round_complete=True, lit_now=lit_now)
+        entry = rs['entries'][rs['idx']]
+        if rs['pos'] >= len(entry['plan']):
+            # 规则2：本轮该叶全部答对（不计间隔）→ 点亮
+            if rs['answers'] and all(a['ok'] for a in rs['answers']):
+                _set_lit(session_id, entry['leaf'])
+                if entry['leaf'] not in rs['lit_round']:
+                    rs['lit_round'].append(entry['leaf'])
+            rs['idx'] += 1
+            rs['pos'] = 0
+            rs['answers'] = []
+            _save_round_state(session_id, rs)
+            continue
+        qid = entry['plan'][rs['pos']]
+        rs['pos'] += 1
+        _save_round_state(session_id, rs)
+        return _response(session_id, state, rs, question=get_question_by_id(qid),
+                         round_complete=False, lit_now=lit_now)
+
+
+# ==================== 响应组装 ====================
+
+def _response(session_id, state, rs, question=None, round_complete=False, lit_now=None):
+    """组装响应：保留前端兼容字段 + lights/round/round_complete"""
+    entry = rs['entries'][rs['idx']] if rs['idx'] < len(rs['entries']) else None
+    return {
+        'action': 'advance',
+        'current_node': entry['leaf'] if entry else '',
+        'question': question,
+        'graph': get_graph(),
+        'mastery': get_mastery(session_id),
+        'lights': compute_lights(session_id),
+        'round': {
+            'status': rs['status'],
+            'branch': entry['branch'] if entry else None,
+            'leaf': entry['leaf'] if entry else None,
+            'pos': rs['pos'],
+            'leaf_total': len(entry['plan']) if entry else LEAF_Q,
+            'leaf_index': rs['idx'] + 1 if entry else 0,
+            'leaf_count': len(rs['entries']),
+            'answered_total': rs['answered_total'],
+            'lit_round': rs['lit_round'],
+        },
+        'round_complete': round_complete,
+        'lit_now': lit_now,
+        'wrong_streak': state.get('wrong_streak', 0),
+        'total_answered': state.get('total_answered', 0),
+        'total_correct': state.get('total_correct', 0),
+        'fillin_mode': False,
+        'deep_mode': state.get('deep_mode', 1),
+        'hint': '',
+        'phase': 'complete' if round_complete else 'active',
+    }
+
+
+# ==================== 统计（保留原实现） ====================
 
 def _record_answer_stats(session_id, state, was_correct, duration):
-    """记录答题统计：速度、总答题数、连错计数"""
     conn = get_connection()
     if duration is not None:
         sp = state.get('speed_count', 0)
@@ -145,265 +341,7 @@ def _record_answer_stats(session_id, state, was_correct, duration):
         conn.execute('UPDATE journey_state SET avg_speed=?, speed_count=? WHERE session_id=?', (new_avg, new_count, session_id))
     conn.execute('UPDATE journey_state SET total_answered=total_answered+1 WHERE session_id=?', (session_id,))
     if was_correct is True:
-        conn.execute('UPDATE journey_state SET wrong_streak=0 WHERE session_id=?', (session_id,))
+        conn.execute('UPDATE journey_state SET total_correct=total_correct+1, wrong_streak=0 WHERE session_id=?', (session_id,))
     elif was_correct is False:
         conn.execute('UPDATE journey_state SET wrong_streak=wrong_streak+1 WHERE session_id=?', (session_id,))
     conn.commit()
-
-def _determine_phase(session_id, phase, total_answered, was_correct, state):
-    """阶段切换决策：cold→exploration→mastery"""
-    conn = get_connection()
-    if phase == 'cold' and total_answered >= 5:
-        phase = 'exploration'
-        conn.execute('UPDATE journey_state SET phase=? WHERE session_id=?', (phase, session_id))
-        conn.commit()
-    elif phase == 'exploration' and total_answered > 30:
-        recent = [dict(r) for r in conn.execute(
-            'SELECT is_correct FROM user_progress WHERE session_id=? ORDER BY answered_at DESC LIMIT 10', (session_id,)).fetchall()]
-        if len(recent) >= 10:
-            vals = [r['is_correct'] for r in recent]
-            mean = sum(vals) / len(vals)
-            variance = sum((v - mean) ** 2 for v in vals) / len(vals)
-            if variance < 0.15:
-                phase = 'mastery'
-                conn.execute('UPDATE journey_state SET phase=? WHERE session_id=?', (phase, session_id))
-                conn.commit()
-    if phase == 'mastery' and was_correct is False and state.get('wrong_streak', 0) >= 3:
-        phase = 'exploration'
-        conn.execute('UPDATE journey_state SET phase=? WHERE session_id=?', (phase, session_id))
-        conn.commit()
-    return phase
-
-def _check_fillin_mode(state, just_answered_qid, deep_mode):
-    """检查是否应进入填空模式（MCQ答完后触发）"""
-    if not deep_mode or not just_answered_qid:
-        return False, '', '', None
-    jaq = get_question_by_id(just_answered_qid)
-    if jaq and jaq.get('options') and jaq['options'].strip():
-        current_node = state.get('current_node')
-        if current_node:
-            return True, '请手动输入 SQL 语句来确认你是否真正掌握了该知识点。', 'fillin', current_node
-    return False, '', '', None
-
-def _select_candidate_node(session_id, unlocked, mastery, total_answered, phase, state,
-                           is_fast, was_correct, recent_modules_raw, skipped_raw, progress=None):
-    """Thompson采样选择下一个知识点节点"""
-    recent_modules = list(recent_modules_raw)
-    skipped = list(skipped_raw)
-    action = ''
-
-    # Update recent modules (for safety constraint)
-    if state.get('current_node'):
-        graph_nodes = get_graph()['nodes']
-        current_node_obj = next((n for n in graph_nodes if n['id'] == state['current_node']), None)
-        if current_node_obj:
-            recent_modules.append(current_node_obj.get('category', ''))
-            if len(recent_modules) > 5:
-                recent_modules = recent_modules[-5:]
-
-    # Safety: check if 5 consecutive same-module
-    same_module_count = 0
-    last_mod = None
-    if len(recent_modules) >= 5:
-        last_mod = recent_modules[-1]
-        same_module_count = sum(1 for m in recent_modules if m == last_mod)
-
-    # Collect candidates: unlocked, not mastered
-    candidates = [nid for nid in unlocked if not _is_mastered(nid, mastery)]
-    if same_module_count >= 5 and candidates:
-        all_nodes = get_graph()['nodes']
-        node_map = {n['id']: n for n in all_nodes}
-        candidates = [nid for nid in candidates if node_map.get(nid, {}).get('category', '') != last_mod]
-    if not candidates:
-        candidates = unlocked
-
-    # Difficulty damping
-    recent_progress = (progress if progress is not None else get_progress(session_id))[-10:]
-    recent_correct = sum(1 for p in recent_progress if p['is_correct'])
-    difficulty_damping = (len(recent_progress) >= 5 and recent_correct / max(len(recent_progress), 1) > 0.8)
-    if difficulty_damping and phase != 'cold':
-        all_nodes = get_graph()['nodes']
-        node_map = {n['id']: n for n in all_nodes}
-        weighted = []
-        for nid in candidates:
-            score = _thompson_score(nid, mastery, total_answered, phase)
-            level = node_map.get(nid, {}).get('level', 0)
-            score *= (1 + level * 0.2)
-            weighted.append((score, nid))
-    else:
-        weighted = [(_thompson_score(nid, mastery, total_answered, phase), nid) for nid in candidates]
-
-    weighted.sort(key=lambda x: -x[0])
-    recommend_node = weighted[0][1] if weighted else 'select_basic'
-    action = 'advance' if phase != 'cold' else 'cold'
-
-    # Fast+correct: push same-level peers to skipped
-    if is_fast and was_correct is True and phase != 'cold':
-        all_nodes = get_graph()['nodes']
-        node_map = {n['id']: n for n in all_nodes}
-        rec_level = node_map.get(recommend_node, {}).get('level', 0)
-        same_level = [nid for nid in candidates if node_map.get(nid, {}).get('level', 0) == rec_level and nid != recommend_node]
-        for s in same_level:
-            if s not in skipped:
-                skipped.append(s)
-
-    # Review interspersion (every 5 questions)
-    if total_answered > 0 and total_answered % 5 == 0 and skipped:
-        review_node = random.choice(skipped)
-        skipped.remove(review_node)
-        if not _is_mastered(review_node, mastery):
-            recommend_node = review_node
-            action = 'review'
-            recent_modules = []
-
-    # Persist
-    conn = get_connection()
-    conn.execute('UPDATE journey_state SET skipped_nodes=?, recent_modules=? WHERE session_id=?',
-                 (json.dumps(skipped), json.dumps(recent_modules), session_id))
-    conn.commit()
-    return recommend_node, action
-
-def _select_question_for_node(recommend_node, fillin_mode, session_id, just_answered_qid, progress=None):
-    """为指定知识点节点选择一道合适的题目，返回 (question, fillin_mode, action, hint)"""
-    action = ''
-    hint = ''
-    node_qs = get_questions_by_node(recommend_node)
-    if fillin_mode:
-        node_qs = [q for q in node_qs if not q.get('options') or not q['options'].strip()]
-    else:
-        mcq = [q for q in node_qs if q.get('options') and q['options'].strip()]
-        if mcq:
-            node_qs = mcq
-
-    if progress is None:
-        progress = get_progress(session_id)
-    answered_ids = set(p['question_id'] for p in progress)
-    correct_ids = set(p['question_id'] for p in progress if p['is_correct'])
-
-    unanswered = [q for q in node_qs if q['id'] not in answered_ids]
-    if not unanswered:
-        unanswered = [q for q in node_qs if q['id'] not in correct_ids]
-    if not unanswered:
-        unanswered = node_qs
-
-    # 填空模式下该节点无题 → 回退到普通选择
-    if not unanswered:
-        if fillin_mode:
-            node_qs = get_questions_by_node(recommend_node)
-            mcq = [q for q in node_qs if q.get('options') and q['options'].strip()]
-            if mcq:
-                node_qs = mcq
-            unanswered = [q for q in node_qs if q['id'] not in answered_ids]
-            if not unanswered:
-                unanswered = [q for q in node_qs if q['id'] not in correct_ids]
-            if not unanswered:
-                unanswered = node_qs
-            if not unanswered:
-                fallback = [q for q in get_all_questions() if q.get('options') and q['options'].strip()]
-                unanswered = fallback if fallback else get_all_questions()
-            fillin_mode = False
-            action = ''
-            hint = ''
-        else:
-            fallback = [q for q in get_all_questions() if q.get('options') and q['options'].strip()]
-            unanswered = fallback if fallback else get_all_questions()
-    if not unanswered:
-        unanswered = get_all_questions()
-
-    # 填空模式：不重复刚刚做过的MCQ
-    if fillin_mode and unanswered and just_answered_qid:
-        alt = [q for q in unanswered if q['id'] != just_answered_qid]
-        if alt:
-            unanswered = alt
-        else:
-            fillin_mode = False
-            action = ''
-            hint = ''
-            node_qs = get_questions_by_node(recommend_node)
-            mcq = [q for q in node_qs if q.get('options') and q['options'].strip()]
-            if mcq:
-                node_qs = mcq
-            unanswered = [q for q in node_qs if q['id'] not in answered_ids]
-            if not unanswered:
-                unanswered = [q for q in node_qs if q['id'] not in correct_ids]
-            if not unanswered:
-                unanswered = node_qs
-            if not unanswered:
-                fallback = [q for q in get_all_questions() if q.get('options') and q['options'].strip()]
-                unanswered = fallback if fallback else get_all_questions()
-
-    return random.choice(unanswered) if unanswered else None, fillin_mode, action, hint
-
-def journey_next(session_id, just_answered_qid=None, was_correct=None, duration=None):
-    """自适应选题引擎：基于BKT+Thompson采样选择下一道题"""
-    state = get_journey_state(session_id)
-    if not state:
-        state = init_journey(session_id)
-
-    # 1. 记录答题统计
-    if was_correct is not None:
-        _record_answer_stats(session_id, state, was_correct, duration)
-
-    # 2. 重新加载状态
-    state = get_journey_state(session_id)
-    total_answered = state.get('total_answered', 0)
-    phase = state.get('phase', 'cold')
-    deep_mode = state.get('deep_mode', 1)
-    wrong_streak = state.get('wrong_streak', 0)
-
-    # 3. 阶段切换
-    phase = _determine_phase(session_id, phase, total_answered, was_correct, state)
-
-    # 3.5 一次性加载本请求所需数据（避免重复全表查询）
-    progress = get_progress(session_id)
-    mastery = get_mastery(session_id)
-    unlocked = _get_unlocked_nodes(session_id)
-
-    # 4. 检查填空模式触发
-    is_fast = duration is not None and duration < 10
-    fillin_mode, hint, fillin_action, recommend_node = _check_fillin_mode(
-        state, just_answered_qid, deep_mode)
-
-    # 5. 非填空模式：Thompson采样选节点
-    if not fillin_mode:
-        recent_modules = json.loads(state.get('recent_modules', '[]'))
-        skipped = json.loads(state.get('skipped_nodes', '[]'))
-        recommend_node, action = _select_candidate_node(
-            session_id, unlocked, mastery, total_answered, phase, state,
-            is_fast, was_correct, recent_modules, skipped, progress=progress)
-    else:
-        action = fillin_action
-
-    # 6. 持久化当前节点
-    conn = get_connection()
-    conn.execute('UPDATE journey_state SET current_node=? WHERE session_id=?', (recommend_node, session_id))
-    conn.commit()
-
-    # 7. 选题
-    question, fillin_mode, returned_action, returned_hint = _select_question_for_node(
-        recommend_node, fillin_mode, session_id, just_answered_qid, progress=progress)
-    if returned_action:
-        action = returned_action
-    if returned_hint:
-        hint = returned_hint
-
-    # 8. 组装响应
-    graph_data = get_graph()
-    mastery_data = mastery
-
-    return {
-        'action': action,
-        'current_node': recommend_node,
-        'question': question,
-        'graph': graph_data,
-        'mastery': mastery_data,
-        'unlocked_nodes': unlocked,
-        'wrong_streak': wrong_streak,
-        'total_answered': total_answered,
-        # progress 已包含本次提交的答案（调用方先 save_answer 再进引擎），不再重复 +1
-        'total_correct': sum(1 for p in progress if p['is_correct']),
-        'fillin_mode': fillin_mode,
-        'deep_mode': deep_mode,
-        'hint': hint,
-        'phase': phase
-    }
