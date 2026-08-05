@@ -60,7 +60,6 @@ body {
 }
 .nav-link:hover { color: var(--text-1); background: rgba(88, 110, 170, 0.08); }
 .nav-link.active { color: #fff; background: var(--accent-grad); box-shadow: 0 4px 14px rgba(90, 100, 255, 0.35); }
-#langBtn { margin-left: auto; border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.5); font-size: 12.5px; }
 .container { max-width: 980px; margin: 0 auto; padding: 30px 24px 60px; position: relative; z-index: 1; }
 .card { padding: 1.1rem 1.2rem; margin-bottom: 18px; }
 .card-title { font-size: 14px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
@@ -180,7 +179,9 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
     <div class="nav-links">
       <button class="nav-link active" data-i18n="nav_panel">管理员面板</button>
     </div>
-    <button class="nav-link" id="langBtn" onclick="toggleLang()">English</button>
+
+</div>
+
   </div>
 </nav>
 
@@ -320,11 +321,6 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-/* ============================================================
-   管理员自身页面
-   数据：/api/admin/colleagues（我的同事）· /api/admin/key（统一密钥）
-   认证：sessionStorage.admin_token（Bearer）——无 token 回 /admin-auth
-   ============================================================ */
 const API_BASE = '/api';
 const $ = id => document.getElementById(id);
 
@@ -332,6 +328,7 @@ const $ = id => document.getElementById(id);
 var ADMIN_TOKEN = sessionStorage.getItem('admin_token');
 var ADMIN_USER = sessionStorage.getItem('admin_user') || '';
 if (!ADMIN_TOKEN) { window.location.href = 'admin-auth'; }
+
 function adminFetch(path, opts) {
   opts = opts || {};
   opts.headers = Object.assign({}, opts.headers || {});
@@ -341,86 +338,87 @@ function adminFetch(path, opts) {
 
 /* ---- 中英双语 ---- */
 const I18N = {
-  page_title: { zh: '管理员面板 · SQL 自适应训练', en: 'Admin Panel · SQL Adaptive Training' },
-  nav_panel: { zh: '管理员面板', en: 'Admin Panel' },
-  welcome: { zh: '你好，', en: 'Hello, ' },
-  welcome_sub: { zh: '这里是管理员的工作台：查看同事动态与团队信息', en: 'Your admin workspace: see colleagues\' activity and manage platform user passwords' },
-  back_portal: { zh: '返回门户', en: 'Back to Portal' },
-  logout: { zh: '退出登录', en: 'Log Out' },
-  colleagues_title: { zh: '我的同事', en: 'My Colleagues' },
-  col_user: { zh: '管理员用户名', en: 'Admin Username' },
-  col_last: { zh: '最后上线时间', en: 'Last Online' },
-  col_ops: { zh: '操作', en: 'Actions' },
-  loading: { zh: '加载中...', en: 'Loading...' },
-  empty_colleagues: { zh: '暂无其他管理员', en: 'No other admins yet' },
-  never: { zh: '从未上线', en: 'Never' },
-  badge_primary: { zh: '主管理员', en: 'Primary' },
+  page_title: { zh: '管理员面板 · SQL 自适应训练', en: 'Admin Panel · SQL Adaptive Training','zh_tw':'管理員面板 · SQL 自適應訓練','ja':'管理者パネル · SQL適応型トレーニング','hi':'एडमिन पैनल · SQL अनुकूली प्रशिक्षण','pt':'Painel do Administrador · Treinamento Adaptativo SQL' },
+  nav_panel: { zh: '管理员面板', en: 'Admin Panel','zh_tw':'管理員面板','ja':'管理者パネル','hi':'एडमिन पैनल','pt':'Painel do Administrador' },
+  welcome: { zh: '你好，', en: 'Hello, ','zh_tw':'你好，','ja':'こんにちは、','hi':'नमस्ते, ','pt':'Olá, ' },
+  welcome_sub: { zh: '这里是管理员的工作台：查看同事动态与团队信息', en: 'Your admin workspace: see colleagues\' activity and manage platform user passwords','zh_tw':'這裡是管理員的工作台：查看同事動態與團隊信息','ja':'ここは管理者のワークスペースです：同僚の活動とチーム情報を確認できます','hi':'यह एडमिन का कार्यक्षेत्र है: सहकर्मियों की गतिविधि और टीम जानकारी देखें','pt':'Este é o espaço de trabalho do administrador: veja a atividade dos colegas e as informações da equipe' },
+  back_portal: { zh: '返回门户', en: 'Back to Portal','zh_tw':'返回入口','ja':'ポータルに戻る','hi':'पोर्टल पर वापस जाएं','pt':'Voltar ao Portal' },
+  logout: { zh: '退出登录', en: 'Log Out','zh_tw':'登出','ja':'ログアウト','hi':'लॉग आउट','pt':'Sair' },
+  colleagues_title: { zh: '我的同事', en: 'My Colleagues','zh_tw':'我的同事','ja':'同僚','hi':'मेरे सहयोगी','pt':'Meus Colegas' },
+  col_user: { zh: '管理员用户名', en: 'Admin Username','zh_tw':'管理員使用者名稱','ja':'管理者ユーザー名','hi':'एडमिन उपयोगकर्ता नाम','pt':'Nome de usuário do administrador' },
+  col_last: { zh: '最后上线时间', en: 'Last Online','zh_tw':'最後上線時間','ja':'最終オンライン時刻','hi':'अंतिम ऑनलाइन समय','pt':'Último acesso' },
+  col_ops: { zh: '操作', en: 'Actions','zh_tw':'操作','ja':'操作','hi':'क्रियाएँ','pt':'Ações' },
+  loading: { zh: '加载中...', en: 'Loading...','zh_tw':'載入中...','ja':'読み込み中...','hi':'लोड हो रहा है...','pt':'Carregando...' },
+  empty_colleagues: { zh: '暂无其他管理员', en: 'No other admins yet','zh_tw':'暫無其他管理員','ja':'他の管理者はいません','hi':'अभी कोई अन्य एडमिन नहीं है','pt':'Ainda não há outros administradores' },
+  never: { zh: '从未上线', en: 'Never','zh_tw':'從未上線','ja':'オンライン履歴なし','hi':'कभी ऑनलाइन नहीं','pt':'Nunca' },
+  badge_primary: { zh: '主管理员', en: 'Primary','zh_tw':'主管理員','ja':'プライマリ','hi':'प्राथमिक','pt':'Principal' },
   primary_hint: { zh: '作为主管理员，你可以修改其他管理员的密码（以防遗忘）',
-                  en: 'As primary admin, you can reset other admins\' passwords (in case they forget)' },
-  reset_pwd: { zh: '修改密码', en: 'Reset Password' },
-  reset_title: { zh: '修改管理员密码', en: 'Change Admin Password' },
+                  en: 'As primary admin, you can reset other admins\' passwords (in case they forget)','zh_tw':'作為主管理員，你可以修改其他管理員的密碼（以防遺忘）','ja':'プライマリ管理者として、他の管理者のパスワードをリセットできます（忘れた場合のために）','hi':'प्राथमिक एडमिन के रूप में, आप अन्य एडमिन का पासवर्ड रीसेट कर सकते हैं (यदि वे भूल जाएं)','pt':'Como administrador principal, você pode redefinir as senhas de outros administradores (caso esqueçam)' },
+  reset_pwd: { zh: '修改密码', en: 'Reset Password','zh_tw':'修改密碼','ja':'パスワードをリセット','hi':'पासवर्ड रीसेट करें','pt':'Redefinir Senha' },
+  reset_title: { zh: '修改管理员密码', en: 'Change Admin Password','zh_tw':'修改管理員密碼','ja':'管理者パスワードを変更','hi':'एडमिन पासवर्ड बदलें','pt':'Alterar Senha do Administrador' },
   reset_tip: { zh: '为「{0}」设置新密码：新密码需 8-64 位，包含大小写字母和数字。',
-               en: 'Set a new password for "{0}": 8-64 characters with uppercase, lowercase and digits.' },
+               en: 'Set a new password for "{0}": 8-64 characters with uppercase, lowercase and digits.','zh_tw':'為「{0}」設定新密碼：新密碼需 8-64 位，包含大小寫字母和數字。','ja':'「{0}」の新しいパスワードを設定：8〜64文字で、大文字・小文字・数字を含む必要があります。','hi':'"{0}" के लिए नया पासवर्ड सेट करें: 8-64 अक्षर, बड़े, छोटे अक्षर और संख्या शामिल होनी चाहिए।','pt':'Defina uma nova senha para "{0}": 8-64 caracteres, incluindo letras maiúsculas, minúsculas e números.' },
   pwd_rule: { zh: '密码需 8-64 位，且包含大小写字母和数字',
-              en: 'Password must be 8-64 characters with uppercase, lowercase and digits' },
-  gen: { zh: '生成', en: 'Generate' },
-  cancel: { zh: '取消', en: 'Cancel' },
-  confirm_reset: { zh: '确认修改', en: 'Confirm' },
-  reset_ok: { zh: '已修改「{0}」的密码', en: 'Password for "{0}" changed' },
-  reset_fail: { zh: '修改失败', en: 'Reset failed' },
-  rollback_btn: { zh: '回退', en: 'Rollback' },
-  rollback_title: { zh: '回退管理员密码', en: 'Rollback Admin Password' },
+              en: 'Password must be 8-64 characters with uppercase, lowercase and digits','zh_tw':'密碼需 8-64 位，且包含大小寫字母和數字','ja':'パスワードは8〜64文字で、大文字・小文字・数字を含む必要があります','hi':'पासवर्ड 8-64 अक्षरों का होना चाहिए और उसमें बड़े, छोटे अक्षर और संख्या शामिल होनी चाहिए','pt':'A senha deve ter 8-64 caracteres, incluindo letras maiúsculas, minúsculas e números' },
+  gen: { zh: '生成', en: 'Generate','zh_tw':'生成','ja':'生成','hi':'जनरेट करें','pt':'Gerar' },
+  cancel: { zh: '取消', en: 'Cancel','zh_tw':'取消','ja':'キャンセル','hi':'रद्द करें','pt':'Cancelar' },
+  confirm_reset: { zh: '确认修改', en: 'Confirm','zh_tw':'確認修改','ja':'確認変更','hi':'पुष्टि करें','pt':'Confirmar alteração' },
+  reset_ok: { zh: '已修改「{0}」的密码', en: 'Password for "{0}" changed','zh_tw':'已修改「{0}」的密碼','ja':'「{0}」のパスワードを変更しました','hi':'「{0}」 का पासवर्ड बदल दिया गया','pt':'Senha de "{0}" alterada' },
+  reset_fail: { zh: '修改失败', en: 'Reset failed','zh_tw':'修改失敗','ja':'変更に失敗しました','hi':'परिवर्तन विफल','pt':'Falha na alteração' },
+  rollback_btn: { zh: '回退', en: 'Rollback','zh_tw':'回退','ja':'ロールバック','hi':'वापस लें','pt':'Reverter' },
+  rollback_title: { zh: '回退管理员密码', en: 'Rollback Admin Password','zh_tw':'回退管理員密碼','ja':'管理者パスワードのロールバック','hi':'एडमिन पासवर्ड वापस लें','pt':'Reverter senha do administrador' },
   rollback_tip: { zh: '将把「{0}」的密码回退到上一个版本，该版本立即生效。剩余可回退次数：{1}（最多 3 次）。',
-                  en: 'Roll back "{0}"\'s password to the previous version, effective immediately. Rollbacks left: {1} (max 3).' },
-  confirm_rollback: { zh: '确认回退', en: 'Confirm Rollback' },
-  rollback_ok: { zh: '已回退「{0}」的密码', en: 'Password for "{0}" rolled back' },
-  rollback_fail: { zh: '回退失败', en: 'Rollback failed' },
-  del_admin: { zh: '删除管理员', en: 'Delete Admin' },
-  del_admin_title: { zh: '删除管理员', en: 'Delete Admin Account' },
+                  en: 'Roll back "{0}"\'s password to the previous version, effective immediately. Rollbacks left: {1} (max 3).','zh_tw':'將把「{0}」的密碼回退到上一個版本，該版本立即生效。剩餘可回退次數：{1}（最多 3 次）。','ja':'「{0}」のパスワードを前のバージョンにロールバックします。すぐに有効になります。残りロールバック回数：{1}（最大3回）。','hi':'「{0}」 का पासवर्ड पिछले संस्करण में वापस लिया जाएगा, जो तुरंत प्रभावी होगा। शेष रोलबैक: {1} (अधिकतम 3)।','pt':'A senha de "{0}" será revertida para a versão anterior, que entra em vigor imediatamente. Reversões restantes: {1} (máx. 3).' },
+  confirm_rollback: { zh: '确认回退', en: 'Confirm Rollback','zh_tw':'確認回退','ja':'ロールバックを確認','hi':'रोलबैक की पुष्टि करें','pt':'Confirmar reversão' },
+  rollback_ok: { zh: '已回退「{0}」的密码', en: 'Password for "{0}" rolled back','zh_tw':'已回退「{0}」的密碼','ja':'「{0}」のパスワードをロールバックしました','hi':'「{0}」 का पासवर्ड वापस लिया गया','pt':'Senha de "{0}" revertida' },
+  rollback_fail: { zh: '回退失败', en: 'Rollback failed','zh_tw':'回退失敗','ja':'ロールバックに失敗しました','hi':'रोलबैक विफल','pt':'Falha na reversão' },
+  del_admin: { zh: '删除管理员', en: 'Delete Admin','zh_tw':'刪除管理員','ja':'管理者を削除','hi':'एडमिन हटाएं','pt':'Excluir administrador' },
+  del_admin_title: { zh: '删除管理员', en: 'Delete Admin Account','zh_tw':'刪除管理員','ja':'管理者アカウントを削除','hi':'एडमिन खाता हटाएं','pt':'Excluir conta de administrador' },
   del_admin_tip: { zh: '即将永久删除管理员「{0}」：其账号、登录信息与密码修改历史将一并从数据库移除。删除后该管理员将无法再登录管理后台与管理员面板。',
-                    en: 'Permanently delete admin "{0}": the account, login info and password history will be removed from the database. The admin will no longer be able to sign in to the admin gate or panel.' },
+                    en: 'Permanently delete admin "{0}": the account, login info and password history will be removed from the database. The admin will no longer be able to sign in to the admin gate or panel.','zh_tw':'即將永久刪除管理員「{0}」：其帳號、登入資訊與密碼修改歷史將一併從資料庫移除。刪除後該管理員將無法再登入管理後台與管理員面板。','ja':'管理者「{0}」を完全に削除します：アカウント、ログイン情報、パスワード履歴がデータベースから削除されます。削除後、この管理者は管理ゲートとパネルにログインできなくなります。','hi':'एडमिन «{0}» को स्थायी रूप से हटाया जाएगा: खाता, लॉगिन जानकारी और पासवर्ड इतिहास डेटाबेस से हटा दिया जाएगा। हटाने के बाद यह एडमिन एडमिन गेट या पैनल में लॉगिन नहीं कर पाएगा।','pt':'O administrador "{0}" será excluído permanentemente: a conta, as informações de login e o histórico de senha serão removidos do banco de dados. Após a exclusão, o administrador não poderá entrar no portal ou painel de administração.' },
   del_admin_warn: { zh: '⚠ 该操作不可恢复，删除后该管理员将无法登录管理后台与管理员面板！',
-                    en: '⚠ This cannot be undone. The admin will no longer be able to sign in to the admin gate or panel!' },
-  confirm_delete: { zh: '确认删除', en: 'Confirm Delete' },
-  del_admin_ok: { zh: '删除完毕：管理员「{0}」及其数据已从数据库移除', en: 'Done: admin "{0}" and their data removed' },
-  del_admin_fail: { zh: '删除失败', en: 'Delete failed' },
-  copy: { zh: '复制', en: 'Copy' },
-  key_title: { zh: '统一管理员密钥', en: 'Unified Admin Key' },
-  key_show: { zh: '显示', en: 'Show' },
-  key_hide: { zh: '隐藏', en: 'Hide' },
-  key_copy: { zh: '复制密钥', en: 'Copy Key' },
+                    en: '⚠ This cannot be undone. The admin will no longer be able to sign in to the admin gate or panel!','zh_tw':'⚠ 該操作不可恢復，刪除後該管理員將無法登入管理後台與管理員面板！','ja':'⚠ この操作は元に戻せません。削除後、この管理者は管理ゲートとパネルにログインできなくなります！','hi':'⚠ यह कार्रवाई पूर्ववत नहीं की जा सकती। हटाने के बाद यह एडमिन एडमिन गेट या पैनल में लॉगिन नहीं कर पाएगा!','pt':'⚠ Esta operação não pode ser desfeita. Após a exclusão, o administrador não poderá entrar no portal ou painel de administração!' },
+  confirm_delete: { zh: '确认删除', en: 'Confirm Delete','zh_tw':'確認刪除','ja':'削除を確認','hi':'हटाने की पुष्टि करें','pt':'Confirmar exclusão' },
+  del_admin_ok: { zh: '删除完毕：管理员「{0}」及其数据已从数据库移除', en: 'Done: admin "{0}" and their data removed','zh_tw':'刪除完畢：管理員「{0}」及其資料已從資料庫移除','ja':'削除完了：管理者「{0}」とそのデータがデータベースから削除されました','hi':'हो गया: एडमिन «{0}» और उसका डेटा डेटाबेस से हटा दिया गया','pt':'Concluído: Administrador "{0}" e seus dados foram removidos do banco de dados' },
+  del_admin_fail: { zh: '删除失败', en: 'Delete failed','zh_tw':'刪除失敗','ja':'削除に失敗しました','hi':'हटाना विफल','pt':'Falha na exclusão' },
+  copy: { zh: '复制', en: 'Copy','zh_tw':'複製','ja':'コピー','hi':'कॉपी करें','pt':'Copiar' },
+  key_title: { zh: '统一管理员密钥', en: 'Unified Admin Key','zh_tw':'統一管理員密鑰','ja':'統合管理者キー','hi':'यूनिफाइड एडमिन कुंजी','pt':'Chave unificada do administrador' },
+  key_show: { zh: '显示', en: 'Show','zh_tw':'顯示','ja':'表示','hi':'दिखाएँ','pt':'Mostrar' },
+  key_hide: { zh: '隐藏', en: 'Hide','zh_tw':'隱藏','ja':'非表示','hi':'छिपाएँ','pt':'Ocultar' },
+  key_copy: { zh: '复制密钥', en: 'Copy Key','zh_tw':'複製密鑰','ja':'キーをコピー','hi':'कुंजी कॉपी करें','pt':'Copiar chave' },
   key_hint: { zh: '此密钥用于登录「管理后台」（门户导航 → 管理后台），请勿泄露给非管理员',
-              en: 'Use this key to enter the Admin Dashboard (Portal nav → Admin). Do not share it with non-admins.' },
-  key_change: { zh: '更换密钥', en: 'Change Key' },
-  key_change_title: { zh: '更换统一管理员密钥', en: 'Change Unified Admin Key' },
+              en: 'Use this key to enter the Admin Dashboard (Portal nav → Admin). Do not share it with non-admins.','zh_tw':'此密鑰用於登入「管理後台」（門戶導航 → 管理後台），請勿洩露給非管理員','ja':'このキーは管理ダッシュボードへのログインに使用されます（ポータルナビ → 管理）。非管理者と共有しないでください。','hi':'यह कुंजी एडमिन डैशबोर्ड में लॉगिन के लिए उपयोग की जाती है (पोर्टल नेविगेशन → एडमिन)। इसे गैर-एडमिन के साथ साझा न करें।','pt':'Use esta chave para entrar no painel de administração (Navegação do portal → Admin). Não a compartilhe com não-administradores.' },
+  key_change: { zh: '更换密钥', en: 'Change Key','zh_tw':'更換密鑰','ja':'キーを変更','hi':'कुंजी बदलें','pt':'Alterar chave' },
+  key_change_title: { zh: '更换统一管理员密钥', en: 'Change Unified Admin Key','zh_tw':'更換統一管理員密鑰','ja':'統合管理者キーを変更','hi':'यूनिफाइड एडमिन कुंजी बदलें','pt':'Alterar chave unificada do administrador' },
   key_change_tip: { zh: '更换后新密钥立即对全部管理员生效，请将新密钥告知其他管理员。',
-                    en: 'The new key takes effect for all admins immediately — please share it with your colleagues.' },
-  confirm_change: { zh: '确认更换', en: 'Confirm Change' },
-  key_rule: { zh: '密钥需为 8-64 个字符', en: 'Key must be 8-64 characters' },
-  key_updated: { zh: '密钥已更换，请将新密钥告知其他管理员', en: 'Key updated — please share it with other admins' },
-  ref_title: { zh: '内推码管理', en: 'Referral Codes' },
+                    en: 'The new key takes effect for all admins immediately — please share it with your colleagues.','zh_tw':'更換後新密鑰立即對全部管理員生效，請將新密鑰告知其他管理員。','ja':'変更後、新しいキーはすべての管理者に即座に有効になります。新しいキーを他の管理者と共有してください。','hi':'बदलने के बाद नई कुंजी सभी एडमिन पर तुरंत प्रभावी होगी। कृपया नई कुंजी अन्य एडमिन के साथ साझा करें।','pt':'A nova chave entra em vigor para todos os administradores imediatamente. Compartilhe-a com seus colegas.' },
+  confirm_change: { zh: '确认更换', en: 'Confirm Change','zh_tw':'確認更換','ja':'変更を確認','hi':'परिवर्तन की पुष्टि करें','pt':'Confirmar alteração' },
+  key_rule: { zh: '密钥需为 8-64 个字符', en: 'Key must be 8-64 characters','zh_tw':'密鑰需為 8-64 個字元','ja':'キーは8〜64文字である必要があります','hi':'कुंजी 8-64 अक्षरों की होनी चाहिए','pt':'A chave deve ter de 8 a 64 caracteres' },
+  key_updated: { zh: '密钥已更换，请将新密钥告知其他管理员', en: 'Key updated — please share it with other admins','zh_tw':'密鑰已更換，請將新密鑰告知其他管理員','ja':'キーが変更されました。新しいキーを他の管理者と共有してください','hi':'कुंजी अपडेट हो गई। कृपया नई कुंजी अन्य एडमिन के साथ साझा करें','pt':'Chave atualizada — compartilhe-a com outros administradores' },
+  ref_title: { zh: '内推码管理', en: 'Referral Codes','zh_tw':'內推碼管理','ja':'紹介コード管理','hi':'रेफरल कोड प्रबंधन','pt':'Gerenciar códigos de indicação' },
   ref_hint: { zh: '管理员注册时校验的邀请码，新增/删除后注册校验即时同步',
-              en: 'Invite codes validated at admin registration; add/delete takes effect immediately.' },
-  ref_code: { zh: '内推码', en: 'Code' },
-  ref_note: { zh: '备注', en: 'Note' },
-  ref_created: { zh: '创建时间', en: 'Created' },
-  ref_add: { zh: '添加', en: 'Add' },
-  ref_new_placeholder: { zh: '新内推码', en: 'New code' },
-  ref_note_placeholder: { zh: '备注（可选）', en: 'Note (optional)' },
-  ref_added: { zh: '内推码已添加，注册校验即时生效', en: 'Code added — registration check is live now' },
-  ref_deleted: { zh: '已删除内推码', en: 'Referral code deleted' },
+              en: 'Invite codes validated at admin registration; add/delete takes effect immediately.','zh_tw':'管理員註冊時校驗的邀請碼，新增/刪除後註冊校驗即時同步','ja':'管理者登録時に検証される招待コード。追加/削除後、登録検証は即座に同期されます。','hi':'एडमिन पंजीकरण पर सत्यापित आमंत्रण कोड; जोड़ने/हटाने पर तुरंत प्रभावी।','pt':'Códigos de convite validados no registro de administradores; adicionar/excluir entra em vigor imediatamente.' },
+  ref_code: { zh: '内推码', en: 'Code','zh_tw':'內推碼','ja':'コード','hi':'कोड','pt':'Código' },
+  ref_note: { zh: '备注', en: 'Note','zh_tw':'備註','ja':'メモ','hi':'नोट','pt':'Nota' },
+  ref_created: { zh: '创建时间', en: 'Created','zh_tw':'建立時間','ja':'作成日時','hi':'निर्माण समय','pt':'Criado em' },
+  ref_add: { zh: '添加', en: 'Add','zh_tw':'新增','ja':'追加','hi':'जोड़ें','pt':'Adicionar' },
+  ref_new_placeholder: { zh: '新内推码', en: 'New code','zh_tw':'新內推碼','ja':'新しいコード','hi':'नया कोड','pt':'Novo código' },
+  ref_note_placeholder: { zh: '备注（可选）', en: 'Note (optional)','zh_tw':'備註（選填）','ja':'メモ（任意）','hi':'नोट (वैकल्पिक)','pt':'Nota (opcional)' },
+  ref_added: { zh: '内推码已添加，注册校验即时生效', en: 'Code added — registration check is live now','zh_tw':'內推碼已新增，註冊校驗即時生效','ja':'コードが追加されました。登録検証は即時有効です','hi':'कोड जोड़ा गया — पंजीकरण सत्यापन अब सक्रिय है','pt':'Código adicionado — verificação de registro ativa agora' },
+  ref_deleted: { zh: '已删除内推码', en: 'Referral code deleted','zh_tw':'已刪除內推碼','ja':'紹介コードを削除しました','hi':'रेफरल कोड हटा दिया गया','pt':'Código de indicação excluído' },
   ref_confirm_delete: { zh: '确定删除内推码「{0}」吗？删除后该码将无法再用于注册。',
-                         en: 'Delete referral code "{0}"? It can no longer be used for registration.' },
-  ref_empty: { zh: '暂无内推码', en: 'No codes yet' },
-  copied: { zh: '已复制到剪贴板', en: 'Copied to clipboard' },
-  copy_fail: { zh: '复制失败，请手动选择复制', en: 'Copy failed — please select manually' },
-  err_401: { zh: '登录已过期，请重新登录', en: 'Session expired — please sign in again' },
-  net_error: { zh: '无法连接后端，请确认服务已启动', en: 'Cannot reach the backend — make sure it is running' },
-  footer: { zh: '© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台', en: '© 2026 SQL Adaptive Training · A personalized SQL learning platform' },
+                         en: 'Delete referral code "{0}"? It can no longer be used for registration.','zh_tw':'確定刪除內推碼「{0}」嗎？刪除後該碼將無法再用於註冊。','ja':'紹介コード「{0}」を削除しますか？削除後、このコードは登録に使用できなくなります。','hi':'रेफरल कोड «{0}» हटाएं? हटाने के बाद यह पंजीकरण के लिए उपयोग नहीं किया जा सकेगा।','pt':'Excluir o código de indicação "{0}"? Ele não poderá mais ser usado para registro.' },
+  ref_empty: { zh: '暂无内推码', en: 'No codes yet','zh_tw':'暫無內推碼','ja':'コードがまだありません','hi':'अभी कोई कोड नहीं','pt':'Nenhum código ainda' },
+  copied: { zh: '已复制到剪贴板', en: 'Copied to clipboard','zh_tw':'已複製到剪貼簿','ja':'クリップボードにコピーしました','hi':'क्लिपबोर्ड पर कॉपी हो गया','pt':'Copiado para a área de transferência' },
+  copy_fail: { zh: '复制失败，请手动选择复制', en: 'Copy failed — please select manually','zh_tw':'複製失敗，請手動選擇複製','ja':'コピーに失敗しました。手動で選択してコピーしてください','hi':'कॉपी विफल — कृपया मैन्युअल चुनें','pt':'Falha ao copiar — selecione manualmente' },
+  err_401: { zh: '登录已过期，请重新登录', en: 'Session expired — please sign in again','zh_tw':'登入已過期，請重新登入','ja':'セッションが期限切れです。再度ログインしてください','hi':'सत्र समाप्त हो गया — कृपया फिर से लॉगिन करें','pt':'Sessão expirada — faça login novamente' },
+  net_error: { zh: '无法连接后端，请确认服务已启动', en: 'Cannot reach the backend — make sure it is running','zh_tw':'無法連線後端，請確認服務已啟動','ja':'バックエンドに接続できません。サービスが実行されていることを確認してください','hi':'बैकएंड से कनेक्ट नहीं हो सका — सुनिश्चित करें कि यह चल रहा है','pt':'Não foi possível conectar ao backend — verifique se está em execução' },
+  footer: { zh: '© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台', en: '© 2026 SQL Adaptive Training · A personalized SQL learning platform','zh_tw':'© 2026 SQL 自適應訓練 · 千人千面的 SQL 學習平台','ja':'© 2026 SQL アダプティブトレーニング · 一人ひとりに合わせた SQL 学習プラットフォーム','hi':'© 2026 SQL अनुकूली प्रशिक्षण · एक व्यक्तिगत SQL सीखने का प्लेटफ़ॉर्म','pt':'© 2026 Treinamento Adaptativo SQL · Uma plataforma de aprendizado SQL personalizada' },
 };
 
-let LANG = localStorage.getItem('lang') || 'zh';
-function t(key) { const e = I18N[key]; return e ? (e[LANG] || e.zh) : key; }
+let LANG = localStorage.getItem('lang') || 'zh';   // 跟随先导页（index_glass）语言设置
+function langKey() { return LANG === 'zh-TW' ? 'zh_tw' : LANG; }
+function t(key) { const e = I18N[key]; return e ? (e[langKey()] || e.en || e.zh) : key; }
 function tf(key) {
   const s = t(key);
   const args = Array.prototype.slice.call(arguments, 1);
@@ -432,15 +430,10 @@ function applyI18n() {
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
   document.title = t('page_title');
   const btn = document.getElementById('langBtn');
-  if (btn) btn.textContent = LANG === 'zh' ? 'English' : '中文';
-  document.documentElement.lang = LANG === 'zh' ? 'zh-CN' : 'en';
+  if (btn) btn.textContent = '中文';
+  document.documentElement.lang = LANG === 'zh-TW' ? 'zh-TW' : (LANG === 'zh' ? 'zh-CN' : 'en');
 }
-function toggleLang() {
-  LANG = LANG === 'zh' ? 'en' : 'zh';
-  localStorage.setItem('lang', LANG);
-  applyI18n();
-  renderAll();
-}
+function toggleLang() { /* 语言切换入口仅保留在主界面 */ }
 applyI18n();
 
 /* ---- 工具 ---- */

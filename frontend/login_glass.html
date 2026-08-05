@@ -76,7 +76,6 @@ body {
 .nav-link:hover { color: var(--text-1); background: rgba(88, 110, 170, 0.08); }
 .nav-link.active { color: #fff; background: var(--accent-grad); box-shadow: 0 4px 14px rgba(90, 100, 255, 0.35); }
 /* 语言切换：始终钉在导航右上角（窄屏 nav-links 隐藏时也生效） */
-#langBtn { margin-left: auto; border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.5); font-size: 12.5px; }
 /* ---- 登录卡片 ---- */
 .auth-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 46px 20px 60px; position: relative; z-index: 1; }
 .auth-card { width: 100%; max-width: 460px; padding: 36px 38px; position: relative; overflow: hidden; }
@@ -222,7 +221,9 @@ body {
       <button class="nav-link" onclick="window.location.href='index_glass.html'" data-i18n="nav_home">首页</button>
       <button class="nav-link active" onclick="window.location.href='login_glass.html'" data-i18n="nav_login">登录</button>
     </div>
-    <button class="nav-link" id="langBtn" onclick="toggleLang()">English</button>
+
+</div>
+
   </div>
 </nav>
 
@@ -335,86 +336,86 @@ body {
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-/* ============================================================
-   登录 / 注册（玻璃拟态版）
-   接口：POST /api/login · POST /api/register · GET /api/check-username
-   会话：sessionStorage.sql_user → 跳转 index.html?new=1（与做题页约定一致）
-   路径：首页 index_glass.html → 本页 → 做题页 index.html（已接线）
-   ============================================================ */
 const API_BASE = '/api';
 const $ = id => document.getElementById(id);
 
-/* ============================================================
-   中英双语（登录/注册页）
-   ============================================================ */
 const I18N = {
-  page_title: { zh: '登录 · SQL 自适应训练', en: 'Login · SQL Adaptive Training' },
-  nav_home: { zh: '首页', en: 'Home' },
-  nav_login: { zh: '登录', en: 'Login' },
-  auth_title: { zh: '欢迎来到 <span class="grad">SQL 自适应训练</span>', en: 'Welcome to <span class="grad">SQL Adaptive Training</span>' },
-  auth_sub: { zh: '登录后同步你的学习画像与进度', en: 'Sign in to sync your learning profile & progress' },
-  tab_login: { zh: '账号登录', en: 'Account Login' },
-  tab_register: { zh: '注册账号', en: 'Create Account' },
-  label_user: { zh: '用户名', en: 'Username' },
-  label_pass: { zh: '密码', en: 'Password' },
-  label_pass2: { zh: '确认密码', en: 'Confirm Password' },
-  ph_user: { zh: '请输入用户名', en: 'Enter username' },
-  ph_pass: { zh: '请输入密码', en: 'Enter password' },
-  ph_reg_user: { zh: '输入你的名字', en: 'Your name' },
-  ph_reg_pass: { zh: '8-64 位，含大小写+数字', en: '8-64 chars, upper + lower + digit' },
-  ph_pass2: { zh: '再次输入密码', en: 'Re-enter password' },
-  remember: { zh: '记住我', en: 'Remember me' },
-  forgot: { zh: '忘记密码？', en: 'Forgot password?' },
-  forgot_toast: { zh: '请联系管理员重置密码', en: 'Contact the admin to reset your password' },
-  btn_login: { zh: '登 录', en: 'Log In' },
-  divider: { zh: '其他方式', en: 'Other methods' },
-  wechat_dev: { zh: '微信登录（开发中）', en: 'WeChat login (coming soon)' },
-  github_dev: { zh: 'GitHub 登录（开发中）', en: 'GitHub login (coming soon)' },
+  page_title: { zh: '登录 · SQL 自适应训练', en: 'Login · SQL Adaptive Training','zh_tw':'登入 · SQL 自適應訓練','ja':'ログイン · SQLアダプティブトレーニング','hi':'लॉगिन · SQL अनुकूली प्रशिक्षण','pt':'Login · Treinamento Adaptativo SQL' },
+  nav_home: { zh: '首页', en: 'Home','zh_tw':'首頁','ja':'ホーム','hi':'होम','pt':'Início' },
+  nav_login: { zh: '登录', en: 'Login','zh_tw':'登入','ja':'ログイン','hi':'लॉगिन','pt':'Login' },
+  auth_title: { zh: '欢迎来到 <span class="grad">SQL 自适应训练</span>', en: 'Welcome to <span class="grad">SQL Adaptive Training</span>','zh_tw':'歡迎來到 <span class="grad">SQL 自適應訓練</span>','ja':'<span class="grad">SQL アダプティブトレーニング</span>へようこそ','hi':'<span class="grad">SQL अनुकूली प्रशिक्षण</span> में आपका स्वागत है','pt':'Bem-vindo ao <span class="grad">Treinamento Adaptativo SQL</span>' },
+  auth_sub: { zh: '登录后同步你的学习画像与进度', en: 'Sign in to sync your learning profile & progress','zh_tw':'登入後同步你的學習畫像與進度','ja':'ログイン後、学習プロフィールと進捗が同期されます','hi':'लॉगिन के बाद आपकी सीखने की प्रोफ़ाइल और प्रगति सिंक हो जाती है','pt':'Faça login para sincronizar seu perfil de aprendizado e progresso' },
+  tab_login: { zh: '账号登录', en: 'Account Login','zh_tw':'帳號登入','ja':'アカウントでログイン','hi':'खाते से लॉगिन','pt':'Login de conta' },
+  tab_register: { zh: '注册账号', en: 'Create Account','zh_tw':'註冊帳號','ja':'アカウント登録','hi':'खाता बनाएं','pt':'Criar conta' },
+  label_user: { zh: '用户名', en: 'Username','zh_tw':'使用者名稱','ja':'ユーザー名','hi':'उपयोगकर्ता नाम','pt':'Nome de usuário' },
+  label_pass: { zh: '密码', en: 'Password','zh_tw':'密碼','ja':'パスワード','hi':'पासवर्ड','pt':'Senha' },
+  label_pass2: { zh: '确认密码', en: 'Confirm Password','zh_tw':'確認密碼','ja':'パスワード（確認）','hi':'पासवर्ड की पुष्टि','pt':'Confirmar senha' },
+  ph_user: { zh: '请输入用户名', en: 'Enter username','zh_tw':'請輸入使用者名稱','ja':'ユーザー名を入力してください','hi':'उपयोगकर्ता नाम दर्ज करें','pt':'Digite o nome de usuário' },
+  ph_pass: { zh: '请输入密码', en: 'Enter password','zh_tw':'請輸入密碼','ja':'パスワードを入力してください','hi':'पासवर्ड दर्ज करें','pt':'Digite a senha' },
+  ph_reg_user: { zh: '输入你的名字', en: 'Your name','zh_tw':'輸入你的名字','ja':'あなたの名前を入力','hi':'अपना नाम दर्ज करें','pt':'Digite seu nome' },
+  ph_reg_pass: { zh: '8-64 位，含大小写+数字', en: '8-64 chars, upper + lower + digit','zh_tw':'8-64 位，含大小寫+數字','ja':'8〜64文字、大文字+小文字+数字','hi':'8-64 अक्षर, बड़े+छोटे+अंक','pt':'8-64 caracteres, maiúscula + minúscula + número' },
+  ph_pass2: { zh: '再次输入密码', en: 'Re-enter password','zh_tw':'再次輸入密碼','ja':'パスワードをもう一度','hi':'पासवर्ड फिर से दर्ज करें','pt':'Redigite a senha' },
+  remember: { zh: '记住我', en: 'Remember me','zh_tw':'記住我','ja':'ログイン状態を保持','hi':'मुझे याद रखें','pt':'Lembrar de mim' },
+  forgot: { zh: '忘记密码？', en: 'Forgot password?','zh_tw':'忘記密碼？','ja':'パスワードをお忘れですか？','hi':'पासवर्ड भूल गए?','pt':'Esqueceu a senha?' },
+  forgot_toast: { zh: '请联系管理员重置密码', en: 'Contact the admin to reset your password','zh_tw':'請聯繫管理員重設密碼','ja':'管理者に連絡してパスワードをリセットしてください','hi':'कृपया पासवर्ड रीसेट करने के लिए एडमिन से संपर्क करें','pt':'Contate o administrador para redefinir a senha' },
+  btn_login: { zh: '登 录', en: 'Log In','zh_tw':'登 入','ja':'ログイン','hi':'लॉग इन करें','pt':'Entrar' },
+  divider: { zh: '其他方式', en: 'Other methods','zh_tw':'其他方式','ja':'その他の方法','hi':'अन्य तरीके','pt':'Outras formas' },
+  wechat_dev: { zh: '微信登录（开发中）', en: 'WeChat login (coming soon)','zh_tw':'微信登入（開發中）','ja':'WeChat ログイン（開発中）','hi':'WeChat लॉगिन (जल्द आ रहा है)','pt':'Login WeChat (em breve)' },
+  github_dev: { zh: 'GitHub 登录（开发中）', en: 'GitHub login (coming soon)','zh_tw':'GitHub 登入（開發中）','ja':'GitHub ログイン（開発中）','hi':'GitHub लॉगिन (जल्द आ रहा है)','pt':'Login GitHub (em breve)' },
   auth_foot_login: { zh: '还没有账号？<a class="link" href="javascript:void(0)" onclick="switchTab(\'register\')">立即注册</a>',
-                     en: 'No account yet? <a class="link" href="javascript:void(0)" onclick="switchTab(\'register\')">Sign up now</a>' },
+                     en: 'No account yet? <a class="link" href="javascript:void(0)" onclick="switchTab(\'register\')">Sign up now</a>',
+                     'zh_tw':'還沒有帳號？<a class="link" href="javascript:void(0)" onclick="switchTab(\'register\')">立即註冊</a>',
+                     'ja':'アカウントがありませんか？<a class="link" href="javascript:void(0)" onclick="switchTab(\'register\')">今すぐ登録</a>',
+                     'hi':'कोई खाता नहीं? <a class="link" href="javascript:void(0)" onclick="switchTab(\'register\')">अभी पंजीकरण करें</a>',
+                     'pt':'Ainda não tem conta? <a class="link" href="javascript:void(0)" onclick="switchTab(\'register\')">Cadastre-se agora</a>' },
   auth_foot_reg: { zh: '已有账号？<a class="link" href="javascript:void(0)" onclick="switchTab(\'login\')">直接登录</a>',
-                   en: 'Already have an account? <a class="link" href="javascript:void(0)" onclick="switchTab(\'login\')">Sign in</a>' },
-  btn_reg: { zh: '注 册', en: 'Sign Up' },
-  back_home: { zh: '返回首页', en: 'Back to Home' },
-  footer: { zh: '© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台', en: '© 2026 SQL Adaptive Training · A personalized SQL learning platform' },
-  show_pwd: { zh: '显示密码', en: 'Show password' },
-  hide_pwd: { zh: '隐藏密码', en: 'Hide password' },
-  random_user: { zh: '随机用户名', en: 'Random username' },
-  random_pwd: { zh: '随机安全密码', en: 'Random secure password' },
-  loading_txt: { zh: '请稍候…', en: 'Please wait…' },
-  user_min: { zh: '用户名至少 3 个字符', en: 'Username must be at least 3 characters' },
-  user_taken: { zh: '该用户名已被占用，试试随机生成', en: 'Username taken — try the random one' },
-  user_ok: { zh: '✓ 用户名可用', en: '✓ Username available' },
-  user_exists: { zh: '用户名已存在，请直接登录', en: 'Username already exists — sign in directly' },
-  pwd_mismatch: { zh: '两次输入的密码不一致', en: 'Passwords do not match' },
-  pwd_match: { zh: '✓ 密码一致', en: '✓ Passwords match' },
-  strength_prefix: { zh: '强度：', en: 'Strength: ' },
-  st_weak: { zh: '弱', en: 'Weak' },
-  st_med: { zh: '中', en: 'Medium' },
-  st_strong: { zh: '强', en: 'Strong' },
-  st_very: { zh: '非常强', en: 'Very strong' },
-  rule_len: { zh: '8-64 个字符', en: '8-64 characters' },
-  rule_upper: { zh: '包含大写字母', en: 'Uppercase letter' },
-  rule_lower: { zh: '包含小写字母', en: 'Lowercase letter' },
-  rule_digit: { zh: '包含数字', en: 'Number' },
-  rule_special: { zh: '包含特殊字符（可选）', en: 'Special character (optional)' },
-  need_user: { zh: '请输入用户名', en: 'Please enter username' },
-  need_pass: { zh: '请输入密码', en: 'Please enter password' },
-  user_notfound: { zh: '用户不存在，请先注册', en: 'User not found — please register' },
-  pwd_wrong: { zh: '密码错误', en: 'Incorrect password' },
-  login_fail: { zh: '登录失败，请重试', en: 'Login failed, please retry' },
-  login_ok: { zh: '✓ 登录成功', en: '✓ Login successful' },
-  login_ok_msg: { zh: '登录成功！正在进入做题页面…', en: 'Login successful! Entering practice…' },
-  net_error: { zh: '无法连接服务器，请确认后端已启动', en: 'Cannot reach server — make sure the backend is running' },
-  pwd_policy: { zh: '密码需 8-64 位，且包含大小写字母和数字', en: 'Password needs 8-64 chars with upper, lower & digit' },
-  reg_fail: { zh: '注册失败，请重试', en: 'Registration failed, please retry' },
-  reg_ok: { zh: '✓ 注册成功', en: '✓ Registered' },
-  reg_ok_msg: { zh: '注册成功，已自动登录！', en: 'Registered & signed in automatically!' },
-  random_pwd_toast: { zh: '已生成随机安全密码，可点击眼睛图标查看', en: 'Random secure password generated — click the eye to view' },
+                   en: 'Already have an account? <a class="link" href="javascript:void(0)" onclick="switchTab(\'login\')">Sign in</a>',
+                   'zh_tw':'已有帳號？<a class="link" href="javascript:void(0)" onclick="switchTab(\'login\')">直接登入</a>',
+                   'ja':'すでにアカウントをお持ちですか？<a class="link" href="javascript:void(0)" onclick="switchTab(\'login\')">ログイン</a>',
+                   'hi':'पहले से खाता है? <a class="link" href="javascript:void(0)" onclick="switchTab(\'login\')">लॉगिन करें</a>',
+                   'pt':'Já tem uma conta? <a class="link" href="javascript:void(0)" onclick="switchTab(\'login\')">Entrar</a>' },
+  btn_reg: { zh: '注 册', en: 'Sign Up','zh_tw':'註 冊','ja':'登 録','hi':'पंजीकरण करें','pt':'Cadastre-se' },
+  back_home: { zh: '返回首页', en: 'Back to Home','zh_tw':'返回首頁','ja':'ホームに戻る','hi':'होम पर वापस जाएं','pt':'Voltar ao Início' },
+  footer: { zh: '© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台', en: '© 2026 SQL Adaptive Training · A personalized SQL learning platform','zh_tw':'© 2026 SQL 自適應訓練 · 千人千面的 SQL 學習平台','ja':'© 2026 SQL アダプティブトレーニング · 一人ひとりに合わせた SQL 学習プラットフォーム','hi':'© 2026 SQL अनुकूली प्रशिक्षण · हर किसी के लिए व्यक्तिगत SQL सीखने का मंच','pt':'© 2026 Treinamento Adaptativo SQL · Uma plataforma de aprendizagem SQL personalizada' },
+  show_pwd: { zh: '显示密码', en: 'Show password','zh_tw':'顯示密碼','ja':'パスワードを表示','hi':'पासवर्ड दिखाएं','pt':'Mostrar senha' },
+  hide_pwd: { zh: '隐藏密码', en: 'Hide password','zh_tw':'隱藏密碼','ja':'パスワードを隠す','hi':'पासवर्ड छिपाएं','pt':'Ocultar senha' },
+  random_user: { zh: '随机用户名', en: 'Random username','zh_tw':'隨機使用者名稱','ja':'ランダムユーザー名','hi':'रैंडम उपयोगकर्ता नाम','pt':'Nome de usuário aleatório' },
+  random_pwd: { zh: '随机安全密码', en: 'Random secure password','zh_tw':'隨機安全密碼','ja':'ランダム安全パスワード','hi':'रैंडम सुरक्षित पासवर्ड','pt':'Senha segura aleatória' },
+  loading_txt: { zh: '请稍候…', en: 'Please wait…','zh_tw':'請稍候…','ja':'お待ちください…','hi':'कृपया प्रतीक्षा करें…','pt':'Aguarde…' },
+  user_min: { zh: '用户名至少 3 个字符', en: 'Username must be at least 3 characters','zh_tw':'使用者名稱至少 3 個字元','ja':'ユーザー名は 3 文字以上必要です','hi':'उपयोगकर्ता नाम कम से कम 3 अक्षरों का होना चाहिए','pt':'O nome de usuário deve ter pelo menos 3 caracteres' },
+  user_taken: { zh: '该用户名已被占用，试试随机生成', en: 'Username taken — try the random one','zh_tw':'該使用者名稱已被占用，試試隨機生成','ja':'このユーザー名は使用されています。ランダム生成をお試しください','hi':'यह उपयोगकर्ता नाम पहले से लिया गया है, रैंडम जनरेशन आज़माएं','pt':'Este nome de usuário já está em uso — tente o aleatório' },
+  user_ok: { zh: '✓ 用户名可用', en: '✓ Username available','zh_tw':'✓ 使用者名稱可用','ja':'✓ ユーザー名は使用可能です','hi':'✓ उपयोगकर्ता नाम उपलब्ध है','pt':'✓ Nome de usuário disponível' },
+  user_exists: { zh: '用户名已存在，请直接登录', en: 'Username already exists — sign in directly','zh_tw':'使用者名稱已存在，請直接登入','ja':'ユーザー名は既に存在します。直接ログインしてください','hi':'उपयोगकर्ता नाम पहले से मौजूद है, सीधे लॉगिन करें','pt':'Nome de usuário já existe — entre diretamente' },
+  pwd_mismatch: { zh: '两次输入的密码不一致', en: 'Passwords do not match','zh_tw':'兩次輸入的密碼不一致','ja':'入力されたパスワードが一致しません','hi':'दोनों पासवर्ड मेल नहीं खाते','pt':'As senhas não coincidem' },
+  pwd_match: { zh: '✓ 密码一致', en: '✓ Passwords match','zh_tw':'✓ 密碼一致','ja':'✓ パスワード一致','hi':'✓ पासवर्ड मेल खाता है','pt':'✓ Senhas coincidem' },
+  strength_prefix: { zh: '强度：', en: 'Strength: ','zh_tw':'強度：','ja':'強度: ','hi':'मज़बूती: ','pt':'Força: ' },
+  st_weak: { zh: '弱', en: 'Weak','zh_tw':'弱','ja':'弱','hi':'कमज़ोर','pt':'Fraca' },
+  st_med: { zh: '中', en: 'Medium','zh_tw':'中','ja':'中','hi':'मध्यम','pt':'Média' },
+  st_strong: { zh: '强', en: 'Strong','zh_tw':'強','ja':'強','hi':'मज़बूत','pt':'Forte' },
+  st_very: { zh: '非常强', en: 'Very strong','zh_tw':'非常強','ja':'非常に強い','hi':'बहुत मज़बूत','pt':'Muito forte' },
+  rule_len: { zh: '8-64 个字符', en: '8-64 characters','zh_tw':'8-64 個字元','ja':'8〜64文字','hi':'8-64 अक्षर','pt':'8-64 caracteres' },
+  rule_upper: { zh: '包含大写字母', en: 'Uppercase letter','zh_tw':'包含大寫字母','ja':'大文字を含む','hi':'बड़े अक्षर शामिल','pt':'Inclui letra maiúscula' },
+  rule_lower: { zh: '包含小写字母', en: 'Lowercase letter','zh_tw':'包含小寫字母','ja':'小文字を含む','hi':'छोटे अक्षर शामिल','pt':'Inclui letra minúscula' },
+  rule_digit: { zh: '包含数字', en: 'Number','zh_tw':'包含數字','ja':'数字を含む','hi':'अंक शामिल','pt':'Inclui número' },
+  rule_special: { zh: '包含特殊字符（可选）', en: 'Special character (optional)','zh_tw':'包含特殊字元（選填）','ja':'特殊文字を含む（任意）','hi':'विशेष वर्ण शामिल (वैकल्पिक)','pt':'Inclui caractere especial (opcional)' },
+  need_user: { zh: '请输入用户名', en: 'Please enter username','zh_tw':'請輸入使用者名稱','ja':'ユーザー名を入力してください','hi':'कृपया उपयोगकर्ता नाम दर्ज करें','pt':'Por favor, digite o nome de usuário' },
+  need_pass: { zh: '请输入密码', en: 'Please enter password','zh_tw':'請輸入密碼','ja':'パスワードを入力してください','hi':'कृपया पासवर्ड दर्ज करें','pt':'Por favor, digite a senha' },
+  user_notfound: { zh: '用户不存在，请先注册', en: 'User not found — please register','zh_tw':'使用者不存在，請先註冊','ja':'ユーザーが見つかりません。まず登録してください','hi':'उपयोगकर्ता मौजूद नहीं है, पहले पंजीकरण करें','pt':'Usuário não encontrado — registre-se primeiro' },
+  pwd_wrong: { zh: '密码错误', en: 'Incorrect password','zh_tw':'密碼錯誤','ja':'パスワードが正しくありません','hi':'पासवर्ड गलत है','pt':'Senha incorreta' },
+  login_fail: { zh: '登录失败，请重试', en: 'Login failed, please retry','zh_tw':'登入失敗，請重試','ja':'ログインに失敗しました。もう一度お試しください','hi':'लॉगिन विफल, कृपया पुनः प्रयास करें','pt':'Falha no login, tente novamente' },
+  login_ok: { zh: '✓ 登录成功', en: '✓ Login successful','zh_tw':'✓ 登入成功','ja':'✓ ログイン成功','hi':'✓ लॉगिन सफल','pt':'✓ Login bem-sucedido' },
+  login_ok_msg: { zh: '登录成功！正在进入做题页面…', en: 'Login successful! Entering practice…','zh_tw':'登入成功！正在進入做題頁面…','ja':'ログイン成功！練習ページへ移動しています…','hi':'लॉगिन सफल! अभ्यास पृष्ठ में प्रवेश कर रहे हैं…','pt':'Login bem-sucedido! Entrando na página de prática…' },
+  net_error: { zh: '无法连接服务器，请确认后端已启动', en: 'Cannot reach server — make sure the backend is running','zh_tw':'無法連接伺服器，請確認後端已啟動','ja':'サーバーに接続できません。バックエンドが起動しているか確認してください','hi':'सर्वर से कनेक्ट नहीं हो सका, कृपया सुनिश्चित करें कि बैकएंड चालू है','pt':'Não foi possível conectar ao servidor — verifique se o backend está em execução' },
+  pwd_policy: { zh: '密码需 8-64 位，且包含大小写字母和数字', en: 'Password needs 8-64 chars with upper, lower & digit','zh_tw':'密碼需 8-64 位，且包含大小寫字母和數字','ja':'パスワードは8〜64文字で、大文字・小文字・数字を含む必要があります','hi':'पासवर्ड 8-64 अक्षरों का होना चाहिए और उसमें बड़े, छोटे अक्षर और संख्या शामिल होनी चाहिए','pt':'A senha deve ter 8-64 caracteres, incluindo letras maiúsculas, minúsculas e números' },
+  reg_fail: { zh: '注册失败，请重试', en: 'Registration failed, please retry','zh_tw':'註冊失敗，請重試','ja':'登録に失敗しました。もう一度お試しください','hi':'पंजीकरण विफल, कृपया पुनः प्रयास करें','pt':'Falha no registro, tente novamente' },
+  reg_ok: { zh: '✓ 注册成功', en: '✓ Registered','zh_tw':'✓ 註冊成功','ja':'✓ 登録完了','hi':'✓ पंजीकरण सफल','pt':'✓ Registrado' },
+  reg_ok_msg: { zh: '注册成功，已自动登录！', en: 'Registered & signed in automatically!','zh_tw':'註冊成功，已自動登入！','ja':'登録完了、自動ログインしました！','hi':'पंजीकरण सफल, स्वचालित रूप से लॉगिन हो गया!','pt':'Registrado e conectado automaticamente!' },
+  random_pwd_toast: { zh: '已生成随机安全密码，可点击眼睛图标查看', en: 'Random secure password generated — click the eye to view','zh_tw':'已生成隨機安全密碼，可點擊眼睛圖示查看','ja':'ランダム安全パスワードを生成しました。目のアイコンをクリックして表示','hi':'रैंडम सुरक्षित पासवर्ड बनाया गया — आंख आइकन पर क्लिक करें','pt':'Senha segura aleatória gerada — clique no ícone de olho para ver' },
 };
 
-let LANG = localStorage.getItem('lang') || 'zh';
-function t(key) { const e = I18N[key]; return e ? (e[LANG] || e.zh) : key; }
+let LANG = localStorage.getItem('lang') || 'zh';   // 跟随先导页（index_glass）语言设置
+function langKey() { return LANG === 'zh-TW' ? 'zh_tw' : LANG; }
+function t(key) { const e = I18N[key]; return e ? (e[langKey()] || e.en || e.zh) : key; }
 
 function applyI18n() {
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
@@ -423,8 +424,7 @@ function applyI18n() {
   document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.getAttribute('data-i18n-title')); });
   document.title = t('page_title');
   const btn = document.getElementById('langBtn');
-  if (btn) btn.textContent = LANG === 'zh' ? 'English' : '中文';
-  document.documentElement.lang = LANG === 'zh' ? 'zh-CN' : 'en';
+  document.documentElement.lang = LANG === 'zh-TW' ? 'zh-TW' : (LANG === 'zh' ? 'zh-CN' : 'en');
 }
 
 function toggleLang() {
@@ -435,6 +435,20 @@ function toggleLang() {
   if (window.checkUsername) checkUsername();
   if (window.onRegPassInput) onRegPassInput();
 }
+
+
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n-html')); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.getAttribute('data-i18n-title')); });
+  document.title = t('page_title');
+  const btn = document.getElementById('langBtn');
+  document.documentElement.lang = LANG === 'zh-TW' ? 'zh-TW' : (LANG === 'zh' ? 'zh-CN' : 'en');
+}
+
+function toggleLang() { /* 语言切换入口仅保留在主界面 */ }
 applyI18n();
 
 /* ---- 选项卡 ---- */
