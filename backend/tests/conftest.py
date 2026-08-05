@@ -24,16 +24,43 @@ def test_db(tmp_path, monkeypatch):
     monkeypatch.setattr(db, 'DB_PATH', str(tmp_path / 'test.db'))
     db.init_db()
     conn = db.get_connection()
+    # q1: select_basic 进阶选择题（有 options、无 q_level → 非 basic）
     conn.execute(
         "INSERT INTO questions (source,category,difficulty,title,description,table_schema,initial_data,correct_answer,explanation,options) "
         "VALUES (?,?,?,?,?,?,?,?,?,?)",
-        ('t', '基础查询', 'easy', '查询所有', '查询所有员工', SCHEMA, DATA,
+        ('t', 'select_basic', 'easy', '查询所有', '查询所有员工', SCHEMA, DATA,
          'SELECT * FROM employees', 'SELECT * 查询所有列', 'SELECT * FROM employees;|SELECT ALL FROM employees;'))
+    # q2: select_basic 填空题
     conn.execute(
         "INSERT INTO questions (source,category,difficulty,title,description,table_schema,initial_data,correct_answer,explanation) "
         "VALUES (?,?,?,?,?,?,?,?,?)",
-        ('t', '基础查询', 'easy', '查询姓名', '查询所有员工姓名', SCHEMA, DATA,
+        ('t', 'select_basic', 'easy', '查询姓名', '查询所有员工姓名', SCHEMA, DATA,
          'SELECT name FROM employees', 'SELECT 指定列'))
+    # q3: select_basic 基础选择题（q_level='basic'，初次进标签应优先推送）
+    conn.execute(
+        "INSERT INTO questions (source,category,difficulty,title,description,table_schema,initial_data,correct_answer,explanation,options,q_level) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        ('static_basic', 'select_basic', 'easy', 'SELECT 概念', '选择正确的查询语句', '', '',
+         'B. SELECT', 'SELECT 语句', 'A. DELETE|B. SELECT|C. UPDATE', 'basic'))
+    # q4: join_inner 填空题（select_basic 掌握后解锁的新标签）
+    conn.execute(
+        "INSERT INTO questions (source,category,difficulty,title,description,table_schema,initial_data,correct_answer,explanation) "
+        "VALUES (?,?,?,?,?,?,?,?,?)",
+        ('t', 'join_inner', 'medium', '内连接查询', '查询员工与部门', SCHEMA, DATA,
+         'SELECT * FROM employees e JOIN departments d ON e.dept = d.dept', 'JOIN 连接'))
+    # q5: dml_select 基础选择题（图谱点亮轮：top_dml 为首个活跃枝、dml_select 为第一叶）
+    conn.execute(
+        "INSERT INTO questions (source,category,difficulty,title,description,table_schema,initial_data,correct_answer,explanation,options,q_level) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        ('static_basic', 'dml_select', 'easy', 'DML SELECT 概念', '选择正确的查询语句', '', '',
+         'B. SELECT * FROM employees', 'DML SELECT 语句',
+         'A. DELETE FROM employees|B. SELECT * FROM employees|C. DROP TABLE employees', 'basic'))
+    # q6: dml_select 填空题
+    conn.execute(
+        "INSERT INTO questions (source,category,difficulty,title,description,table_schema,initial_data,correct_answer,explanation) "
+        "VALUES (?,?,?,?,?,?,?,?,?)",
+        ('t', 'dml_select', 'easy', '查询技术部员工', '查询技术部员工姓名', SCHEMA, DATA,
+         "SELECT name FROM employees WHERE dept = '技术部'", 'WHERE 条件'))
     conn.commit()
     from seeding import seed_knowledge_graph
     seed_knowledge_graph()
