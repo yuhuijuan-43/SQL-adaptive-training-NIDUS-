@@ -235,7 +235,8 @@ const API_BASE = 'http://localhost:5000/api';
 // 管理员 Token：首次输入后保存在 sessionStorage，请求时带 Authorization: Bearer 头
 var ADMIN_TOKEN = sessionStorage.getItem('admin_token');
 if (!ADMIN_TOKEN) {
-  ADMIN_TOKEN = prompt('请输入管理员 Token（后端 ADMIN_TOKEN 配置）：') || '';
+  // C2 重构：Bearer 为 per-admin 会话 Token（请先通过 /admin-gate 双重验证登录后进入本页）
+  ADMIN_TOKEN = prompt('请输入管理员会话 Token（请从 /admin-gate 登录获取）：') || '';
   if (ADMIN_TOKEN) sessionStorage.setItem('admin_token', ADMIN_TOKEN);
 }
 function adminFetch(path, opts) {
@@ -286,7 +287,7 @@ function drawUserBars(users) {
     html += '<rect x="' + x + '" y="' + (BASELINE - h) + '" width="' + barW + '" height="' + h + '" fill="' + accColor + '" rx="3" opacity="0.8" style="cursor:pointer" onclick="openUserDetail(_rankUsers[' + i + '])"><title>' + tip + '</title></rect>';
     html += '<text x="' + (x + barW / 2) + '" y="' + (BASELINE - 5) + '" text-anchor="middle" fill="#2c241b" font-family="Oswald" font-size="10" font-weight="700">' + u.answered + '</text>';
     var name = u.username.length > 6 ? u.username.substring(0, 6) + '..' : u.username;
-    html += '<text x="' + (x + barW / 2) + '" y="' + (BASELINE + 8) + '" text-anchor="middle" fill="#87867f" font-size="6.5" style="cursor:pointer" onclick="openUserDetail(_rankUsers[' + i + '])">' + name + '</text>';
+    html += '<text x="' + (x + barW / 2) + '" y="' + (BASELINE + 8) + '" text-anchor="middle" fill="#87867f" font-size="6.5" style="cursor:pointer" onclick="openUserDetail(_rankUsers[' + i + '])">' + escapeHtml(name) + '</text>';
     html += '<text x="' + (x + barW / 2) + '" y="' + (BASELINE + 20) + '" text-anchor="middle" fill="' + accColor + '" font-size="6.5">' + (u.answered > 0 ? u.accuracy + '%' : '-') + '</text>';
   }
   document.getElementById('userChart').innerHTML = html;
@@ -354,6 +355,10 @@ function closeUserDetail() {
 
 function adminErrorMsg(e) {
   console.error('[admin] 加载失败:', e);
+  // 限流命中：请求过于频繁（如连续删除/刷新），稍等片刻自动恢复，无需重新登录
+  if (e && e.message === 'HTTP 429') {
+    return '<tr><td colspan="6" class="text-center" style="color:#b07a2a">操作过于频繁，请稍等片刻后自动恢复</td></tr>';
+  }
   // 无法连接（网络/CORS/后端未启动或未重启）
   return '<tr><td colspan="6" class="text-center" style="color:#b04a4a">无法连接后端：请确认服务已启动；' +
          '若刚更新过后端代码，请重启服务（CORS 配置需重启生效）</td></tr>';
@@ -378,14 +383,16 @@ function renderUserTable() {
     var lastActive = u.last_active ? new Date(u.last_active + ' UTC').toLocaleString() : '从未作答';
     var accClass = u.accuracy >= 60 ? '' : (u.accuracy > 0 ? 'style="color:var(--accent)"' : 'style="color:var(--error)"');
     // 操作列：重置密码（+ 有历史时显示回退）+ 删除用户；stopPropagation 避免触发行点击查看答题记录
-    var opBtn = '<button class="mini-btn danger" onclick="event.stopPropagation();openReset(\'' + escapeHtml(u.username) + '\')">重置密码</button>';
+    // 事件参数一律用 _allUsers 索引引用，绝不把用户数据拼进内联字符串（防引号注入 XSS）
+    var idx = start + i;
+    var opBtn = '<button class="mini-btn danger" onclick="event.stopPropagation();openReset(_allUsers[' + idx + '].username)">重置密码</button>';
     if (u.rollback_count > 0) {
-      opBtn += ' <button class="mini-btn" title="回退到上一个密码（最多 3 次）" onclick="event.stopPropagation();openRollback(\'' +
-               escapeHtml(u.username) + '\',' + u.rollback_count + ')">回退(' + u.rollback_count + ')</button>';
+      opBtn += ' <button class="mini-btn" title="回退到上一个密码（最多 3 次）" onclick="event.stopPropagation();openRollback(_allUsers[' +
+               idx + '].username,' + u.rollback_count + ')">回退(' + u.rollback_count + ')</button>';
     }
-    opBtn += ' <button class="mini-btn danger" title="永久删除该用户及其全部数据，不可恢复" onclick="event.stopPropagation();openDelete(\'' +
-             escapeHtml(u.username) + '\',' + u.answered + ',' + u.correct + ')">删除用户</button>';
-    html += '<tr style="cursor:pointer" onclick="openUserDetail(_allUsers[' + (start + i) + '])" title="查看答题记录"><td><strong>' + u.username + '</strong></td>';
+    opBtn += ' <button class="mini-btn danger" title="永久删除该用户及其全部数据，不可恢复" onclick="event.stopPropagation();openDelete(_allUsers[' +
+             idx + '].username,' + u.answered + ',' + u.correct + ')">删除用户</button>';
+    html += '<tr style="cursor:pointer" onclick="openUserDetail(_allUsers[' + idx + '])" title="查看答题记录"><td><strong>' + escapeHtml(u.username) + '</strong></td>';
     html += '<td class="num-oswald">' + u.answered + '</td>';
     html += '<td style="color:var(--text)">' + u.correct + '</td>';
     html += '<td class="num-oswald" ' + accClass + '>' + (u.answered > 0 ? u.accuracy + '%' : '-') + '</td>';
@@ -576,7 +583,9 @@ function confirmDelete() {
       loadAdmin();   // 立即刷新统计卡与用户明细
     })
     .catch(function(e) {
-      if (e.message !== '401') toast('删除失败，请重试', 'bad');
+      if (e.message !== '401') {
+        toast(e.message === 'HTTP 429' ? '操作过于频繁，请稍等片刻再试' : '删除失败，请重试', 'bad');
+      }
     })
     .finally(function() { btn.disabled = false; });
 }
@@ -616,7 +625,7 @@ async function loadAdmin() {
 }
 
 loadAdmin();
-setInterval(loadAdmin, 10000);
+setInterval(loadAdmin, 30000);
 </script>
 <div class="toast-wrap" id="toastWrap"></div>
 </body>

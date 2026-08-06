@@ -28,13 +28,13 @@ def test_db(tmp_path, monkeypatch):
     conn.execute(
         "INSERT INTO questions (source,category,difficulty,title,description,table_schema,initial_data,correct_answer,explanation,options) "
         "VALUES (?,?,?,?,?,?,?,?,?,?)",
-        ('t', 'select_basic', 'easy', '查询所有', '查询所有员工', SCHEMA, DATA,
+        ('static_advanced', 'select_basic', 'easy', '查询所有', '查询所有员工', SCHEMA, DATA,
          'SELECT * FROM employees', 'SELECT * 查询所有列', 'SELECT * FROM employees;|SELECT ALL FROM employees;'))
     # q2: select_basic 填空题
     conn.execute(
         "INSERT INTO questions (source,category,difficulty,title,description,table_schema,initial_data,correct_answer,explanation) "
         "VALUES (?,?,?,?,?,?,?,?,?)",
-        ('t', 'select_basic', 'easy', '查询姓名', '查询所有员工姓名', SCHEMA, DATA,
+        ('nowcoder_preview', 'select_basic', 'easy', '查询姓名', '查询所有员工姓名', SCHEMA, DATA,
          'SELECT name FROM employees', 'SELECT 指定列'))
     # q3: select_basic 基础选择题（q_level='basic'，初次进标签应优先推送）
     conn.execute(
@@ -46,7 +46,7 @@ def test_db(tmp_path, monkeypatch):
     conn.execute(
         "INSERT INTO questions (source,category,difficulty,title,description,table_schema,initial_data,correct_answer,explanation) "
         "VALUES (?,?,?,?,?,?,?,?,?)",
-        ('t', 'join_inner', 'medium', '内连接查询', '查询员工与部门', SCHEMA, DATA,
+        ('nowcoder_preview', 'join_inner', 'medium', '内连接查询', '查询员工与部门', SCHEMA, DATA,
          'SELECT * FROM employees e JOIN departments d ON e.dept = d.dept', 'JOIN 连接'))
     # q5: dml_select 基础选择题（图谱点亮轮：top_dml 为首个活跃枝、dml_select 为第一叶）
     conn.execute(
@@ -59,7 +59,7 @@ def test_db(tmp_path, monkeypatch):
     conn.execute(
         "INSERT INTO questions (source,category,difficulty,title,description,table_schema,initial_data,correct_answer,explanation) "
         "VALUES (?,?,?,?,?,?,?,?,?)",
-        ('t', 'dml_select', 'easy', '查询技术部员工', '查询技术部员工姓名', SCHEMA, DATA,
+        ('nowcoder_preview', 'dml_select', 'easy', '查询技术部员工', '查询技术部员工姓名', SCHEMA, DATA,
          "SELECT name FROM employees WHERE dept = '技术部'", 'WHERE 条件'))
     conn.commit()
     from seeding import seed_knowledge_graph
@@ -68,11 +68,40 @@ def test_db(tmp_path, monkeypatch):
 
 
 @pytest.fixture()
-def client(test_db, monkeypatch):
+def client(test_db):
     import app as app_mod
     app_mod.app.config['TESTING'] = True
     app_mod.limiter.enabled = False          # flask-limiter 3.x: enabled 是实例属性
-    # 统一管理员密钥：统一密钥从 DB 读（未设置时回退 env），测试注入 env 即可生效
-    monkeypatch.setenv('ADMIN_TOKEN', 'test-admin-token')
     with app_mod.app.test_client() as c:
         yield c
+
+
+def _register_admin(client, username):
+    """注册管理员并返回其 per-admin 会话 token（C2 重构后 Bearer 必须是会话 token）"""
+    r = client.post('/api/admin/auth-register', json={
+        'username': username, 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
+    assert r.status_code == 200, r.get_json()
+    return r.get_json()['token']
+
+
+def _get_admin_key(username):
+    """读取某管理员的个人密钥（一人一钥：gate 登录第二重验证用它）"""
+    import db
+    conn = db.get_connection()
+    row = conn.execute('SELECT personal_key FROM admin_users WHERE username=?', (username,)).fetchone()
+    return row['personal_key'] if row else None
+
+
+def _make_primary(username):
+    import db
+    conn = db.get_connection()
+    conn.execute("UPDATE admin_users SET is_primary=1 WHERE username=?", (username,))
+    conn.commit()
+
+
+@pytest.fixture()
+def admin_session(client):
+    """注册主管理员并返回其会话 token（所有需要管理员权限的测试用它做 Bearer）"""
+    token = _register_admin(client, 'primary_admin')
+    _make_primary('primary_admin')
+    return token

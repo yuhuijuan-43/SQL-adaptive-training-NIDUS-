@@ -17,13 +17,11 @@ OFFICIAL_TAGS = {
         ('dml_update', 'UPDATE', '★'),
         ('dml_delete', 'DELETE', '★'),
     ]),
-    'top_ddl': ('DDL', [
-        ('ddl_create', 'CREATE', '★'),
-        ('ddl_alter', 'ALTER', '★★'),
-        ('ddl_drop', 'DROP', '★'),
-        ('ddl_truncate', 'TRUNCATE', '★'),
-        ('ddl_rename', 'RENAME', '★'),
-        ('ddl_comment', 'COMMENT', '★'),
+    'top_select': ('SELECT', [
+        ('select_basic', '基本 SELECT：字段、别名、常量', '★'),
+        ('where_basic', 'WHERE 条件筛选', '★'),
+        ('group_by', '聚合函数与 GROUP BY', '★★'),
+        ('having', 'HAVING 子句', '★★★'),
     ]),
     'top_func': ('函数', [
         ('string_func', '字符串函数', '★'),
@@ -31,6 +29,12 @@ OFFICIAL_TAGS = {
         ('aggregate_func', '聚合函数', '★★'),
         ('cast_func', '转换函数', '★★'),
         ('window_func', '窗口函数', '★★★'),
+    ]),
+    'top_subquery': ('子查询', [
+        ('subquery_scalar', '标量子查询', '★★'),
+        ('subquery_column', '列子查询', '★★'),
+        ('subquery_table', '表子查询', '★★★'),
+        ('subquery_in', 'IN 子查询', '★★★'),
     ]),
     'top_join': ('表连接', [
         ('join_inner', '内连接', '★★'),
@@ -42,19 +46,18 @@ OFFICIAL_TAGS = {
         ('constraint_primary_key', '主键', '★'),
         ('constraint_foreign_key', '外键', '★★'),
     ]),
-    'top_subquery': ('子查询', [
-        ('subquery_scalar', '标量子查询', '★★'),
-        ('subquery_column', '列子查询', '★★'),
-        ('subquery_table', '表子查询', '★★★'),
-        ('subquery_in', 'IN 子查询', '★★★'),
-    ]),
-    'top_select': ('SELECT', [
-        ('select_basic', '基本 SELECT：字段、别名、常量', '★'),
-        ('where_basic', 'WHERE 条件筛选', '★'),
-        ('group_by', '聚合函数与 GROUP BY', '★★'),
-        ('having', 'HAVING 子句', '★★★'),
+    'top_ddl': ('DDL', [
+        ('ddl_create', 'CREATE', '★'),
+        ('ddl_alter', 'ALTER', '★★'),
+        ('ddl_drop', 'DROP', '★'),
+        ('ddl_truncate', 'TRUNCATE', '★'),
+        ('ddl_rename', 'RENAME', '★'),
+        ('ddl_comment', 'COMMENT', '★'),
     ]),
 }
+# 枝/叶固定顺序（图谱声明序，不放回；2026-08-05 调整为 DML→SELECT→函数→子查询→表连接→约束→DDL）
+TOP_NODE_ORDER = list(OFFICIAL_TAGS.keys())
+
 STAR_TO_LEVEL = {'★': 2, '★★': 3, '★★★': 4}
 STAR_TO_DIFFICULTY = {'★': 'easy', '★★': 'medium', '★★★': 'hard'}
 # 标签 → 星级（来自 knowledge_tags.csv）
@@ -453,8 +456,8 @@ def seed_questions():
             (q['source'],category,difficulty,q['title'],q['description'],
              q.get('table_schema'),q.get('initial_data'),q['correct_answer'],q.get('explanation'),q.get('options'), q.get('option_explanations'), q.get('expected_output'), 'practice', q.get('q_level')))
     conn.commit()
-    # 清理引用已不存在题目的答题记录（题库重建后 id 可能错位，保守清理）
-    conn.execute("DELETE FROM user_progress WHERE question_id NOT IN (SELECT id FROM questions)")
+    # 清理引用已不存在题目的答题记录（题库重建后 id 可能错位，保守清理；仅练习池，真题记录按 pool 隔离保留）
+    conn.execute("DELETE FROM user_progress WHERE pool='practice' AND question_id NOT IN (SELECT id FROM questions)")
     conn.commit()
     print(f"Seeded {len(questions)} practice questions.")
 

@@ -281,6 +281,19 @@ body {
 
 <div class="toast-wrap" id="toastWrap"></div>
 
+<!-- 注册成功：一次性展示个人密钥（一人一钥） -->
+<div id="keyGiveModal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(10,16,40,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px">
+  <div style="max-width:440px;width:100%;background:linear-gradient(160deg,#ffffff 0%,#f2f5ff 100%);border:1px solid rgba(88,110,170,0.25);border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(20,30,80,0.35)">
+    <div style="font-size:16px;font-weight:800;color:#1c2a52;margin-bottom:8px" data-i18n="key_give_title">🎉 注册成功，这是你的个人密钥</div>
+    <div style="font-size:12.5px;color:#5a6a95;margin-bottom:14px;line-height:1.7" data-i18n="key_give_tip">此密钥是你的专属登录凭证（管理后台双重验证），仅显示这一次，请妥善保存。主管理员也可在「我的同事」中查看/重置。</div>
+    <code id="keyGiveText" style="display:block;font-family:'SF Mono',Consolas,monospace;font-size:13.5px;font-weight:700;letter-spacing:.06em;word-break:break-all;padding:12px 14px;border-radius:10px;background:rgba(255,255,255,.9);border:1px solid rgba(74,125,255,.35);color:#2450c4;margin-bottom:14px;user-select:all"></code>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="copyGiveKey()" style="height:36px;padding:0 16px;border-radius:8px;border:1px solid rgba(14,166,120,.35);background:transparent;color:#0ea678;font-size:13px;font-weight:700;cursor:pointer" data-i18n="key_copy_btn">复制密钥</button>
+      <button onclick="enterPanel()" style="height:36px;padding:0 18px;border:none;border-radius:8px;background:linear-gradient(135deg,#4a7dff 0%,#6a5cff 100%);color:#fff;font-size:13px;font-weight:700;cursor:pointer" data-i18n="key_give_enter">保存并进入面板</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const API_BASE = '/api';
 const $ = id => document.getElementById(id);
@@ -346,6 +359,14 @@ const I18N = {
   net_error: { zh: '无法连接服务器，请确认后端已启动', en: 'Cannot reach server — make sure the backend is running','zh_tw':'無法連接伺服器，請確認後端已啟動','ja':'サーバーに接続できません。バックエンドが起動しているか確認してください','hi':'सर्वर से कनेक्ट नहीं हो सका, कृपया सुनिश्चित करें कि बैकएंड चालू है','pt':'Não foi possível conectar ao servidor — verifique se o backend está em execução' },
   login_ok_msg: { zh: '登录成功，正在进入管理员面板…', en: 'Signed in — entering the admin panel…','zh_tw':'登入成功，正在進入管理員面板…','ja':'ログイン成功、管理者パネルに入っています…','hi':'लॉगिन सफल, एडमिन पैनल में प्रवेश कर रहे हैं…','pt':'Login bem-sucedido — entrando no painel do administrador…' },
   reg_ok_msg: { zh: '注册成功，正在进入管理员面板…', en: 'Registered — entering the admin panel…','zh_tw':'註冊成功，正在進入管理員面板…','ja':'登録完了、管理者パネルに入っています…','hi':'पंजीकरण सफल, एडमिन पैनल में प्रवेश कर रहे हैं…','pt':'Registro concluído — entrando no painel do administrador…' },
+  key_disabled: { zh: '密钥已被停用，请联系主管理员', en: 'Your key has been disabled — contact the primary admin','zh_tw':'密鑰已被停用，請聯絡主管理員','ja':'キーは無効化されています。プライマリ管理者に連絡してください','hi':'आपकी कुंजी अक्षम कर दी गई है — मुख्य एडमिन से संपर्क करें','pt':'Sua chave foi desativada — entre em contato com o administrador principal' },
+  key_give_title: { zh: '🎉 注册成功，这是你的个人密钥', en: '🎉 Registered! This is your personal key','zh_tw':'🎉 註冊成功，這是你的個人密鑰','ja':'🎉 登録完了！これがあなたの個人キーです','hi':'🎉 पंजीकरण सफल! यह आपकी निजी कुंजी है','pt':'🎉 Registro concluído! Esta é sua chave pessoal' },
+  key_give_tip: { zh: '此密钥是你的专属登录凭证（管理后台双重验证），仅显示这一次，请妥善保存。主管理员也可在「我的同事」中查看/重置。',
+                  en: 'This is your personal login credential (admin dashboard double verification) — shown only once, save it safely. The primary admin can also view/reset it in "My Colleagues".','zh_tw':'此密鑰是你的專屬登入憑證（管理後台雙重驗證），僅顯示這一次，請妥善保存。主管理員也可在「我的同事」中查看/重置。','ja':'これはあなた専用のログイン資格情報です（管理ダッシュボードの二重認証）。一度しか表示されないので、安全に保管してください。プライマリ管理者も「同僚」で確認・リセットできます。','hi':'यह आपका निजी लॉगिन प्रमाण है (एडमिन डैशबोर्ड दोहरा सत्यापन) — केवल एक बार दिखाया जाता है, इसे सुरक्षित रखें। मुख्य एडमिन "मेरे सहयोगी" में इसे देख/रीसेट कर सकता है।','pt':'Esta é sua credencial de login pessoal (verificação dupla do painel de administração) — mostrada apenas uma vez, guarde-a com segurança. O administrador principal também pode visualizá-la/redefini-la em "Meus Colegas".' },
+  key_copy_btn: { zh: '复制密钥', en: 'Copy Key','zh_tw':'複製密鑰','ja':'キーをコピー','hi':'कुंजी कॉपी करें','pt':'Copiar chave' },
+  key_give_enter: { zh: '保存并进入面板', en: 'Save & Enter Panel','zh_tw':'保存並進入面板','ja':'保存してパネルへ','hi':'सहेजें और पैनल में जाएं','pt':'Salvar e entrar no painel' },
+  copied: { zh: '已复制到剪贴板', en: 'Copied to clipboard','zh_tw':'已複製到剪貼簿','ja':'クリップボードにコピーしました','hi':'क्लिपबोर्ड पर कॉपी हो गया','pt':'Copiado para a área de transferência' },
+  copy_fail: { zh: '复制失败，请手动选择复制', en: 'Copy failed — please select manually','zh_tw':'複製失敗，請手動選擇複製','ja':'コピーに失敗しました。手動で選択してコピーしてください','hi':'कॉपी विफल — कृपया मैन्युअल चुनें','pt':'Falha ao copiar — selecione manualmente' },
 };
 
 let LANG = localStorage.getItem('lang') || 'zh';   // 跟随先导页（index_glass）语言设置
@@ -519,6 +540,7 @@ async function doLogin(e) {
       loading('loginBtn', false);
       if (r.status === 404) { setHint('loginUserHint', t('admin_notfound'), 'err'); setInputState('inpUser', 'err'); }
       else if (r.status === 401) { setHint('loginPassHint', t('pwd_wrong'), 'err'); setInputState('inpPass', 'err'); }
+      else if (r.status === 403) { setHint('loginPassHint', t('key_disabled'), 'err'); setInputState('inpPass', 'err'); }
       else toast('bad', d.error || t('net_error'), 'bad');
       return;
     }
@@ -561,12 +583,39 @@ async function doRegister(e) {
     sessionStorage.setItem('admin_token', d.token);
     sessionStorage.setItem('admin_user', d.username);
     $('regBtn').textContent = '✓';
-    toast('ok', t('reg_ok_msg'), 'ok');
-    setTimeout(() => { window.location.href = 'admin-panel'; }, 700);
+    // 一人一钥：注册即签发个人密钥，仅本次展示一次（确认后进入面板）
+    showGiveKey(d.key);
   } catch (err) {
     loading('regBtn', false);
     toast('bad', t('net_error'), 'bad');
   }
+}
+
+/* ---- 注册成功：一次性展示个人密钥（一人一钥） ---- */
+var _giveKey = '';
+function showGiveKey(key) {
+  _giveKey = key || '';
+  $('keyGiveText').textContent = _giveKey;
+  $('keyGiveModal').style.display = 'flex';
+}
+function copyGiveKey() {
+  if (!_giveKey) return;
+  copyText(_giveKey).then(ok => toast(ok ? t('copied') : t('copy_fail'), ok ? 'ok' : 'bad'));
+}
+function enterPanel() {
+  window.location.href = 'admin-panel';
+}
+function copyText(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  return Promise.resolve(ok);
 }
 </script>
 </body>

@@ -1,11 +1,11 @@
-import json, uuid, os, random
+import json, uuid, os, random, sys
 
 from flask import Flask, jsonify, redirect, request, send_from_directory
 from flask_cors import CORS
 from sql_judge import judge as judge_sql
 from db import init_db, get_connection, close_db
 from repositories import (get_all_questions, get_exam_questions, get_question_by_id,
-    get_questions_by_node, get_question_node_id, save_answer, get_progress, get_graph,
+    get_exam_question_by_id, get_questions_by_node, get_question_node_id, save_answer, get_progress, get_graph,
     get_mastery, save_diagnostic_result, get_diagnostic_result,
     get_or_create_derived_question, get_derived_question_by_id,
     get_questions_by_node_and_type, get_node_id_for_question, is_mcq,
@@ -14,8 +14,10 @@ from repositories import (get_all_questions, get_exam_questions, get_question_by
     delete_admin, _account_kind)
 from auth import (login_user, register_user, login_or_register, check_username_exists,
     _is_authenticated, register_admin, login_admin, check_admin_username_exists,
-    get_admin_colleagues, get_admin_profile, get_admin_key, set_admin_key,
-    get_referral_codes, add_referral_code, delete_referral_code)
+    get_admin_colleagues, get_admin_profile, get_personal_key, set_personal_key,
+    reset_personal_key, is_key_disabled, set_key_disabled,
+    get_referral_codes, add_referral_code, delete_referral_code,
+    create_admin_session, validate_admin_token, revoke_admin_sessions, is_primary_admin)
 from engine import init_journey, journey_next, get_journey_state, compute_lights
 from seeding import seed_questions, seed_exam_questions, seed_knowledge_graph
 
@@ -46,6 +48,11 @@ def internal_error(e):
     app.logger.error(f"Internal server error: {e}")
     return jsonify({"error": "服务器内部错误，请稍后重试"}), 500
 
+@app.errorhandler(429)
+def too_many_requests(e):
+    """限流命中：返回 JSON 而非 flask-limiter 的纯文本，前端可解析并明确提示"""
+    return jsonify({"error": "操作过于频繁，请稍后再试"}), 429
+
 # ---- 速率限制（安全降级：未安装flask-limiter时无操作） ----
 # 只对写接口 / 登录注册 / admin 限流；读题、练习接口不限（避免误伤正常练习用户）
 try:
@@ -63,17 +70,44 @@ except ImportError:
             return decorator
     limiter = _NoopLimiter()
 
-# ---- Admin 鉴权：Bearer token（统一管理员密钥，DB 存储，主管理员可更换；env 兜底） ----
 
-def _check_admin_token():
-    """校验 Authorization: Bearer <token> 头"""
-    return request.headers.get('Authorization', '') == f'Bearer {get_admin_key()}'
+def _user_rate_key():
+    """用户接口按人计数：优先 session_id（已登录会话），其次请求体用户名（登录/注册），
+    兜底客户端 IP。ngrok/局域网部署下所有请求同源，按 IP 计数会把全班误判为同一人"""
+    data = request.get_json(silent=True) or {}
+    sid = data.get('session_id') or request.args.get('session_id')
+    if sid:
+        return 'u:' + str(sid)
+    name = (data.get('username') or '').strip()
+    if name:
+        return 'u:' + name
+    return get_remote_address()
 
-def _is_primary_operator(data):
-    """请求操作者是否为主管理员（operator 参数声明操作者身份，防普通管理员改管理员密码）"""
-    operator = (data.get('operator') or '').strip()
-    profile = get_admin_profile(operator)
-    return bool(profile and profile.get('is_primary'))
+
+def _admin_rate_key():
+    """管理接口按管理员计数：优先 Bearer token 解析出的管理员用户名（登录/注册前按请求体用户名），
+    兜底客户端 IP。多位管理员共用面板时互不挤占限流额度"""
+    admin = _admin_username()
+    if admin:
+        return 'a:' + admin
+    data = request.get_json(silent=True) or {}
+    name = (data.get('username') or '').strip()
+    if name:
+        return 'a:' + name
+    return get_remote_address()
+
+# ---- Admin 鉴权：Bearer 会话 token（C2 重构：token 绑定管理员身份，不再校验共享密钥） ----
+
+def _admin_username():
+    """从 Authorization: Bearer <token> 解析当前管理员用户名；无效/过期返回 None"""
+    auth = request.headers.get('Authorization', '')
+    if not auth.startswith('Bearer '):
+        return None
+    return validate_admin_token(auth[len('Bearer '):].strip())
+
+def _require_admin():
+    """校验管理会话，返回当前管理员用户名；未授权返回 None"""
+    return _admin_username()
 
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
 
@@ -91,7 +125,8 @@ _PUBLIC_API_PATHS = {'/api/login', '/api/register', '/api/check-username',
                      '/api/admin/user-progress', '/api/admin/colleagues',
                      '/api/admin/user-reset', '/api/admin/password-rollback', '/api/admin/key',
                      '/api/admin/user-delete', '/api/admin/admin-delete',
-                     '/api/admin/key-update', '/api/admin/referral-codes',
+                     '/api/admin/key-update', '/api/admin/key-toggle', '/api/admin/key-reset',
+                     '/api/admin/referral-codes',
                      '/api/admin/referral-add', '/api/admin/referral-delete'}
 
 def _request_session_id():
@@ -196,20 +231,41 @@ def get_diagnostic():
 
 @app.route('/api/diagnostic/complete', methods=['POST'])
 def diagnostic_complete():
+    """摸底小测提交：服务端重算每题对错，客户端自报的 is_correct 不再被信任。
+    选择题按选项文本比对；填空题用 judge_sql 实判（答案由前端随提交携带）。"""
     data = request.get_json()
     session_id = data.get('session_id')
     results = data.get('results', [])
     if not session_id:
         return jsonify({"error": "缺少 session_id"}), 400
-    total = len(results)
-    answered = [r for r in results if not r.get('skipped')]
+    recomputed = []
+    for r in results:
+        item = dict(r) if isinstance(r, dict) else {}
+        qid = item.get('question_id')
+        if not item.get('skipped') and isinstance(qid, int):
+            q = get_question_by_id(qid)
+            answer = (item.get('answer') or '').strip()
+            if q and answer:
+                if q.get('options') and str(q.get('options', '')).strip():
+                    # 选择题：选项文本比对（双向 HTML 实体归一，与 /api/submit 一致）
+                    import html as _html
+                    item['is_correct'] = (_html.unescape(answer).lower()
+                                          == _html.unescape(q['correct_answer'].strip()).lower())
+                else:
+                    item['is_correct'], _rows, _err = judge_sql(
+                        answer, q['correct_answer'], q.get('table_schema'), q.get('initial_data'))
+            else:
+                item['is_correct'] = False
+        recomputed.append(item)
+    total = len(recomputed)
+    answered = [r for r in recomputed if not r.get('skipped')]
     correct = sum(1 for r in answered if r.get('is_correct'))
-    skipped = sum(1 for r in results if r.get('skipped'))
+    skipped = sum(1 for r in recomputed if r.get('skipped'))
     accuracy = round(correct / total * 100, 1) if total > 0 else 0
     # Store results
     diagnostic_data = {
         'total': total, 'correct': correct, 'skipped': skipped,
-        'accuracy': accuracy, 'details': results
+        'accuracy': accuracy, 'details': recomputed
     }
     save_diagnostic_result(session_id, diagnostic_data)
     return jsonify(diagnostic_data)
@@ -265,23 +321,25 @@ def list_questions():
 
 @app.route('/api/questions/<int:qid>')
 def get_question(qid):
-    q = get_question_by_id(qid)
+    pool = request.args.get('pool', 'practice')  # exam → 真题库（两表 id 各自从 1 起）
+    q = get_exam_question_by_id(qid) if pool == 'exam' else get_question_by_id(qid)
     if not q:
         return jsonify({"error": "题目不存在"}), 404
-    shuffle_options(q)
     return jsonify(q)
 
 # ---- 提交答案 ----
 @app.route('/api/submit', methods=['POST'])
-@limiter.limit("30 per minute")
+@limiter.limit("30 per minute", key_func=_user_rate_key)
 def submit_answer():
     data = request.get_json()
     session_id = data.get('session_id', str(uuid.uuid4()))
     question_id = data.get('question_id')
     user_answer = data.get('answer', '').strip()
+    # 池：practice 查 questions 表，exam 查 exam_questions 表（两表 id 各自从 1 起，必须按池取）
+    pool = data.get('pool', 'practice')
     save_qid = question_id
     # Try regular question first, then derived question
-    q = get_question_by_id(question_id)
+    q = get_exam_question_by_id(question_id) if pool == 'exam' else get_question_by_id(question_id)
     is_derived = False
     if not q:
         dq = get_derived_question_by_id(question_id)
@@ -303,7 +361,7 @@ def submit_answer():
         # 真实执行判题：内存 SQLite 构建题目环境，比较用户 SQL 与标准答案的结果集
         is_correct, _rows, judge_error = judge_sql(
             user_answer, correct, q.get('table_schema'), q.get('initial_data'))
-    save_answer(session_id, save_qid, user_answer, is_correct)
+    save_answer(session_id, save_qid, user_answer, is_correct, pool=pool)
     resp = {
         "is_correct": is_correct,
         "correct_answer": correct,
@@ -367,8 +425,6 @@ def journey_start():
     diag = get_diagnostic_result(session_id)
     init_journey(session_id, diagnostic_data=diag)
     result = journey_next(session_id)
-    if result.get('question'):
-        shuffle_options(result['question'])
     return jsonify(result)
 
 @app.route('/api/journey/next', methods=['POST'])
@@ -400,8 +456,6 @@ def journey_next_route():
             row_id = save_answer(session_id, question_id, user_answer, is_correct, duration or 0)
     result = journey_next(session_id, just_answered_qid=question_id, was_correct=is_correct,
                           duration=duration, just_answered_id=row_id)
-    if result.get('question'):
-        shuffle_options(result['question'])
     result['last_answer_correct'] = is_correct
     return jsonify(result)
 
@@ -445,7 +499,7 @@ def toggle_deep():
     return jsonify({"deep_mode": enabled, "session_id": session_id})
 
 @app.route('/api/login', methods=['POST'])
-@limiter.limit("8 per minute")
+@limiter.limit("8 per minute", key_func=_user_rate_key)
 def login():
     """Login only — does NOT auto-register."""
     data = request.get_json()
@@ -463,7 +517,7 @@ def login():
     return jsonify({"session_id": session_id, "username": username})
 
 @app.route('/api/register', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("5 per minute", key_func=_user_rate_key)
 def register():
     """Register new user — username must be unique, password >= 6 chars."""
     data = request.get_json()
@@ -477,6 +531,8 @@ def register():
     if not session_id:
         if reason == 'exists':
             return jsonify({"error": "用户名已存在，请直接登录"}), 409
+        if reason == 'invalid_username':
+            return jsonify({"error": "用户名需为2-32位字母/数字/下划线/中文"}), 400
         return jsonify({"error": "注册失败，请重试"}), 500
     return jsonify({"session_id": session_id, "username": username})
 
@@ -491,7 +547,8 @@ def check_username():
 
 @app.route('/api/progress/<session_id>')
 def get_user_progress(session_id):
-    progress = get_progress(session_id)
+    pool = request.args.get('pool', 'practice')  # 练习/真题池进度各自独立（id 各自从 1 起）
+    progress = get_progress(session_id, pool=pool)
     total = len(progress)
     correct = sum(1 for p in progress if p['is_correct'])
     return jsonify({
@@ -527,9 +584,10 @@ def admin_panel_page():
     return send_from_directory(FRONTEND_DIR, 'admin_panel.html')
 
 @app.route('/api/admin/login', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("5 per minute", key_func=_admin_rate_key)
 def admin_login():
-    """管理后台登录（双重验证）：管理员账号密码（同步 admin_users）+ 统一管理员密钥"""
+    """管理后台登录（双重验证）：管理员账号密码（同步 admin_users）+ 个人密钥（一人一钥）。
+    登录成功签发 per-admin 会话 token"""
     import hmac
     data = request.get_json(silent=True) or {}
     username = (data.get('username') or '').strip()
@@ -541,39 +599,41 @@ def admin_login():
         if reason == 'not_found':
             return jsonify({"error": "管理员不存在，请先凭内推码注册"}), 404
         return jsonify({"error": "账号或密钥不正确"}), 401
-    # 第二重：统一管理员密钥（常量时间比较，防时序攻击；DB 存储，主管理员可更换）
-    if not key or not hmac.compare_digest(key, get_admin_key()):
+    # 第二重：该管理员的个人密钥（常量时间比较，防时序攻击；密钥被主管理员停用则拒绝登录）
+    if is_key_disabled(username):
+        return jsonify({"error": "密钥已被停用，请联系主管理员"}), 403
+    if not key or not hmac.compare_digest(key, get_personal_key(username) or ''):
         return jsonify({"error": "账号或密钥不正确"}), 401
-    return jsonify({"ok": True, "token": get_admin_key()})
+    return jsonify({"ok": True, "token": create_admin_session(username), "username": username})
 
 @app.route('/api/admin/stats')
-@limiter.limit("20 per minute")
+@limiter.limit("120 per minute", key_func=_admin_rate_key)
 def admin_stats():
-    if not _check_admin_token():
+    if not _require_admin():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     return jsonify(get_admin_stats())
 
 @app.route('/api/admin/users')
-@limiter.limit("20 per minute")
+@limiter.limit("120 per minute", key_func=_admin_rate_key)
 def admin_users():
     """管理后台用户列表：仅平台用户（不含管理员信息）"""
-    if not _check_admin_token():
+    if not _require_admin():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     return jsonify(get_admin_users())
 
 @app.route('/api/admin/accounts')
-@limiter.limit("20 per minute")
+@limiter.limit("120 per minute", key_func=_admin_rate_key)
 def admin_accounts():
     """管理员面板账号列表：平台用户 + 管理员（role 区分，供密码管理）"""
-    if not _check_admin_token():
+    if not _require_admin():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     return jsonify(get_admin_accounts())
 
 @app.route('/api/admin/user-progress')
-@limiter.limit("30 per minute")
+@limiter.limit("120 per minute", key_func=_admin_rate_key)
 def admin_user_progress():
     """管理员查看指定用户的答题记录摘要（?session_id=xxx）"""
-    if not _check_admin_token():
+    if not _require_admin():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     session_id = request.args.get('session_id', '').strip()
     if not session_id:
@@ -582,7 +642,7 @@ def admin_user_progress():
 
 # ---- 管理员账号体系（内推码注册 + 登录） ----
 @app.route('/api/admin/auth-register', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("5 per minute", key_func=_admin_rate_key)
 def admin_auth_register():
     """管理员注册：内推码 + 用户名唯一 + 密码规则与平台一致"""
     data = request.get_json(silent=True) or {}
@@ -600,11 +660,15 @@ def admin_auth_register():
     if not ok:
         if reason == 'exists':
             return jsonify({"error": "用户名已存在"}), 409
+        if reason == 'invalid_username':
+            return jsonify({"error": "用户名需为2-32位字母/数字/下划线/中文"}), 400
         return jsonify({"error": "注册失败，请重试"}), 500
-    return jsonify({"ok": True, "token": get_admin_key(), "username": username})
+    # 一人一钥：注册即签发专属个人密钥（仅本次响应返回一次，请妥善保存）
+    return jsonify({"ok": True, "token": create_admin_session(username), "username": username,
+                    "key": get_personal_key(username)})
 
 @app.route('/api/admin/auth-login', methods=['POST'])
-@limiter.limit("8 per minute")
+@limiter.limit("8 per minute", key_func=_admin_rate_key)
 def admin_auth_login():
     """管理员账号登录"""
     data = request.get_json(silent=True) or {}
@@ -617,34 +681,39 @@ def admin_auth_login():
         if reason == 'not_found':
             return jsonify({"error": "管理员不存在"}), 404
         return jsonify({"error": "密码错误"}), 401
-    return jsonify({"ok": True, "token": get_admin_key(), "username": username})
+    # 停用拦截：密钥被主管理员停用后，账号登录同样拒绝（防绕过 kill switch）
+    if is_key_disabled(username):
+        return jsonify({"error": "密钥已被停用，请联系主管理员"}), 403
+    return jsonify({"ok": True, "token": create_admin_session(username), "username": username})
 
 @app.route('/api/admin/auth-check-username')
-@limiter.limit("20 per minute")
+@limiter.limit("20 per minute", key_func=_admin_rate_key)
 def admin_auth_check_username():
     """管理员用户名占用预检（注册时防重复）"""
     name = request.args.get('name', '').strip()
     return jsonify({"exists": check_admin_username_exists(name) if name else False})
 
 @app.route('/api/admin/colleagues')
-@limiter.limit("30 per minute")
+@limiter.limit("120 per minute", key_func=_admin_rate_key)
 def admin_colleagues():
-    """我的同事：其他管理员的用户名、最后上线时间与是否主管理员（?me=排除自己）
-    响应同时携带 me（当前管理员个人资料），前端据此判断是否为主管理员"""
-    if not _check_admin_token():
+    """我的同事：其他管理员的用户名、最后上线时间与是否主管理员
+    当前管理员身份由 Bearer 会话 token 解析（C2 重构：不再信任 ?me= 自报）
+    一人一钥：主管理员视角额外附带同事的个人密钥与停用标记（监控）"""
+    admin = _require_admin()
+    if not admin:
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
-    me = request.args.get('me', '').strip()
     return jsonify({
-        "me": get_admin_profile(me) if me else None,
-        "colleagues": get_admin_colleagues(exclude_username=me or None)
+        "me": get_admin_profile(admin),
+        "colleagues": get_admin_colleagues(exclude_username=admin, include_keys=is_primary_admin(admin))
     })
 
 @app.route('/api/admin/user-reset', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit("60 per minute", key_func=_admin_rate_key)
 def admin_user_reset():
-    """管理员重置密码（Bearer 鉴权）。平台用户：任意管理员可重置；管理员账号：仅主管理员可重置
-    （防互相改密，operator 参数声明操作者）"""
-    if not _check_admin_token():
+    """管理员重置密码（Bearer 会话 token 鉴权）。平台用户：任意管理员可重置；管理员账号：仅主管理员可重置
+    （防互相改密；操作者身份由 token 解析，C2 重构后不再信任自报 operator）"""
+    admin = _require_admin()
+    if not admin:
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     data = request.get_json(silent=True) or {}
     username = (data.get('username') or '').strip()
@@ -653,7 +722,7 @@ def admin_user_reset():
         return jsonify({"error": "缺少参数"}), 400
     if len(new_password) < 8 or len(new_password) > 64:
         return jsonify({"error": "密码需为8-64个字符"}), 400
-    if _account_kind(username) == 'admin' and not _is_primary_operator(data):
+    if _account_kind(username) == 'admin' and not is_primary_admin(admin):
         return jsonify({"error": "仅主管理员可修改管理员密码"}), 403
     ok, reason = reset_user_password(username, new_password)
     if not ok:
@@ -661,51 +730,102 @@ def admin_user_reset():
     return jsonify({"ok": True})
 
 @app.route('/api/admin/key')
-@limiter.limit("30 per minute")
+@limiter.limit("120 per minute", key_func=_admin_rate_key)
 def admin_key():
-    """返回当前统一管理员密钥（面板展示/复制用；DB 实时一致）"""
-    if not _check_admin_token():
+    """返回当前管理员的个人密钥（面板展示/复制用；一人一钥，本人密钥）"""
+    admin = _require_admin()
+    if not admin:
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
-    return jsonify({"key": get_admin_key()})
+    return jsonify({"key": get_personal_key(admin), "key_disabled": bool(is_key_disabled(admin))})
 
 @app.route('/api/admin/key-update', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit("30 per minute", key_func=_admin_rate_key)
 def admin_key_update():
-    """主管理员更换统一管理员密钥：新密钥立即对全部管理员（子管理员）生效"""
-    if not _check_admin_token():
+    """更换个人密钥（自助）：新密钥仅对当前管理员生效；
+    更换后注销本人全部会话（含当前），需重新登录；密钥被停用时禁止更换"""
+    admin = _require_admin()
+    if not admin:
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    if is_key_disabled(admin):
+        return jsonify({"error": "密钥已被停用，请联系主管理员"}), 403
     data = request.get_json(silent=True) or {}
-    if not _is_primary_operator(data):
-        return jsonify({"error": "仅主管理员可更换统一密钥"}), 403
     new_key = (data.get('new_key') or '').strip()
     if len(new_key) < 8 or len(new_key) > 64:
         return jsonify({"error": "密钥需为8-64个字符"}), 400
-    if new_key == get_admin_key():
+    if new_key == get_personal_key(admin):
         return jsonify({"error": "新密钥与当前密钥相同"}), 400
-    set_admin_key(new_key)
+    set_personal_key(admin, new_key)
+    revoke_admin_sessions(admin)   # 换密钥后该管理员旧会话全部失效，需重新登录
     return jsonify({"ok": True, "key": new_key})
 
-@app.route('/api/admin/referral-codes')
-@limiter.limit("20 per minute")
-def admin_referral_codes():
-    """主管理员查看全部内推码（?me= 声明操作者；与注册校验实时同步）"""
-    if not _check_admin_token():
+@app.route('/api/admin/key-toggle', methods=['POST'])
+@limiter.limit("30 per minute", key_func=_admin_rate_key)
+def admin_key_toggle():
+    """主管理员停用/启用某管理员的个人密钥（风险管控）：
+    停用 = 立即注销该管理员全部会话（强制下线）+ gate 与账号登录均被拒绝；禁止停用主管理员本人"""
+    admin = _require_admin()
+    if not admin:
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
-    me = request.args.get('me', '').strip()
-    profile = get_admin_profile(me)
-    if not profile or not profile.get('is_primary'):
+    if not is_primary_admin(admin):
+        return jsonify({"error": "仅主管理员可停用密钥"}), 403
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    disabled = bool(data.get('disabled'))
+    if not username:
+        return jsonify({"error": "缺少参数"}), 400
+    if username == admin:
+        return jsonify({"error": "不能停用主管理员自身的密钥"}), 400
+    if not get_admin_profile(username):
+        return jsonify({"error": "管理员不存在"}), 404
+    set_key_disabled(username, disabled)
+    if disabled:
+        revoke_admin_sessions(username)   # 停用即强制下线
+    return jsonify({"ok": True, "username": username, "key_disabled": disabled})
+
+@app.route('/api/admin/key-reset', methods=['POST'])
+@limiter.limit("30 per minute", key_func=_admin_rate_key)
+def admin_key_reset():
+    """主管理员一键重置某管理员的个人密钥：生成新密钥（旧密钥立即失效）、
+    自动解除停用并注销其全部会话；禁止对主管理员本人操作"""
+    admin = _require_admin()
+    if not admin:
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    if not is_primary_admin(admin):
+        return jsonify({"error": "仅主管理员可重置密钥"}), 403
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    if not username:
+        return jsonify({"error": "缺少参数"}), 400
+    if username == admin:
+        return jsonify({"error": "不能重置主管理员自身的密钥，请使用更换密钥"}), 400
+    if not get_admin_profile(username):
+        return jsonify({"error": "管理员不存在"}), 404
+    new_key = reset_personal_key(username)
+    set_key_disabled(username, False)   # 重置即代表重新启用（新密钥可用）
+    revoke_admin_sessions(username)
+    return jsonify({"ok": True, "username": username, "key": new_key})
+
+@app.route('/api/admin/referral-codes')
+@limiter.limit("120 per minute", key_func=_admin_rate_key)
+def admin_referral_codes():
+    """主管理员查看全部内推码（操作者身份由 token 解析；与注册校验实时同步）"""
+    admin = _require_admin()
+    if not admin:
+        return jsonify({"error": "未授权，请提供管理员 Token"}), 401
+    if not is_primary_admin(admin):
         return jsonify({"error": "仅主管理员可查看内推码"}), 403
     return jsonify({"codes": get_referral_codes()})
 
 @app.route('/api/admin/referral-add', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit("60 per minute", key_func=_admin_rate_key)
 def admin_referral_add():
     """主管理员新增内推码（注册校验即时生效）"""
-    if not _check_admin_token():
+    admin = _require_admin()
+    if not admin:
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
-    data = request.get_json(silent=True) or {}
-    if not _is_primary_operator(data):
+    if not is_primary_admin(admin):
         return jsonify({"error": "仅主管理员可新增内推码"}), 403
+    data = request.get_json(silent=True) or {}
     code = (data.get('code') or '').strip()
     note = (data.get('note') or '').strip()
     ok, reason = add_referral_code(code, note)
@@ -716,14 +836,15 @@ def admin_referral_add():
     return jsonify({"ok": True, "codes": get_referral_codes()})
 
 @app.route('/api/admin/referral-delete', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit("60 per minute", key_func=_admin_rate_key)
 def admin_referral_delete():
     """主管理员删除内推码（最后一个不允许删除，保证注册入口存在）"""
-    if not _check_admin_token():
+    admin = _require_admin()
+    if not admin:
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
-    data = request.get_json(silent=True) or {}
-    if not _is_primary_operator(data):
+    if not is_primary_admin(admin):
         return jsonify({"error": "仅主管理员可删除内推码"}), 403
+    data = request.get_json(silent=True) or {}
     code = (data.get('code') or '').strip()
     if not code:
         return jsonify({"error": "缺少参数"}), 400
@@ -735,17 +856,18 @@ def admin_referral_delete():
     return jsonify({"ok": True, "codes": get_referral_codes()})
 
 @app.route('/api/admin/password-rollback', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit("60 per minute", key_func=_admin_rate_key)
 def admin_password_rollback():
-    """回退密码到上一个版本（历史保留 3 条 → 最多回退 3 次；Bearer 鉴权）。
+    """回退密码到上一个版本（历史保留 3 条 → 最多回退 3 次；Bearer 会话 token 鉴权）。
     管理员账号回退同样仅限主管理员（与 user-reset 一致）"""
-    if not _check_admin_token():
+    admin = _require_admin()
+    if not admin:
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     data = request.get_json(silent=True) or {}
     username = (data.get('username') or '').strip()
     if not username:
         return jsonify({"error": "缺少参数"}), 400
-    if _account_kind(username) == 'admin' and not _is_primary_operator(data):
+    if _account_kind(username) == 'admin' and not is_primary_admin(admin):
         return jsonify({"error": "仅主管理员可回退管理员密码"}), 403
     ok, reason = rollback_user_password(username)
     if not ok:
@@ -753,11 +875,11 @@ def admin_password_rollback():
     return jsonify({"ok": True})
 
 @app.route('/api/admin/user-delete', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit("60 per minute", key_func=_admin_rate_key)
 def admin_user_delete():
-    """删除平台用户（Bearer 鉴权 + confirm 显式确认）。
+    """删除平台用户（Bearer 会话 token 鉴权 + confirm 显式确认）。
     同步删除该用户的答题记录/掌握度/旅程/诊断结果/密码历史；管理员账号不允许删除"""
-    if not _check_admin_token():
+    if not _require_admin():
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     data = request.get_json(silent=True) or {}
     username = (data.get('username') or '').strip()
@@ -773,20 +895,20 @@ def admin_user_delete():
     return jsonify({"ok": True})
 
 @app.route('/api/admin/admin-delete', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit("60 per minute", key_func=_admin_rate_key)
 def admin_admin_delete():
-    """删除管理员账号（Bearer 鉴权 + confirm 显式确认 + 仅主管理员可删其他管理员）。
-    同步删除该管理员的密码修改历史；删除后其无法再登录管理后台"""
-    if not _check_admin_token():
+    """删除管理员账号（Bearer 会话 token 鉴权 + confirm 显式确认 + 仅主管理员可删其他管理员）。
+    操作者身份由 token 解析（C2 重构）；同步删除该管理员的密码修改历史与会话；删除后其无法再登录"""
+    admin = _require_admin()
+    if not admin:
         return jsonify({"error": "未授权，请提供管理员 Token"}), 401
     data = request.get_json(silent=True) or {}
     username = (data.get('username') or '').strip()
-    operator = (data.get('operator') or '').strip()
     if not username:
         return jsonify({"error": "缺少参数"}), 400
     if not data.get('confirm'):
         return jsonify({"error": "删除操作需显式确认（confirm=true）"}), 400
-    ok, reason = delete_admin(username, operator)
+    ok, reason = delete_admin(username, admin)
     if not ok:
         if reason == 'not_primary':
             return jsonify({"error": "仅主管理员可删除管理员账号"}), 403
@@ -801,4 +923,14 @@ if __name__ == '__main__':
     init_db()
     seed_questions()
     seed_knowledge_graph()
-    app.run(debug=True, port=5000)
+    # 本地调试用 Werkzeug 开发服务器（FLASK_DEBUG=1，含热重载；调试器在暴露网络环境可致 RCE，仅限本机）
+    if os.environ.get('FLASK_DEBUG') == '1':
+        app.run(debug=True, port=5000)
+        sys.exit(0)
+    # 正式运行用 waitress 生产级服务：多线程 + 高连接上限，课堂多人同时涌入也不瘫痪
+    # （Windows 下 gunicorn 不可用，waitress 是正解；多进程跑 SQLite 反而增加写锁争用，故单进程多线程）
+    try:
+        from waitress import serve
+    except ImportError:
+        sys.exit('waitress 未安装：请先执行 pip install -r requirements.txt 后重试')
+    serve(app, host='0.0.0.0', port=5000, threads=16, connection_limit=512)

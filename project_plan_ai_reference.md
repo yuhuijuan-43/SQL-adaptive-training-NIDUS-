@@ -107,10 +107,11 @@
 | `journey_state` | 用户自适应旅程的当前状态（阶段、当前节点、队列等） | ⭐⭐ |
 | `users` | 用户注册信息（用户名 + bcrypt 密码哈希） | ⭐ |
 | `diagnostic_results` | 摸底测试结果 | ⭐ |
-| `admin_users` | 管理员账号（内推码注册，用户名全局唯一，last_login_at，is_primary 主管理员标记） | ⭐⭐ |
+| `admin_users` | 管理员账号（内推码注册，用户名全局唯一，last_login_at，is_primary 主管理员标记；**personal_key 个人密钥 + key_disabled 停用标记，一人一钥**） | ⭐⭐ |
 | `referral_codes` | 内推码（主管理员可查看/新增/删除，注册校验实时读取；默认 NIDUS_Agent 惰性种入） | ⭐⭐ |
-| `admin_settings` | 平台级设置（统一管理员密钥 admin_key，主管理员可更换；未设置时 env ADMIN_TOKEN 兜底） | ⭐⭐ |
+| `admin_settings` | 平台级设置（admin_key 统一密钥已废弃，鉴权不再使用；历史数据保留） | ⭐⭐ |
 | `user_password_history` | 密码历史（重置前入档，每账号最多 3 条，kind 区分用户/管理员） | ⭐⭐ |
+| `admin_sessions` | 管理员会话 token（per-admin：登录/注册签发，30 天 TTL；更换/重置/停用密钥、管理员改密即注销） | ⭐⭐ |
 
 ### 3.3 知识图谱（已重构）
 
@@ -219,9 +220,9 @@ root [SQL知识图谱]
 | `/index_glass.html` | 门户页直接访问 |
 | `/nidus_logo.png` | 品牌 logo（透明底 PNG） |
 | `/admin` | 管理后台（统计 + 用户明细含密码管理） |
-| `/admin-gate` | 管理后台登录门（双重验证：管理员账号密码 + 统一密钥） |
-| `/admin-auth` | 管理员账号登录/注册（内推码，页面不显示码值） |
-| `/admin-panel` | 管理员自身页面（统一密钥 + 我的同事） |
+| `/admin-gate` | 管理后台登录门（双重验证：管理员账号密码 + 个人密钥，一人一钥） |
+| `/admin-auth` | 管理员账号登录/注册（内推码，页面不显示码值；注册成功一次性展示个人密钥） |
+| `/admin-panel` | 管理员自身页面（我的密钥 + 我的同事；主管理员可见同事密钥列并支持停用/启用/重置） |
 | `/knowledge-map` | 知识图谱可视化页 |
 | `/diagnostic-page` | 摸底诊断页（前端入口已移除，路由保留） |
 | `/basic-select` | 基础选择题练习页 |
@@ -255,18 +256,20 @@ root [SQL知识图谱]
 | `/api/admin/users` | GET | 后台用户列表（仅平台用户，不含管理员） |
 | `/api/admin/accounts` | GET | 用户+管理员合并列表（role 区分，密码管理用） |
 | `/api/admin/user-progress` | GET | 单用户答题记录摘要（?session_id=） |
-| `/api/admin/colleagues` | GET | 我的同事（用户名 + 最后上线时间 + is_primary + rollback_count，?me= 排除自己，响应含 me 资料） |
-| `/api/admin/key` | GET | 当前统一管理员密钥（面板展示/复制） |
-| `/api/admin/login` | POST | 管理后台登录门：账号密码 + 统一密钥双重验证 |
-| `/api/admin/auth-register` | POST | 管理员内推码注册（403 错码 / 409 重名 / 400 弱密码） |
-| `/api/admin/auth-login` | POST | 管理员账号登录（更新最后上线时间） |
+| `/api/admin/colleagues` | GET | 我的同事（用户名 + 最后上线时间 + is_primary + rollback_count，响应含 me 资料；当前身份由 Bearer 会话 token 解析，C2 后不再信任 ?me= 自报；**主管理员视角额外附带同事 personal_key + key_disabled 监控**） |
+| `/api/admin/key` | GET | 当前管理员的个人密钥 + key_disabled（面板展示/复制，一人一钥） |
+| `/api/admin/login` | POST | 管理后台登录门：账号密码 + 该管理员的个人密钥双重验证（一人一钥）；密钥被停用 → 403；登录成功签发 per-admin 会话 token |
+| `/api/admin/auth-register` | POST | 管理员内推码注册（403 错码 / 409 重名 / 400 弱密码 / 400 非法用户名）；注册即签发个人密钥（响应含 key，仅展示一次）+ per-admin 会话 token |
+| `/api/admin/auth-login` | POST | 管理员账号登录（更新最后上线时间）；密钥被停用 → 403（防绕过 kill switch）；签发 per-admin 会话 token |
 | `/api/admin/auth-check-username` | GET | 管理员用户名预检（含平台用户同名） |
-| `/api/admin/user-reset` | POST | 重置密码（用户/管理员自动识别，旧密码入历史；管理员账号仅主管理员可重置，需 operator 参数） |
-| `/api/admin/password-rollback` | POST | 回退密码（最多 3 次，kind 隔离；管理员账号仅主管理员可回退） |
+| `/api/admin/user-reset` | POST | 重置密码（用户/管理员自动识别，旧密码入历史；管理员账号仅主管理员可重置，身份由 token 解析；管理员被重置后其会话全部注销） |
+| `/api/admin/password-rollback` | POST | 回退密码（最多 3 次，kind 隔离；管理员账号仅主管理员可回退；管理员被回退后其会话全部注销） |
 | `/api/admin/user-delete` | POST | 删除平台用户（confirm=true 显式确认；同步删除答题/掌握度/旅程/诊断/密码历史；管理员账号拒绝） |
-| `/api/admin/admin-delete` | POST | 删除管理员（仅主管理员 + confirm + operator；不能删自己/主管理员；同步清密码历史） |
-| `/api/admin/key-update` | POST | 主管理员更换统一管理员密钥（8-64 字符；更换后对全部管理员生效，返回新 key） |
-| `/api/admin/referral-codes` | GET | 主管理员查看全部内推码（?me=；码+备注+创建时间） |
+| `/api/admin/admin-delete` | POST | 删除管理员（仅主管理员 + confirm，身份由 token 解析；不能删自己/主管理员；同步清密码历史与会话） |
+| `/api/admin/key-update` | POST | **自助**更换本人个人密钥（8-64 字符、不得与当前相同；密钥被停用时禁止；更换后注销本人全部会话，需重新登录） |
+| `/api/admin/key-toggle` | POST | **主管理员**停用/启用同事密钥（`{username, disabled}`；不能对本人操作；停用 = 立即注销其全部会话 + 禁止 gate/账号登录，可恢复） |
+| `/api/admin/key-reset` | POST | **主管理员**一键重置同事密钥（生成新密钥返回 key，旧密钥立即失效、自动解除停用、注销其全部会话；不能对本人操作） |
+| `/api/admin/referral-codes` | GET | 主管理员查看全部内推码（码+备注+创建时间；身份由 token 解析，C2 后不再信任 ?me= 自报） |
 | `/api/admin/referral-add` | POST | 主管理员新增内推码（注册校验即时生效；重复 409） |
 | `/api/admin/referral-delete` | POST | 主管理员删除内推码（最后一个 409 不允许删；删除后注册校验即时失效） |
 
@@ -396,7 +399,8 @@ SQL自适应训练/
 ├── docs/
 │   ├── format_spec.md             ← 前端渲染格式规范（CSS + 渲染流水线）
 │   ├── knowledge_map.md           ← 知识图谱节点树文档
-│   └── 题目格式规范.md             ← 题目格式规范（早期版本）
+│   ├── 题目格式规范.md             ← 题目格式规范（早期版本）
+│   └── 安全审计记录.md             ← 安全审计记录（C2/L2 已修复，C1 部分化解，M3 待讨论）
 │
 ├── ngrok/
 │   └── ngrok.exe                  ← 内网穿透工具
@@ -443,16 +447,18 @@ SQL自适应训练/
 | 前端刷题页（双模式） | ✅ 完成 | `frontend/index.html` |
 | 登录系统（bcrypt + 强度检测 + 记住输入） | ✅ 完成 | `frontend/login_glass.html` + `/api/login` `/api/register` |
 | 登录保护（游客禁止读题） | ✅ 完成 | `app.py` before_request 守卫 |
-| 摸底诊断测试 | ✅ 完成 | `frontend/diagnostic.html` + `/api/diagnostic` |
+| 摸底诊断测试 | ✅ 完成 | `frontend/diagnostic.html` + `/api/diagnostic`（前端入口已下线，接口保留） |
+| **摸底成绩服务端重算（L2）** | ✅ 完成（2026-08-05） | `app.py` → `diagnostic_complete()`：选择题选项文本比对 + 填空题 judge_sql 实判（答案随提交携带），客户端自报 is_correct 不再被信任 |
 | 管理后台（玻璃拟态） | ✅ 完成 | `frontend/admin.html` + `/api/admin/*` |
+| **管理后台鉴权重构（C2：per-admin 会话 token）** | ✅ 完成（2026-08-05） | `auth.py` + `db.py`（admin_sessions）+ `app.py`：共享密钥不再作为 Bearer，操作者身份由 token 解析（废弃 operator/?me= 自报）；换密钥清全部会话；管理员改密（重置/回退）注销其会话；注册用户名白名单；管理页防注入（索引引用 + escapeHtml）；FLASK_DEBUG 默认关闭 |
 | 管理后台登录门（双重验证） | ✅ 完成 | `frontend/admin_gate.html` + `/api/admin/login` |
 | 管理员账号体系（内推码注册） | ✅ 完成 | `frontend/admin_auth.html` + `/api/admin/auth-*` |
 | 管理员自身页面（密钥 + 同事） | ✅ 完成 | `frontend/admin_panel.html` + `/api/admin/colleagues` `/key` |
 | 密码管理（重置 + 回退 3 次 + 复制） | ✅ 完成 | `/api/admin/user-reset` `/password-rollback` + 历史表 |
-| **主管理员体系** | ✅ 完成 | `admin_users.is_primary`（Yuhuijuan）；仅主管理员可重置/回退/删除管理员账号（`operator` 参数校验，403 拦截）；同事接口返回 `me` + `is_primary` + `rollback_count`，面板仅主管理员可见操作列 |
+| **主管理员体系** | ✅ 完成 | `admin_users.is_primary`（Yuhuijuan）；仅主管理员可重置/回退/删除管理员账号（C2 后身份由 Bearer 会话 token 解析，废弃 `operator` 自报，403 拦截）；同事接口返回 `me` + `is_primary` + `rollback_count`，面板仅主管理员可见操作列 |
 | **删除用户** | ✅ 完成 | `/api/admin/user-delete`（confirm 显式确认；同步删答题/掌握度/旅程/诊断/密码历史）+ `admin.html` 警告→确认→删除完毕三步流 |
-| **删除管理员** | ✅ 完成 | `/api/admin/admin-delete`（仅主管理员 + confirm + operator；不能删自己/主管理员；同步清密码历史） |
-| **更换统一密钥** | ✅ 完成 | `/api/admin/key-update`（主管理员更换管理平台密码，更换后对所有管理员生效） |
+| **删除管理员** | ✅ 完成 | `/api/admin/admin-delete`（仅主管理员 + confirm，身份由 token 解析；不能删自己/主管理员；同步清密码历史与会话） |
+| **一人一钥（个人密钥体系）** | ✅ 完成（2026-08-05） | `admin_users.personal_key/key_disabled`：每位管理员（含主管理员）注册即签发专属密钥，登录门双重验证改为「账号密码 + 个人密钥」；密钥自助更换（`/api/admin/key-update`，更换后本人会话注销）；主管理员在「我的同事」查看同事密钥（`colleagues` 附带 personal_key/key_disabled）、停用/启用（`/api/admin/key-toggle`，停用 = 强制下线 + 禁止登录）、一键重置（`/api/admin/key-reset`）；注册成功一次性展示密钥（`admin_auth.html`） |
 | **内推码管理** | ✅ 完成 | `/api/admin/referral-codes` `-add` `-delete`（主管理员查看/新增/删除，注册校验实时同步） |
 | **真实 SQL 判题引擎** | ✅ 完成 | `backend/sql_judge.py`（内存库真实执行 + 结果集比对） |
 | 后端分层架构 | ✅ 完成 | `db.py` / `repositories.py` / `auth.py` / `engine.py` / `seeding.py` |
@@ -465,7 +471,7 @@ SQL自适应训练/
 | 题库（515 练习 + 50 真题，含答案） | ✅ 完成 | `questions.json` + `exam_questions.json` |
 | MySQL→SQLite 翻译层 | ✅ 完成 | 批量生成预期输出脚本 |
 | 选择题 + 填空题混合 | ✅ 完成 | 457 practice + 50 exam |
-| **单元测试 / 集成测试** | ✅ 完成 | `backend/tests/`（pytest 111 用例，临时 SQLite 隔离；含 15 个图谱点亮引擎用例） |
+| **单元测试 / 集成测试** | ✅ 完成 | `backend/tests/`（pytest 123 用例，临时 SQLite 隔离；含 15 个图谱点亮引擎用例，C2 鉴权重构后全绿） |
 | **git 版本控制** | ✅ 完成 | 基线快照 + 按功能拆分提交 |
 
 ### ❌ 未实现（设计文档中规划）
@@ -564,6 +570,7 @@ SQL自适应训练/
 | 前端渲染格式规范 | `docs/format_spec.md` |
 | 知识图谱节点树 | `docs/knowledge_map.md` |
 | 近期改动汇总 | `modification.md` |
+| 安全审计记录 | `docs/安全审计记录.md` |
 | API 端点列表 | `文件/API list.md` |
 | 框架 Agent 指引 | `文件/framework_agent guidance.md` |
 | 调研报告 | `文件/调研全面版.html` |

@@ -185,7 +185,7 @@ body {
   <div class="auth-card glass fade-up">
     <div class="auth-head">
       <div class="auth-title" data-i18n-html="auth_title">管理员<span class="grad">登录</span></div>
-      <div class="auth-sub" data-i18n="auth_sub">双重验证：管理员账号密码 + 统一管理员密钥</div>
+      <div class="auth-sub" data-i18n="auth_sub">双重验证：管理员账号密码 + 个人密钥</div>
     </div>
 
     <form onsubmit="doAdminLogin(event)" autocomplete="off">
@@ -207,7 +207,7 @@ body {
         <div class="hint" id="admPassHint"></div>
       </div>
       <div class="field">
-        <label for="admKey" data-i18n="label_key">统一管理员密钥</label>
+        <label for="admKey" data-i18n="label_key">个人密钥</label>
         <div class="inp-wrap has-right">
           <span class="u-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></span>
           <input id="admKey" type="password" placeholder="••••••••••••" autocomplete="off" data-i18n-placeholder="ph_key">
@@ -243,13 +243,13 @@ const I18N = {
   nav_about: { zh: '了解我们', en: 'About','zh_tw':'了解我們','ja':'私たちについて','hi':'हमारे बारे में','pt':'Sobre' },
   nav_enter: { zh: '进入平台', en: 'Enter','zh_tw':'進入平台','ja':'プラットフォームに入る','hi':'प्लेटफ़ॉर्म में प्रवेश करें','pt':'Entrar' },
   auth_title: { zh: '管理员<span class="grad">登录</span>', en: 'Admin <span class="grad">Login</span>','zh_tw':'管理員<span class="grad">登入</span>','ja':'管理者<span class="grad">ログイン</span>','hi':'एडमिन <span class="grad">लॉगिन</span>','pt':'Login do <span class="grad">Administrador</span>' },
-  auth_sub: { zh: '双重验证：管理员账号密码 + 统一管理员密钥', en: 'Double verification: admin account password + Unified Admin Key','zh_tw':'雙重驗證：管理員帳號密碼 + 統一管理員密鑰','ja':'二重認証：管理者アカウントのパスワード + 統一管理者キー','hi':'दोहरी सत्यापन: एडमिन खाता पासवर्ड + यूनिफाइड एडमिन कुंजी','pt':'Verificação dupla: senha da conta de administrador + Chave de Administrador Unificada' },
+  auth_sub: { zh: '双重验证：管理员账号密码 + 个人密钥', en: 'Double verification: admin account password + personal key','zh_tw':'雙重驗證：管理員帳號密碼 + 個人密鑰','ja':'二重認証：管理者アカウントのパスワード + 個人キー','hi':'दोहरी सत्यापन: एडमिन खाता पासवर्ड + निजी कुंजी','pt':'Verificação dupla: senha da conta de administrador + chave pessoal' },
   label_user: { zh: '管理员用户名', en: 'Admin Username','zh_tw':'管理員使用者名稱','ja':'管理者ユーザー名','hi':'एडमिन उपयोगकर्ता नाम','pt':'Nome de usuário do administrador' },
   label_pass: { zh: '管理员密码', en: 'Admin Password','zh_tw':'管理員密碼','ja':'管理者パスワード','hi':'एडमिन पासवर्ड','pt':'Senha do administrador' },
-  label_key: { zh: '统一管理员密钥', en: 'Unified Admin Key','zh_tw':'統一管理員密鑰','ja':'統一管理者キー','hi':'यूनिफाइड एडमिन कुंजी','pt':'Chave de Administrador Unificada' },
+  label_key: { zh: '个人密钥', en: 'Personal Key','zh_tw':'個人密鑰','ja':'個人キー','hi':'निजी कुंजी','pt':'Chave pessoal' },
   ph_user: { zh: '请输入管理员用户名', en: 'Enter admin username','zh_tw':'請輸入管理員使用者名稱','ja':'管理者ユーザー名を入力してください','hi':'एडमिन उपयोगकर्ता नाम दर्ज करें','pt':'Digite o nome de usuário do administrador' },
   ph_pass: { zh: '请输入管理员密码', en: 'Enter admin password','zh_tw':'請輸入管理員密碼','ja':'管理者パスワードを入力してください','hi':'एडमिन पासवर्ड दर्ज करें','pt':'Digite a senha do administrador' },
-  ph_key: { zh: '请输入统一管理员密钥', en: 'Enter the admin key','zh_tw':'請輸入統一管理員密鑰','ja':'統一管理者キーを入力してください','hi':'यूनिफाइड एडमिन कुंजी दर्ज करें','pt':'Digite a chave do administrador' },
+  ph_key: { zh: '请输入个人密钥', en: 'Enter your personal key','zh_tw':'請輸入個人密鑰','ja':'個人キーを入力してください','hi':'अपनी निजी कुंजी दर्ज करें','pt':'Digite sua chave pessoal' },
   show_key: { zh: '显示密钥', en: 'Show key','zh_tw':'顯示密鑰','ja':'キーを表示','hi':'कुंजी दिखाएं','pt':'Mostrar chave' },
   hide_key: { zh: '隐藏密钥', en: 'Hide key','zh_tw':'隱藏密鑰','ja':'キーを隠す','hi':'कुंजी छिपाएं','pt':'Ocultar chave' },
   show_pwd: { zh: '显示密码', en: 'Show password','zh_tw':'顯示密碼','ja':'パスワードを表示','hi':'पासवर्ड दिखाएं','pt':'Mostrar senha' },
@@ -259,7 +259,8 @@ const I18N = {
   footer: { zh: '© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台', en: '© 2026 SQL Adaptive Training · A personalized SQL learning platform','zh_tw':'© 2026 SQL 自適應訓練 · 千人千面的 SQL 學習平台','ja':'© 2026 SQL適応型トレーニング · 一人ひとりに合わせたSQL学習プラットフォーム','hi':'© 2026 SQL अनुकूली प्रशिक्षण · हर किसी के लिए व्यक्तिगत SQL सीखने का मंच','pt':'© 2026 Treinamento Adaptativo SQL · Uma plataforma de aprendizagem SQL personalizada' },
   need_user: { zh: '请输入管理员用户名', en: 'Please enter the admin username','zh_tw':'請輸入管理員使用者名稱','ja':'管理者ユーザー名を入力してください','hi':'कृपया एडमिन उपयोगकर्ता नाम दर्ज करें','pt':'Por favor, digite o nome de usuário do administrador' },
   need_pass: { zh: '请输入管理员密码', en: 'Please enter the admin password','zh_tw':'請輸入管理員密碼','ja':'管理者パスワードを入力してください','hi':'कृपया एडमिन पासवर्ड दर्ज करें','pt':'Por favor, digite a senha do administrador' },
-  need_key: { zh: '请输入统一管理员密钥', en: 'Please enter the admin key','zh_tw':'請輸入統一管理員密鑰','ja':'統一管理者キーを入力してください','hi':'कृपया यूनिफाइड एडमिन कुंजी दर्ज करें','pt':'Por favor, digite a chave do administrador' },
+  need_key: { zh: '请输入个人密钥', en: 'Please enter your personal key','zh_tw':'請輸入個人密鑰','ja':'個人キーを入力してください','hi':'कृपया अपनी निजी कुंजी दर्ज करें','pt':'Por favor, digite sua chave pessoal' },
+  key_disabled: { zh: '密钥已被停用，请联系主管理员', en: 'Your key has been disabled — contact the primary admin','zh_tw':'密鑰已被停用，請聯絡主管理員','ja':'キーは無効化されています。プライマリ管理者に連絡してください','hi':'आपकी कुंजी अक्षम कर दी गई है — मुख्य एडमिन से संपर्क करें','pt':'Sua chave foi desativada — entre em contato com o administrador principal' },
   bad_creds: { zh: '账号或密钥不正确', en: 'Incorrect account or key','zh_tw':'帳號或密鑰不正確','ja':'アカウントまたはキーが正しくありません','hi':'खाता या कुंजी गलत है','pt':'Conta ou chave incorreta' },
   admin_notfound: { zh: '管理员不存在，请先凭内推码注册', en: 'Admin not found — register with a referral code first','zh_tw':'管理員不存在，請先憑內推碼註冊','ja':'管理者が見つかりません。紹介コードで登録してください','hi':'एडमिन मौजूद नहीं है, कृपया पहले रेफरल कोड से पंजीकरण करें','pt':'Administrador não encontrado — registre-se com um código de indicação primeiro' },
   too_many: { zh: '尝试过于频繁，请稍后再试', en: 'Too many attempts — try again later','zh_tw':'嘗試過於頻繁，請稍後再試','ja':'試行回数が多すぎます。後でもう一度お試しください','hi':'बहुत अधिक प्रयास, बाद में पुनः प्रयास करें','pt':'Muitas tentativas — tente novamente mais tarde' },
@@ -317,7 +318,7 @@ function toast(msg, type) {
   setTimeout(() => { tEl.classList.add('out'); setTimeout(() => tEl.remove(), 300); }, 3400);
 }
 
-/* ---- 提交验证（双重验证：账号密码 + 统一密钥） ---- */
+/* ---- 提交验证（双重验证：账号密码 + 个人密钥，一人一钥） ---- */
 async function doAdminLogin(e) {
   e.preventDefault();
   const username = $('admUser').value.trim();
@@ -338,6 +339,12 @@ async function doAdminLogin(e) {
     loading(false);
     if (r.status === 429) { toast('bad', t('too_many'), 'bad'); return; }
     if (!r.ok) {
+      if (r.status === 403) {
+        // 一人一钥：密钥被主管理员停用（风险管控），提示联系主管理员
+        setHint('admKeyHint', t('key_disabled'), 'err');
+        $('admKey').classList.add('err');
+        return;
+      }
       if (r.status === 404) {
         setHint('admUserHint', t('admin_notfound'), 'err');
         $('admUser').classList.add('err');

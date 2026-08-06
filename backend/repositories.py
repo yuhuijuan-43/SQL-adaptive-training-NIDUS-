@@ -110,6 +110,12 @@ def get_question_by_id(qid):
     row = conn.execute('SELECT * FROM questions WHERE id = ?', (qid,)).fetchone()
     return dict(row) if row else None
 
+def get_exam_question_by_id(qid):
+    """真题详情（exam_questions 表；与 questions 表 id 各自从 1 起，调用方须按池取）"""
+    conn = get_connection()
+    row = conn.execute('SELECT * FROM exam_questions WHERE id = ?', (qid,)).fetchone()
+    return dict(row) if row else None
+
 def is_mcq(question):
     """Check if a question is multiple-choice (has options)."""
     opts = question.get('options', '')
@@ -168,13 +174,13 @@ def get_questions_by_node_and_type(node_id, session_id, is_mcq_type, exclude_ids
     if exclude:
         placeholders = ','.join('?' for _ in exclude)
         query = f'''{base_query}
-        AND q.id NOT IN (SELECT question_id FROM user_progress WHERE session_id=? AND is_correct=1)
+        AND q.id NOT IN (SELECT question_id FROM user_progress WHERE session_id=? AND pool='practice' AND is_correct=1)
         AND q.id NOT IN ({placeholders})
         ORDER BY q.difficulty LIMIT 1'''
         params = [node_id, session_id] + exclude
     else:
         query = f'''{base_query}
-        AND q.id NOT IN (SELECT question_id FROM user_progress WHERE session_id=? AND is_correct=1)
+        AND q.id NOT IN (SELECT question_id FROM user_progress WHERE session_id=? AND pool='practice' AND is_correct=1)
         ORDER BY q.difficulty LIMIT 1'''
         params = [node_id, session_id]
     row = conn.execute(query, params).fetchone()
@@ -200,8 +206,26 @@ def get_graph():
     global _graph_cache
     if _graph_cache is None:
         conn = get_connection()
-        nodes = [dict(r) for r in conn.execute('SELECT * FROM knowledge_nodes ORDER BY level,id').fetchall()]
+        nodes = [dict(r) for r in conn.execute('SELECT * FROM knowledge_nodes').fetchall()]
         edges = [dict(r) for r in conn.execute('SELECT * FROM knowledge_edges').fetchall()]
+        # 按图谱声明顺序排序（枝→叶→根，2026-08-05 改为 DML→SELECT→函数→子查询→表连接→约束→DDL）
+        try:
+            from seeding import OFFICIAL_TAGS, TOP_NODE_ORDER
+        except Exception:
+            OFFICIAL_TAGS, TOP_NODE_ORDER = {}, None
+        top_rank = {tid: i for i, tid in enumerate(TOP_NODE_ORDER or ())}
+        leaf_rank = {tid: j for top, (_, leaves) in OFFICIAL_TAGS.items() for j, (tid, _, _) in enumerate(leaves)}
+        def _rank(n):
+            if n['id'] == 'root':
+                return (0, 0, 0)
+            if n['id'] in top_rank:
+                return (1, top_rank[n['id']], 0)
+            if n['id'] in leaf_rank:
+                top_id = next((t for t, (_, leaves) in OFFICIAL_TAGS.items()
+                               if n['id'] in [l[0] for l in leaves]), '')
+                return (2, top_rank.get(top_id, 999), leaf_rank.get(n['id'], 999))
+            return (3, 999, 999)
+        nodes.sort(key=_rank)
         _graph_cache = {'nodes': nodes, 'edges': edges}
     return _graph_cache
 
@@ -211,13 +235,13 @@ def invalidate_graph_cache():
     _graph_cache = None
 
 
-def save_answer(session_id, question_id, user_answer, is_correct, duration=0):
+def save_answer(session_id, question_id, user_answer, is_correct, duration=0, pool='practice'):
     # 未登录用户不记录答题记录
     if not _is_authenticated(session_id):
         return None
     conn = get_connection()
-    cur = conn.execute('INSERT INTO user_progress (session_id,question_id,user_answer,is_correct,duration) VALUES (?,?,?,?,?)',
-                 (session_id, question_id, user_answer, 1 if is_correct else 0, duration))
+    cur = conn.execute('INSERT INTO user_progress (session_id,question_id,user_answer,is_correct,duration,pool) VALUES (?,?,?,?,?,?)',
+                 (session_id, question_id, user_answer, 1 if is_correct else 0, duration, pool))
     # update mastery for related nodes (BKT: Beta distribution)
     nodes = conn.execute('SELECT node_id FROM question_knowledge WHERE question_id = ?', (question_id,)).fetchall()
     for n in nodes:
@@ -250,7 +274,8 @@ def _account_kind(username):
     return None
 
 def reset_user_password(username, new_password):
-    """重置密码（自动识别平台用户/管理员）：旧密码入历史（kind 区分，每账号最多 3 条），新密码 bcrypt"""
+    """重置密码（自动识别平台用户/管理员）：旧密码入历史（kind 区分，每账号最多 3 条），新密码 bcrypt。
+    管理员密码被重置后其全部会话立即失效（C2 重构，需重新登录）"""
     import bcrypt
     kind = _account_kind(username)
     if kind is None:
@@ -266,11 +291,14 @@ def reset_user_password(username, new_password):
             (username, kind, username, kind))
     pw_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     conn.execute(f'UPDATE {table} SET password=? WHERE username=?', (pw_hash, username))
+    if kind == 'admin':
+        conn.execute('DELETE FROM admin_sessions WHERE username=?', (username,))
     conn.commit()
     return True, None
 
 def rollback_user_password(username):
-    """回退到最近一次历史密码（消费一条历史；最多可回退 3 次；按账号类型恢复各自历史）"""
+    """回退到最近一次历史密码（消费一条历史；最多可回退 3 次；按账号类型恢复各自历史）。
+    管理员密码被回退后其全部会话立即失效（C2 重构，与 reset_user_password 行为一致，需重新登录）"""
     kind = _account_kind(username)
     if kind is None:
         return None, 'not_found'
@@ -283,6 +311,8 @@ def rollback_user_password(username):
     table = 'users' if kind == 'user' else 'admin_users'
     conn.execute(f'UPDATE {table} SET password=? WHERE username=?', (dict(h)['password'], username))
     conn.execute('DELETE FROM user_password_history WHERE id=?', (dict(h)['id'],))
+    if kind == 'admin':
+        conn.execute('DELETE FROM admin_sessions WHERE username=?', (username,))
     conn.commit()
     return True, None
 
@@ -293,9 +323,9 @@ def get_admin_stats():
     total_correct = conn.execute('SELECT COUNT(*) FROM user_progress WHERE is_correct=1').fetchone()[0]
     total_journeys = conn.execute('SELECT COUNT(*) FROM journey_state').fetchone()[0]
     accuracy = round(total_correct / total_answers * 100, 1) if total_answers > 0 else 0
-    # per-difficulty stats
+    # per-difficulty stats（真题记录 id 与练习重叠，仅统计练习池避免错位）
     diffs = conn.execute('''SELECT q.difficulty, COUNT(*) as cnt FROM user_progress up
-        JOIN questions q ON up.question_id = q.id GROUP BY q.difficulty''').fetchall()
+        JOIN questions q ON up.question_id = q.id WHERE up.pool='practice' GROUP BY q.difficulty''').fetchall()
     diff_data = {r['difficulty']: r['cnt'] for r in diffs}
     return {
         'total_users': total_users,
@@ -366,7 +396,7 @@ def delete_user(username):
 def delete_admin(username, operator):
     """删除管理员账号（仅主管理员可删除其他管理员）。
     防护：操作者须为主管理员；不能删除自己；主管理员账号不可删除（唯一主管理员保护）。
-    同步删除该管理员的密码修改历史（kind='admin'），删除后其无法再登录管理后台。"""
+    同步删除该管理员的密码修改历史与会话（kind='admin'），删除后其无法再登录管理后台。"""
     from auth import get_admin_profile
     profile = get_admin_profile(operator)
     if not profile or not profile.get('is_primary'):
@@ -381,6 +411,7 @@ def delete_admin(username, operator):
         return None, 'is_primary'
     conn.execute('DELETE FROM admin_users WHERE id=?', (row['id'],))
     conn.execute("DELETE FROM user_password_history WHERE username=? AND kind='admin'", (username,))
+    conn.execute('DELETE FROM admin_sessions WHERE username=?', (username,))
     conn.commit()
     return True, None
 
@@ -398,11 +429,13 @@ def get_diagnostic_result(session_id):
     row = conn.execute('SELECT data FROM diagnostic_results WHERE session_id=?', (session_id,)).fetchone()
     return json.loads(row['data']) if row else None
 
-def get_progress(session_id):
+def get_progress(session_id, pool='practice'):
+    """用户答题进度（按池过滤：practice 联 questions 表；exam 联 exam_questions 表，id 互不串扰）"""
     conn = get_connection()
-    rows = conn.execute('''SELECT q.*, up.question_id, up.user_answer, up.is_correct, up.answered_at
-        FROM user_progress up JOIN questions q ON up.question_id = q.id
-        WHERE up.session_id=? ORDER BY up.answered_at''', (session_id,)).fetchall()
+    tbl = 'questions' if pool == 'practice' else 'exam_questions'
+    rows = conn.execute(f'''SELECT q.*, up.question_id, up.user_answer, up.is_correct, up.answered_at
+        FROM user_progress up JOIN {tbl} q ON up.question_id = q.id
+        WHERE up.session_id=? AND up.pool=? ORDER BY up.answered_at''', (session_id, pool)).fetchall()
     return [dict(r) for r in rows]
 
 def get_progress_summary(session_id, limit=200):

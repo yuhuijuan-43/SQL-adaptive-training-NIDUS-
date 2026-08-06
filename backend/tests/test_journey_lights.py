@@ -1,9 +1,9 @@
 """2026-08 图谱点亮版引擎测试：双循环出题 + 叶/枝/根三级点亮
 
-conftest 题库（活跃叶 3 个，按枝序 top_dml → top_join → top_select）：
+conftest 题库（活跃叶 3 个，按枝序 top_dml → top_select → top_join）：
 - dml_select:   q5(基础选择) q6(填空)                    → plan [5,5,5,6,6]
-- join_inner:   q4(填空)                                 → plan [4,4,4,4,4]（池不足循环复用）
 - select_basic: q3(基础选择) q1(进阶选择) q2(填空)        → plan [3,1,3,2,2]
+- join_inner:   q4(填空)                                 → plan [4,4,4,4,4]（池不足循环复用）
 """
 import sqlite3
 import uuid
@@ -87,10 +87,12 @@ class TestRoundSequence:
         """join_inner 题池仅 1 道填空 → 5 题循环复用同一题"""
         sid = _register(client)
         d = _start(client, sid)
-        # 答错刷完 dml_select 5 题（避免点亮）→ 进入 join_inner
+        # 答错刷完 dml_select 5 题（避免点亮）→ select_basic 5 题 → 进入 join_inner
         for _ in range(5):
-            q = d['question']
-            d = _answer(client, sid, q['id'], WRONG, 8)
+            d = _answer(client, sid, d['question']['id'], WRONG, 8)
+        assert d['current_node'] == 'select_basic'
+        for _ in range(5):
+            d = _answer(client, sid, d['question']['id'], WRONG, 8)
         assert d['current_node'] == 'join_inner'
         assert d['question']['id'] == 4
         for i in range(4):
@@ -107,7 +109,7 @@ class TestRoundSequence:
                          (sid, 5, ANS_Q5))
         conn.commit()
         d = _start(client, sid)
-        assert d['current_node'] == 'join_inner'      # dml_select 已点亮 → 跳过
+        assert d['current_node'] == 'select_basic'    # dml_select 已点亮 → 跳过
         assert d['round']['leaf_count'] == 2
 
 
@@ -121,9 +123,10 @@ class TestRule1:
             q = d['question']
             assert q['id'] == 5
             d = _answer(client, sid, q['id'], ANS_Q5, 5)
-        # 第 3 连对 → 点亮 dml_select 并跳过剩余 2 题 → 直接到 join_inner 第 1 题
+        # 第 3 连对 → 点亮 dml_select 并跳过剩余 2 题 → 直接到 select_basic 第 1 题
         assert d['lit_now'] == 'dml_select'
-        assert d['current_node'] == 'join_inner'
+        assert d['current_node'] == 'select_basic'
+        assert d['question']['id'] == 3
         assert d['round']['pos'] == 1
         conn = _conn()
         row = conn.execute("SELECT lit FROM user_lights WHERE session_id=? AND node_id='dml_select'",
@@ -162,7 +165,7 @@ class TestRule1:
         q = d['question']
         d = _answer(client, sid, q['id'], ANS_Q5, 5)
         assert d['lit_now'] is None
-        assert d['current_node'] == 'join_inner'      # 5 题出完（有错）→ 规则2 不亮，推进
+        assert d['current_node'] == 'select_basic'    # 5 题出完（有错）→ 规则2 不亮，推进
 
 
 class TestRule2:
@@ -178,7 +181,7 @@ class TestRule2:
             d = _answer(client, sid, q['id'], ans, 5)
             _backdate_last(sid)
         assert d['lit_now'] is None                   # 规则1 被间隔阻断
-        assert d['current_node'] == 'join_inner'      # 段末推进
+        assert d['current_node'] == 'select_basic'    # 段末推进
         conn = _conn()
         row = conn.execute("SELECT lit FROM user_lights WHERE session_id=? AND node_id='dml_select'",
                            (sid,)).fetchone()
@@ -194,7 +197,7 @@ class TestRule2:
             ans = (ANS_Q5 if q['id'] == 5 else ANS_Q6) if i != 3 else WRONG
             d = _answer(client, sid, q['id'], ans, 5)
             _backdate_last(sid)
-        assert d['current_node'] == 'join_inner'
+        assert d['current_node'] == 'select_basic'
         conn = _conn()
         row = conn.execute("SELECT lit FROM user_lights WHERE session_id=? AND node_id='dml_select'",
                            (sid,)).fetchone()
@@ -306,8 +309,8 @@ class TestRoundComplete:
             d = _answer(client, sid, q['id'], WRONG, 8)
         assert d['round_complete'] is True
         assert 'dml_select' in d['round']['lit_round']
-        # 新一轮：dml_select 已点亮跳过，只剩 2 叶
+        # 新一轮：dml_select 已点亮跳过，只剩 2 叶（select_basic 在前）
         d2 = _start(client, sid)
         assert d2['round']['leaf_count'] == 2
-        assert d2['current_node'] == 'join_inner'
+        assert d2['current_node'] == 'select_basic'
         assert d2['lights']['dml_select']['lit'] is True

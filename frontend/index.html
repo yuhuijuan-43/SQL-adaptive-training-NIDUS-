@@ -60,6 +60,7 @@
   .option-btn.correct { border-color: var(--success); background: #EBF2FA; }
   .option-btn.correct-answer { border-color: var(--success); background: #eaf4ee; font-weight: 700; }
   .option-btn.wrong { border-color: var(--error); background: #f5ebeb; }
+  .opt-letter { display: inline-block; width: 1.5rem; height: 1.5rem; line-height: 1.5rem; text-align: center; border-radius: 0.25rem; background: var(--tag-bg); color: var(--text2); font-weight: 600; font-size: 0.7rem; margin-right: 0.5rem; font-family: inherit; }
   .result-box { margin-top: 0.75rem; padding: 0.75rem; border-radius: 0.375rem; font-size: 0.8rem; }
   .result-box.correct { background: #EBF2FA; border: 1px solid #C4D8F0; color: #1E5BA8; }
   .result-box.wrong { background: #f5ebeb; border: 1px solid #e4c8c8; color: #8a4040; }
@@ -122,6 +123,10 @@
   .expected-output-text { background:var(--tag-bg); padding:0.5rem; border-radius:4px; font-size:0.7rem; line-height:1.4; overflow-x:auto; white-space:pre; font-family:'SF Mono','Consolas',monospace; }
   .table-label { font-size:0.65rem; font-weight:600; color:var(--text2); margin:0.5rem 0 0.25rem 0; text-transform:uppercase; letter-spacing:0.04em; }
   .exp-label { font-size:0.65rem; font-weight:600; color:var(--text); margin:0.75rem 0 0.25rem 0; text-transform:uppercase; letter-spacing:0.04em; }
+  .section-title { font-size:0.75rem; font-weight:700; color:var(--accent); margin:1rem 0 0.5rem 0; padding-bottom:0.3rem; border-bottom:2px solid var(--border); text-transform:uppercase; letter-spacing:0.06em; }
+  /* 表格纵向排列（建表数据 → 建表 SQL → 预期输出） */
+  .tables-stack { margin:0.75rem 0; }
+  .tables-stack .table-block { overflow-x:auto; }
   /* 表格横排布局 */
   .tables-row { display:flex; gap:1rem; margin:0.75rem 0; }
   .tables-row .table-col { flex:1; min-width:0; overflow-x:auto; }
@@ -296,11 +301,9 @@
       </div>
       <div class="map-stats">
         <span class="num-oswald" id="mapLitCount" style="font-size:1.3rem;color:var(--accent)">0</span><span style="opacity:0.55"> / <span id="mapTotalCount">36</span> <span data-i18n="节点已点亮">节点已点亮</span></span>
+        <button class="btn btn-accent" style="margin-left:1rem" onclick="startJourney()"><i class="fas fa-play mr-1"></i> 开始</button>
       </div>
       <iframe id="journeyMapFrame" src="/knowledge-map" style="width:100%;height:560px;border:1px solid var(--border);border-radius:0.75rem;background:#fff;margin-top:0.5rem" title="SQL知识图谱"></iframe>
-      <div class="text-center mt-4">
-        <button class="btn btn-accent" data-i18n="开始适应" style="margin-top:0.5em" onclick="startJourney()"><i class="fas fa-play mr-1"></i> 开始适应</button>
-      </div>
     </div>
 
     <div id="journeyQuiz" style="display:none">
@@ -315,6 +318,7 @@
           </label>
           </div>
           <span class="text-xs text-[#2c241b] opacity-50"><i class="fas fa-chart-simple mr-1"></i> <span id="journeyStats">0/0</span></span>
+          <button class="btn btn-accent ml-2" style="padding:0.25rem 0.7rem;font-size:0.8rem" onclick="backToJourneyMap()" title="回到自适应图谱（当前进度保留）"><i class="fas fa-map mr-1"></i> 返回图谱</button>
         </div>
         <div class="progress-track mb-1"><div class="fill" id="journeyProgress" style="width:0%"></div></div>
         <div id="journeyQuestion" class="fade-in"></div>
@@ -2588,17 +2592,17 @@ function parseSchemaToMap(schemaStr) {
   if (!schemaStr) return map;
   var stmts = schemaStr.split(';');
   for (var s = 0; s < stmts.length; s++) {
-    var m = stmts[s].match(/(?:CREATE\s+TABLE\s+)?(\w+)\s*\((.*)\)/i);
+    var m = stmts[s].match(/(?:CREATE\s+TABLE\s+)?\s*`?(\w+)`?\s*\(([\s\S]*)\)/i);
     if (!m) continue;
     var tbl = m[1], raw = m[2], depth = 0, cur = '', cols = [];
     for (var i = 0; i < raw.length; i++) {
       var ch = raw[i];
       if (ch === '(') { depth++; cur += ch; }
       else if (ch === ')') { depth--; cur += ch; }
-      else if (ch === ',' && depth === 0) { var p = cur.trim().split(/\s+/); if (p[0]) cols.push(p[0]); cur = ''; }
+      else if (ch === ',' && depth === 0) { var p = cur.trim().replace(/`/g,'').split(/\s+/); if (p[0]) cols.push(p[0]); cur = ''; }
       else { cur += ch; }
     }
-    if (cur.trim()) { var p = cur.trim().split(/\s+/); if (p[0]) cols.push(p[0]); }
+    if (cur.trim()) { var p = cur.trim().replace(/`/g,'').split(/\s+/); if (p[0]) cols.push(p[0]); }
     map[tbl] = cols;
   }
   return map;
@@ -2718,7 +2722,7 @@ function renderSqlPanel(q) {
   if (q.table_schema) code += q.table_schema.replace(/</g, '&lt;') + ';\n';
   if (q.initial_data) code += q.initial_data.replace(/</g, '&lt;') + '\n';
   var id = 'sql_panel_' + q.id;
-  return '<div class="sql-toggle" onclick="var p=document.getElementById(\'' + id + '\');p.classList.toggle(\'open\');this.querySelector(\'span\').textContent=p.classList.contains(\'open\')?t(\'收起 SQL\'):t(\'展开 SQL\')"><span>' + t('展开 SQL') + '</span> <i class="fas fa-chevron-down" style="font-size:0.5rem"></i></div><div class="sql-panel" id="' + id + '"><div class="sql-code">' + code + '</div></div>';
+  return '<div class="section-title">' + t('建表 SQL') + '</div><div class="sql-toggle" onclick="var p=document.getElementById(\'' + id + '\');p.classList.toggle(\'open\');this.querySelector(\'span\').textContent=p.classList.contains(\'open\')?t(\'收起 SQL\'):t(\'展开 SQL\')"><span>' + t('展开 SQL') + '</span> <i class="fas fa-chevron-down" style="font-size:0.5rem"></i></div><div class="sql-panel" id="' + id + '"><div class="sql-code">' + code + '</div></div>';
 }
 
 function renderSchemaAndData(q) {
@@ -2730,10 +2734,13 @@ function renderSchemaAndData(q) {
 function renderTablesRow(q) {
   var dataHtml = renderSchemaAndData(q);
   var expHtml = renderExpectedOutput(q.expected_output || '');
-  if (!dataHtml && !expHtml) return '';
-  return '<div class="tables-row">' +
-    (dataHtml ? '<div class="table-col">' + dataHtml + '</div>' : '') +
-    (expHtml ? '<div class="table-col">' + expHtml + '</div>' : '') +
+  var out = '';
+  if (dataHtml) out += '<div class="section-title">' + t('建表数据') + '</div>' + dataHtml;
+  if (expHtml) out += '<div class="section-title">' + t('预期输出') + '</div>' + expHtml;
+  if (!out) return '';
+  return '<div class="tables-stack">' +
+    (dataHtml ? '<div class="table-block">' + dataHtml + '</div>' : '') +
+    (expHtml ? '<div class="table-block">' + expHtml + '</div>' : '') +
     '</div>';
 }
 
@@ -2801,6 +2808,18 @@ function parseOptions(str) {
   return str.replace(/\|\|/g, '\x00').split('|').filter(function(o) { return o.trim() !== ''; }).map(function(o) { return o.replace(/\x00/g, '||'); });
 }
 
+function stripOptionLabel(text) {
+  return text.replace(/^[A-D]\.\s*/, '');
+}
+
+function shuffleArray(arr) {
+  for (var i = arr.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  return arr;
+}
+
 
 
 
@@ -2813,8 +2832,8 @@ function selectOpt(prefix, qid, idx, btn) {
   var btns = container.querySelectorAll('.option-btn');
   for (var i = 0; i < btns.length; i++) btns[i].classList.remove('selected');
   btn.classList.add('selected');
-  // Store selected answer on the container
-  container.dataset.selected = btn.textContent;
+  // Store selected answer on the container (使用 data-opt 确保不含 ABCD 前缀)
+  container.dataset.selected = btn.dataset.opt || btn.textContent;
 }
 
 function clearOpt(prefix, qid) {
@@ -2831,13 +2850,15 @@ function showOptionExplanations(prefix, qid, options, explanations, correctAnswe
   var opts = parseOptions(options);
   var expls = parseOptions(explanations);
   var html = '';
+  var optLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   for (var i = 0; i < opts.length; i++) {
     var isCorrect = opts[i].trim().toLowerCase() === correctAnswer.trim().toLowerCase();
     var mark = isCorrect ? '✓' : '✗';
     var explain = (expls && expls[i]) ? expls[i] : (isCorrect ? t('这是正确答案') : '');
+    var optLetter = i < optLetters.length ? optLetters[i] : String.fromCharCode(65 + i);
     html += '<div class="opt-explain" style="background:' + (isCorrect ? 'rgba(34,139,34,0.08)' : 'rgba(220,20,20,0.06)') + '">';
     html += '<span class="mark" style="color:' + (isCorrect ? '#1a6b1a' : '#b22222') + '">' + mark + '</span>';
-    html += '<span><code style="font-family:Oswald,Consolas,monospace;font-size:0.75rem">' + opts[i].replace(/</g, '&lt;') + '</code>';
+    html += '<span><span class="opt-letter">' + optLetter + '</span><code style="font-family:Oswald,Consolas,monospace;font-size:0.75rem">' + stripOptionLabel(opts[i]).replace(/</g, '&lt;') + '</code>';
     if (explain) html += '<br><span style="color:#666;font-size:0.75rem">' + explain + '</span>';
     html += '</span></div>';
   }
@@ -2856,13 +2877,17 @@ function renderQuestion(q, prefix) {
   html += '</div>';
   html += '<h3 class="title-serif text-lg mb-2">' + q.title + '</h3>';
   html += '<p class="question-desc">' + q.description + '</p>';
-  html += renderTablesRow(q);
-  html += renderSqlPanel(q);
+  html += renderSchemaAndData(q);      // 建表数据（建表表格）
+  html += renderSqlPanel(q);           // 建表 SQL
+  html += renderExpectedOutput(q.expected_output || '');   // 预期输出（在建表表格和建表 SQL 下面）
   if (hasOpts) {
     html += '<div class="flex flex-col gap-1.5 my-2" id="' + prefix + '_opts_' + q.id + '">';
     var opts = parseOptions(q.options);
+    var optLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     for (var i = 0; i < opts.length; i++) {
-      html += '<button class="option-btn" onclick="selectOpt(\'' + prefix + '\',' + q.id + ',' + i + ',this)">' + opts[i].replace(/</g, '&lt;') + '</button>';
+      var optLetter = i < optLetters.length ? optLetters[i] : String.fromCharCode(65 + i);
+      var optAttr = opts[i].replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      html += '<button class="option-btn" data-opt="' + optAttr + '" onclick="selectOpt(\'' + prefix + '\',' + q.id + ',' + i + ',this)"><span class="opt-letter">' + optLetter + '</span> ' + stripOptionLabel(opts[i]).replace(/</g, '&lt;') + '</button>';
     }
     html += '</div>';
   } else {
@@ -2956,7 +2981,7 @@ function showJourneyQuestion(data) {
     currentJourneyQid = data.question.id;
     // attach fillin_mode and hint to question object so renderQuestion can use them
     data.question.fillin_mode = data.fillin_mode || false;
-    data.question.hint = data.hint || '';
+    if (!data.question.hint) data.question.hint = data.hint || '';
     el.innerHTML = renderQuestion(data.question, 'journey'); setTimeout(initAllCodeMirrors, 100);
     var ta = el.querySelector('textarea');
     if (ta) ta.focus();
@@ -2985,8 +3010,8 @@ async function submitJourneyAnswer(qid) { saveAllCM();
   var input = '';
   var inp = document.getElementById('journey_inp_' + qid);
   if (inp) { input = inp.value.trim(); } else {
-    var sel = document.querySelector('#journey_opts_' + qid + ' .option-btn.selected');
-    if (sel) input = sel.textContent.trim();
+    var optsContainer = document.getElementById('journey_opts_' + qid);
+    if (optsContainer) input = (optsContainer.dataset.selected || '').trim();
   }
   if (!input) return alert(t('请先输入或选择答案'));
   var elapsed = Math.round((Date.now() - journeyQuestionStart) / 1000);
@@ -3044,7 +3069,7 @@ async function loadPracticeQuestions() {
     // 并行拉取题目列表与答题状态（列表着色：对=绿 / 错=红 / 未做=白）
     var results = await Promise.all([
       apiGet('/questions?' + params.join('&')),
-      apiGet('/progress/' + sessionId).catch(function() { return null; })
+      apiGet('/progress/' + sessionId + '?pool=' + currentPool).catch(function() { return null; })
     ]);
     var data = results[0];
     var prog = results[1];
@@ -3135,7 +3160,7 @@ function renderPracticeList() {
   el.innerHTML = html;
 }
 
-function showPracticeDetail(qid) {
+async function showPracticeDetail(qid) {
   var q = null;
   // Find question by id (number for API, string 'static_N' for static)
   for (var i = 0; i < practiceQuestions.length; i++) {
@@ -3149,6 +3174,14 @@ function showPracticeDetail(qid) {
   var detail = document.getElementById('questionDetail');
   detail.style.display = 'block';
   detail.classList.add('visible');
+  document.getElementById('practiceQuestion').innerHTML = '<div class="text-center text-sm py-4 opacity-50"><i class="fas fa-spinner fa-spin mr-1"></i> ' + t('加载中...') + '</div>';
+  // 列表接口是轻量字段 → 拉详情补齐建表数据/预期输出/答案/解析（真题在 exam 表，须带 pool）
+  if (q.id != null) {
+    try {
+      var dq = await apiGet('/questions/' + q.id + '?pool=' + currentPool);
+      for (var k in dq) q[k] = dq[k];
+    } catch (e) { /* 详情拉取失败时按列表字段渲染 */ }
+  }
   document.getElementById('practiceQuestion').innerHTML = renderPracticeQuestion(q);
   setTimeout(initAllCodeMirrors, 100);
   setTimeout(function() { var ta = document.querySelector('#practiceQuestion textarea'); if (ta && ta._cm) ta._cm.focus(); else if (ta) ta.focus(); }, 150);
@@ -3201,8 +3234,11 @@ function renderPracticeQuestion(q) {
   if (hasOpts) {
     html += '<div class="flex flex-col gap-1.5 my-2" id="prac_opts_' + q.id + '">';
     var opts = parseOptions(q.options);
+    var optLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     for (var i = 0; i < opts.length; i++) {
-      html += '<button class="option-btn" onclick="selectOpt(\'prac\',' + q.id + ',' + i + ',this)">' + opts[i].replace(/</g, '&lt;') + '</button>';
+      var optLetter = i < optLetters.length ? optLetters[i] : String.fromCharCode(65 + i);
+      var optAttr = opts[i].replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      html += '<button class="option-btn" data-opt="' + optAttr + '" onclick="selectOpt(\'prac\',' + q.id + ',' + i + ',this)"><span class="opt-letter">' + optLetter + '</span> ' + stripOptionLabel(opts[i]).replace(/</g, '&lt;') + '</button>';
     }
     html += '</div>';
   } else {
@@ -3253,11 +3289,11 @@ async function submitPracticeAnswer(qid) { saveAllCM();
   var input = '';
   var inp = document.getElementById('prac_inp_' + qid);
   if (inp) { input = inp.value.trim(); } else {
-    var sel = document.querySelector('#prac_opts_' + qid + ' .option-btn.selected');
-    if (sel) input = sel.textContent.trim();
+    var optsContainer = document.getElementById('prac_opts_' + qid);
+    if (optsContainer) input = (optsContainer.dataset.selected || '').trim();
   }
   if (!input) return alert(t('请先输入或选择答案'));
-  var result = await apiPost('/submit', { session_id: sessionId, question_id: qid, answer: input });
+  var result = await apiPost('/submit', { session_id: sessionId, question_id: qid, answer: input, pool: currentPool });
   // 更新答题状态（列表着色：返回列表立即生效）
   if (typeof qid === 'number') _progressMap[qid] = result.is_correct ? 1 : 0;
   var resultBox = document.getElementById('prac_res_' + qid);

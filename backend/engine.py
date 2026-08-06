@@ -11,6 +11,7 @@
 - 一轮 = 所有未点亮且有题叶节点刷完（至多 145 题）；完成后保留点亮状态，重新开始新一轮
 """
 import json
+import re
 
 from db import get_connection
 from repositories import get_question_by_id, get_mastery, get_graph
@@ -70,11 +71,18 @@ def _is_mcq(q):
 
 # ==================== 出题（双循环 + 循环复用） ====================
 
+# 自适应进阶题源白名单：仅使用静态基础/进阶选择题 + nowcoder 预览填空题
+# （2026-08-05 移出全部牛客/LeetCode/Kaggle 题目）
+JOURNEY_SOURCES = ('static_basic', 'static_advanced', 'nowcoder_preview')
+
+
 def _node_pools(leaf):
     """该叶节点的选择题/填空题 id 列表（基础选择先行，其次按 id）"""
     conn = get_connection()
-    rows = conn.execute('''SELECT q.id, q.q_level, q.options FROM questions q
-        JOIN question_knowledge qk ON q.id = qk.question_id WHERE qk.node_id=?''', (leaf,)).fetchall()
+    placeholders = ','.join('?' for _ in JOURNEY_SOURCES)
+    rows = conn.execute(f'''SELECT q.id, q.q_level, q.options FROM questions q
+        JOIN question_knowledge qk ON q.id = qk.question_id
+        WHERE qk.node_id=? AND q.source IN ({placeholders})''', (leaf,) + JOURNEY_SOURCES).fetchall()
     mcq, fillin = [], []
     for r in rows:
         if _is_mcq(dict(r)):
@@ -107,11 +115,11 @@ def _leaf_plan(mcq_ids, fillin_ids):
 # ==================== 点亮判定 ====================
 
 def _correct_counts(session_id):
-    """规则3 派生：跨池（自适应/自主/真题）累计答对每叶节点题数（幂等）"""
+    """规则3 派生：累计答对每叶节点题数（幂等；真题记录 id 与练习重叠，仅统计练习池）"""
     conn = get_connection()
     rows = conn.execute('''SELECT qk.node_id AS node_id, COUNT(*) AS c
         FROM user_progress up JOIN question_knowledge qk ON up.question_id = qk.question_id
-        WHERE up.session_id=? AND up.is_correct=1 GROUP BY qk.node_id''', (session_id,)).fetchall()
+        WHERE up.session_id=? AND up.pool='practice' AND up.is_correct=1 GROUP BY qk.node_id''', (session_id,)).fetchall()
     return {r['node_id']: r['c'] for r in rows}
 
 
@@ -296,9 +304,23 @@ def journey_next(session_id, just_answered_qid=None, was_correct=None, duration=
 
 # ==================== 响应组装 ====================
 
+# 通用 ROUND 提示（标准答案涉及 ROUND 时自动注入，2026-08-05）
+ROUND_HINT = '提示：此题需要用到 ROUND，例如：保留小数点后两位 ROUND(3.1415, 2) → 3.14'
+
+def _inject_round_hint(question):
+    """标准答案含 ROUND（不区分大小写）时，为填空题注入通用提示"""
+    if not question:
+        return question
+    if question.get('options') and str(question.get('options', '')).strip():
+        return question  # 选择题不注入
+    if re.search(r'\bROUND\b', question.get('correct_answer', ''), re.IGNORECASE):
+        question['hint'] = ROUND_HINT
+    return question
+
 def _response(session_id, state, rs, question=None, round_complete=False, lit_now=None):
     """组装响应：保留前端兼容字段 + lights/round/round_complete"""
     entry = rs['entries'][rs['idx']] if rs['idx'] < len(rs['entries']) else None
+    question = _inject_round_hint(question)
     return {
         'action': 'advance',
         'current_node': entry['leaf'] if entry else '',

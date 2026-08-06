@@ -60,8 +60,12 @@ def init_db():
         question_id INTEGER NOT NULL, user_answer TEXT,
         is_correct INTEGER NOT NULL DEFAULT 0,
         duration REAL DEFAULT 0,
+        pool TEXT DEFAULT 'practice',
         answered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(question_id) REFERENCES questions(id))''')
+    # 真题库独立表后与 questions 表 id 重叠（各从 1 起），答题记录用 pool 列区分（旧库默认 practice）
+    try: c.execute("ALTER TABLE user_progress ADD COLUMN pool TEXT DEFAULT 'practice'")
+    except: pass
     c.execute('''CREATE TABLE IF NOT EXISTS knowledge_nodes (
         id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT,
         category TEXT, level INTEGER DEFAULT 0, icon TEXT DEFAULT 'fa-code')''')
@@ -123,6 +127,11 @@ def init_db():
         last_login_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     try: c.execute("ALTER TABLE admin_users ADD COLUMN is_primary INTEGER DEFAULT 0")
     except: pass
+    # 一人一钥：每位管理员专属密钥（存量惰性回填）+ 停用标记（主管理员风险管控）
+    try: c.execute("ALTER TABLE admin_users ADD COLUMN personal_key TEXT")
+    except: pass
+    try: c.execute("ALTER TABLE admin_users ADD COLUMN key_disabled INTEGER DEFAULT 0")
+    except: pass
     # 平台用户密码历史：重置前入档，供管理员回退（每账号最多保留 3 条；kind 区分用户/管理员）
     c.execute('''CREATE TABLE IF NOT EXISTS user_password_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -149,6 +158,12 @@ def init_db():
         session_id TEXT NOT NULL,
         data TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    # 管理员会话（per-admin token：登录/注册时签发，代替共享密钥作为 Bearer；30 天有效）
+    c.execute('''CREATE TABLE IF NOT EXISTS admin_sessions (
+        token TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TEXT NOT NULL)''')
     c.execute('''CREATE TABLE IF NOT EXISTS derived_questions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         prototype_id INTEGER NOT NULL REFERENCES questions(id),

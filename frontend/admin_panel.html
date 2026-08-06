@@ -80,11 +80,19 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
 .mini-btn.danger:hover { color: var(--error); border-color: var(--error); }
 .mini-btn.copy { color: var(--success); border-color: rgba(14, 166, 120, 0.35); }
 .mini-btn.copy:hover { color: var(--success); border-color: var(--success); }
+/* 同事列表单元格内操作按钮：换行堆叠时保持纵向间距（停用/重置密钥等） */
+#colleaguesBody td .mini-btn { margin: 3px 0; }
 .badge-primary {
   display: inline-block; margin-left: 8px; padding: 1px 10px; border-radius: 999px;
   font-size: 10.5px; font-weight: 700; color: #fff; vertical-align: 1px;
   background: linear-gradient(135deg, #f2a94e 0%, #e8783c 100%);
   box-shadow: 0 2px 8px rgba(232, 120, 60, 0.35);
+}
+.badge-disabled {
+  display: inline-block; margin-right: 6px; padding: 1px 10px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; color: #fff; vertical-align: 1px;
+  background: linear-gradient(135deg, #e04a55 0%, #c2333e 100%);
+  box-shadow: 0 2px 8px rgba(224, 74, 85, 0.35);
 }
 .empty { text-align: center; color: var(--text-3); padding: 22px 0; font-size: 13px; }
 .sec-tip { font-size: 12px; color: var(--text-3); margin-top: 10px; }
@@ -201,16 +209,16 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
     </div>
   </div>
 
-  <!-- 统一管理员密钥 -->
+  <!-- 我的密钥（一人一钥：每位管理员专属） -->
   <div class="card glass">
-    <div class="card-title"><span class="ct-dot"></span><span data-i18n="key_title">统一管理员密钥</span></div>
+    <div class="card-title"><span class="ct-dot"></span><span data-i18n="key_title">我的密钥</span></div>
     <div class="key-row">
       <code class="key-masked" id="adminKeyText">••••••••••••••••••</code>
       <button class="mini-btn" id="keyEyeBtn" onclick="toggleKeyShow()" data-i18n="key_show">显示</button>
       <button class="mini-btn copy" onclick="copyAdminKey()" data-i18n="key_copy">复制密钥</button>
-      <button class="mini-btn" id="keyChangeBtn" style="display:none" onclick="openKeyChange()" data-i18n="key_change">更换密钥</button>
+      <button class="mini-btn" id="keyChangeBtn" onclick="openKeyChange()" data-i18n="key_change">更换密钥</button>
     </div>
-    <div class="sec-tip" data-i18n="key_hint">此密钥用于登录「管理后台」（门户导航 → 管理后台），请勿泄露给非管理员</div>
+    <div class="sec-tip" data-i18n="key_hint">此密钥为你的专属密钥，用于登录「管理后台」（双重验证），请勿泄露给他人</div>
   </div>
 
   <!-- 内推码管理（仅主管理员可见） -->
@@ -235,7 +243,7 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
     <div class="card-title"><span class="ct-dot"></span><span data-i18n="colleagues_title">我的同事</span></div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th data-i18n="col_user">管理员用户名</th><th data-i18n="col_last">最后上线时间</th><th data-i18n="col_ops">操作</th></tr></thead>
+        <thead><tr><th data-i18n="col_user">管理员用户名</th><th data-i18n="col_last">最后上线时间</th><th data-i18n="col_ops">操作</th><th id="keyColHead" style="display:none" data-i18n="col_key">密钥</th><th id="keyStatusColHead" style="display:none" data-i18n="col_key_status">密钥状态</th></tr></thead>
         <tbody id="colleaguesBody"><tr><td colspan="3" class="empty" data-i18n="loading">加载中...</td></tr></tbody>
       </table>
     </div>
@@ -298,14 +306,14 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
   </div>
 </div>
 
-<!-- 更换统一管理员密钥弹窗（主管理员专用；更换后对全部管理员生效） -->
+<!-- 更换我的密钥弹窗（全员自助；更换后本人会话注销，需重新登录） -->
 <div class="modal-mask" id="keyModal" onclick="if(event.target===this)closeKeyChange()">
   <div class="modal">
     <div class="modal-head">
-      <span class="modal-title" data-i18n="key_change_title">更换统一管理员密钥</span>
+      <span class="modal-title" data-i18n="key_change_title">更换我的密钥</span>
       <button class="modal-close" onclick="closeKeyChange()">✕</button>
     </div>
-    <div class="modal-tip" data-i18n="key_change_tip">更换后新密钥立即对全部管理员生效，请将新密钥告知其他管理员。</div>
+    <div class="modal-tip" data-i18n="key_change_tip">更换后你的旧密钥立即失效，全部会话将注销，需重新登录。</div>
     <div class="pwd-row">
       <input type="text" id="newKeyInput" placeholder="New Key">
       <button class="mini-btn" onclick="genKey()" data-i18n="gen">生成</button>
@@ -314,6 +322,40 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
     <div class="modal-foot">
       <button class="mini-btn" onclick="closeKeyChange()" data-i18n="cancel">取消</button>
       <button class="btn-ok" id="keyOkBtn" onclick="confirmKeyChange()" data-i18n="confirm_change">确认更换</button>
+    </div>
+  </div>
+</div>
+
+<!-- 停用/启用同事密钥确认弹窗（主管理员专用；停用 = 强制下线 + 禁止登录） -->
+<div class="modal-mask" id="keyToggleModal" onclick="if(event.target===this)closeKeyToggle()">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" data-i18n="key_toggle_title">密钥状态变更</span>
+      <button class="modal-close" onclick="closeKeyToggle()">✕</button>
+    </div>
+    <div class="modal-tip" id="keyToggleTip"></div>
+    <div class="modal-foot">
+      <button class="mini-btn" onclick="closeKeyToggle()" data-i18n="cancel">取消</button>
+      <button class="btn-ok" id="keyToggleOkBtn" onclick="confirmKeyToggle()" data-i18n="key_confirm_disable">确认停用</button>
+    </div>
+  </div>
+</div>
+
+<!-- 重置同事密钥弹窗（主管理员专用；重置后展示新密钥） -->
+<div class="modal-mask" id="keyResetModal" onclick="if(event.target===this)closeKeyReset()">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" data-i18n="key_reset_title">重置密钥</span>
+      <button class="modal-close" onclick="closeKeyReset()">✕</button>
+    </div>
+    <div class="modal-tip" id="keyResetTip"></div>
+    <div class="modal-tip" id="keyResetResult" style="display:none">
+      <code class="key-masked revealed" id="keyResetResultText" style="display:block;margin:0 0 8px"></code>
+      <button class="mini-btn copy" onclick="copyResetResult()" data-i18n="key_copy">复制密钥</button>
+    </div>
+    <div class="modal-foot">
+      <button class="mini-btn" onclick="closeKeyReset()" data-i18n="cancel">取消</button>
+      <button class="btn-ok" id="keyResetOkBtn" onclick="confirmKeyReset()" data-i18n="key_confirm_reset">确认重置</button>
     </div>
   </div>
 </div>
@@ -382,19 +424,42 @@ const I18N = {
   del_admin_ok: { zh: '删除完毕：管理员「{0}」及其数据已从数据库移除', en: 'Done: admin "{0}" and their data removed','zh_tw':'刪除完畢：管理員「{0}」及其資料已從資料庫移除','ja':'削除完了：管理者「{0}」とそのデータがデータベースから削除されました','hi':'हो गया: एडमिन «{0}» और उसका डेटा डेटाबेस से हटा दिया गया','pt':'Concluído: Administrador "{0}" e seus dados foram removidos do banco de dados' },
   del_admin_fail: { zh: '删除失败', en: 'Delete failed','zh_tw':'刪除失敗','ja':'削除に失敗しました','hi':'हटाना विफल','pt':'Falha na exclusão' },
   copy: { zh: '复制', en: 'Copy','zh_tw':'複製','ja':'コピー','hi':'कॉपी करें','pt':'Copiar' },
-  key_title: { zh: '统一管理员密钥', en: 'Unified Admin Key','zh_tw':'統一管理員密鑰','ja':'統合管理者キー','hi':'यूनिफाइड एडमिन कुंजी','pt':'Chave unificada do administrador' },
+  key_title: { zh: '我的密钥', en: 'My Key','zh_tw':'我的密鑰','ja':'マイキー','hi':'मेरी कुंजी','pt':'Minha chave' },
   key_show: { zh: '显示', en: 'Show','zh_tw':'顯示','ja':'表示','hi':'दिखाएँ','pt':'Mostrar' },
   key_hide: { zh: '隐藏', en: 'Hide','zh_tw':'隱藏','ja':'非表示','hi':'छिपाएँ','pt':'Ocultar' },
   key_copy: { zh: '复制密钥', en: 'Copy Key','zh_tw':'複製密鑰','ja':'キーをコピー','hi':'कुंजी कॉपी करें','pt':'Copiar chave' },
-  key_hint: { zh: '此密钥用于登录「管理后台」（门户导航 → 管理后台），请勿泄露给非管理员',
-              en: 'Use this key to enter the Admin Dashboard (Portal nav → Admin). Do not share it with non-admins.','zh_tw':'此密鑰用於登入「管理後台」（門戶導航 → 管理後台），請勿洩露給非管理員','ja':'このキーは管理ダッシュボードへのログインに使用されます（ポータルナビ → 管理）。非管理者と共有しないでください。','hi':'यह कुंजी एडमिन डैशबोर्ड में लॉगिन के लिए उपयोग की जाती है (पोर्टल नेविगेशन → एडमिन)। इसे गैर-एडमिन के साथ साझा न करें।','pt':'Use esta chave para entrar no painel de administração (Navegação do portal → Admin). Não a compartilhe com não-administradores.' },
+  key_hint: { zh: '此密钥为你的专属密钥，用于登录「管理后台」（双重验证），请勿泄露给他人',
+              en: 'This is your personal key for the Admin Dashboard double verification — do not share it.','zh_tw':'此密鑰為你的專屬密鑰，用於登入「管理後台」（雙重驗證），請勿洩露給他人','ja':'これはあなた専用のキーです（管理ダッシュボードの二重認証に使用）。他人と共有しないでください。','hi':'यह आपकी निजी कुंजी है (एडमिन डैशबोर्ड दोहरे सत्यापन के लिए)। इसे साझा न करें।','pt':'Esta é sua chave pessoal para a verificação dupla do painel de administração — não a compartilhe.' },
   key_change: { zh: '更换密钥', en: 'Change Key','zh_tw':'更換密鑰','ja':'キーを変更','hi':'कुंजी बदलें','pt':'Alterar chave' },
-  key_change_title: { zh: '更换统一管理员密钥', en: 'Change Unified Admin Key','zh_tw':'更換統一管理員密鑰','ja':'統合管理者キーを変更','hi':'यूनिफाइड एडमिन कुंजी बदलें','pt':'Alterar chave unificada do administrador' },
-  key_change_tip: { zh: '更换后新密钥立即对全部管理员生效，请将新密钥告知其他管理员。',
-                    en: 'The new key takes effect for all admins immediately — please share it with your colleagues.','zh_tw':'更換後新密鑰立即對全部管理員生效，請將新密鑰告知其他管理員。','ja':'変更後、新しいキーはすべての管理者に即座に有効になります。新しいキーを他の管理者と共有してください。','hi':'बदलने के बाद नई कुंजी सभी एडमिन पर तुरंत प्रभावी होगी। कृपया नई कुंजी अन्य एडमिन के साथ साझा करें।','pt':'A nova chave entra em vigor para todos os administradores imediatamente. Compartilhe-a com seus colegas.' },
+  key_change_title: { zh: '更换我的密钥', en: 'Change My Key','zh_tw':'更換我的密鑰','ja':'マイキーを変更','hi':'मेरी कुंजी बदलें','pt':'Alterar minha chave' },
+  key_change_tip: { zh: '更换后你的旧密钥立即失效，全部会话将注销，需重新登录。',
+                    en: 'After changing, your old key stops working and all your sessions are revoked — please sign in again.','zh_tw':'更換後你的舊密鑰立即失效，全部工作階段將登出，需重新登入。','ja':'変更後、古いキーは直ちに無効になり、すべてのセッションが終了します。再度ログインしてください。','hi':'बदलने के बाद आपकी पुरानी कुंजी तुरंत अमान्य हो जाएगी और सभी सत्र समाप्त हो जाएंगे — कृपया फिर से लॉगिन करें।','pt':'Após a alteração, sua chave antiga para de funcionar e todas as suas sessões são revogadas — faça login novamente.' },
   confirm_change: { zh: '确认更换', en: 'Confirm Change','zh_tw':'確認更換','ja':'変更を確認','hi':'परिवर्तन की पुष्टि करें','pt':'Confirmar alteração' },
   key_rule: { zh: '密钥需为 8-64 个字符', en: 'Key must be 8-64 characters','zh_tw':'密鑰需為 8-64 個字元','ja':'キーは8〜64文字である必要があります','hi':'कुंजी 8-64 अक्षरों की होनी चाहिए','pt':'A chave deve ter de 8 a 64 caracteres' },
-  key_updated: { zh: '密钥已更换，请将新密钥告知其他管理员', en: 'Key updated — please share it with other admins','zh_tw':'密鑰已更換，請將新密鑰告知其他管理員','ja':'キーが変更されました。新しいキーを他の管理者と共有してください','hi':'कुंजी अपडेट हो गई। कृपया नई कुंजी अन्य एडमिन के साथ साझा करें','pt':'Chave atualizada — compartilhe-a com outros administradores' },
+  key_updated: { zh: '密钥已更换，请用新密钥重新登录', en: 'Key changed — sign in again with the new key','zh_tw':'密鑰已更換，請用新密鑰重新登入','ja':'キーが変更されました。新しいキーで再度ログインしてください','hi':'कुंजी बदल दी गई — नई कुंजी से फिर से लॉगिन करें','pt':'Chave alterada — entre novamente com a nova chave' },
+  col_key: { zh: '密钥', en: 'Key','zh_tw':'密鑰','ja':'キー','hi':'कुंजी','pt':'Chave' },
+  col_key_status: { zh: '密钥状态', en: 'Key Status','zh_tw':'密鑰狀態','ja':'キーの状態','hi':'कुंजी स्थिति','pt':'Status da chave' },
+  key_disabled: { zh: '已停用', en: 'Disabled','zh_tw':'已停用','ja':'無効化済み','hi':'अक्षम','pt':'Desativada' },
+  key_disable: { zh: '停用', en: 'Disable','zh_tw':'停用','ja':'無効化','hi':'अक्षम करें','pt':'Desativar' },
+  key_enable: { zh: '启用', en: 'Enable','zh_tw':'啟用','ja':'有効化','hi':'सक्षम करें','pt':'Ativar' },
+  key_reset: { zh: '重置密钥', en: 'Reset Key','zh_tw':'重置密鑰','ja':'キーをリセット','hi':'कुंजी रीसेट करें','pt':'Redefinir chave' },
+  key_toggle_title: { zh: '密钥状态变更', en: 'Change Key Status','zh_tw':'密鑰狀態變更','ja':'キーの状態変更','hi':'कुंजी स्थिति बदलें','pt':'Alterar status da chave' },
+  key_toggle_off_tip: { zh: '停用「{0}」的密钥？停用后其全部会话将立即注销，且无法再登录管理后台。',
+                         en: 'Disable {0}\'s key? All their sessions will be revoked immediately and they can no longer sign in to the admin dashboard.','zh_tw':'停用「{0}」的密鑰？停用後其全部工作階段將立即登出，且無法再登入管理後台。','ja':'「{0}」のキーを無効化しますか？無効化後、すべてのセッションが直ちに終了し、管理ダッシュボードにログインできなくなります。','hi':'«{0}» की कुंजी अक्षम करें? अक्षम करने पर उनके सभी सत्र तुरंत समाप्त हो जाएंगे और वे एडमिन डैशबोर्ड में लॉगिन नहीं कर पाएंगे।','pt':'Desativar a chave de "{0}"? Todas as sessões serão revogadas imediatamente e eles não poderão mais entrar no painel de administração.' },
+  key_toggle_on_tip: { zh: '启用「{0}」的密钥？启用后该管理员可正常登录。',
+                        en: 'Enable {0}\'s key? They will be able to sign in again.','zh_tw':'啟用「{0}」的密鑰？啟用後該管理員可正常登入。','ja':'「{0}」のキーを有効化しますか？有効化後、この管理者はログインできるようになります。','hi':'«{0}» की कुंजी सक्षम करें? सक्षम करने पर वे फिर से लॉगिन कर सकेंगे।','pt':'Ativar a chave de "{0}"? Eles poderão entrar novamente.' },
+  key_confirm_disable: { zh: '确认停用', en: 'Confirm Disable','zh_tw':'確認停用','ja':'無効化を確認','hi':'अक्षम करने की पुष्टि करें','pt':'Confirmar desativação' },
+  key_confirm_enable: { zh: '确认启用', en: 'Confirm Enable','zh_tw':'確認啟用','ja':'有効化を確認','hi':'सक्षम करने की पुष्टि करें','pt':'Confirmar ativação' },
+  key_toggle_off_ok: { zh: '已停用「{0}」的密钥', en: 'Key disabled for {0}','zh_tw':'已停用「{0}」的密鑰','ja':'「{0}」のキーを無効化しました','hi':'«{0}» की कुंजी अक्षम कर दी गई','pt':'Chave desativada para {0}' },
+  key_toggle_on_ok: { zh: '已启用「{0}」的密钥', en: 'Key enabled for {0}','zh_tw':'已啟用「{0}」的密鑰','ja':'「{0}」のキーを有効化しました','hi':'«{0}» की कुंजी सक्षम कर दी गई','pt':'Chave ativada para {0}' },
+  key_toggle_fail: { zh: '密钥状态变更失败', en: 'Failed to change key status','zh_tw':'密鑰狀態變更失敗','ja':'キーの状態変更に失敗しました','hi':'कुंजी स्थिति बदलने में विफल','pt':'Falha ao alterar o status da chave' },
+  key_reset_title: { zh: '重置密钥', en: 'Reset Key','zh_tw':'重置密鑰','ja':'キーをリセット','hi':'कुंजी रीसेट करें','pt':'Redefinir chave' },
+  key_reset_tip: { zh: '为「{0}」生成全新密钥：旧密钥立即失效、全部会话注销。确认重置？',
+                    en: 'Generate a brand-new key for {0}: the old key stops working and all sessions are revoked. Confirm?','zh_tw':'為「{0}」生成全新密鑰：舊密鑰立即失效、全部工作階段登出。確認重置？','ja':'「{0}」の新しいキーを生成します：旧キーは直ちに無効になり、すべてのセッションが終了します。リセットを確認しますか？','hi':'«{0}» के लिए नई कुंजी उत्पन्न करें: पुरानी कुंजी तुरंत अमान्य हो जाएगी और सभी सत्र समाप्त हो जाएंगे। पुष्टि करें?','pt':'Gerar uma nova chave para {0}: a chave antiga para de funcionar e todas as sessões são revogadas. Confirmar?' },
+  key_reset_done_tip: { zh: '「{0}」的新密钥已生成，请复制并转交给对方。',
+                         en: 'New key for {0} generated — copy it and hand it to them.','zh_tw':'「{0}」的新密鑰已生成，請複製並轉交給對方。','ja':'「{0}」の新しいキーが生成されました。コピーして相手に渡してください。','hi':'«{0}» के लिए नई कुंजी उत्पन्न हुई — कॉपी करके उन्हें दें।','pt':'Nova chave para {0} gerada — copie e entregue a eles.' },
+  key_confirm_reset: { zh: '确认重置', en: 'Confirm Reset','zh_tw':'確認重置','ja':'リセットを確認','hi':'रीसेट की पुष्टि करें','pt':'Confirmar redefinição' },
+  key_reset_fail: { zh: '重置失败', en: 'Reset failed','zh_tw':'重置失敗','ja':'リセットに失敗しました','hi':'रीसेट विफल','pt':'Falha na redefinição' },
   ref_title: { zh: '内推码管理', en: 'Referral Codes','zh_tw':'內推碼管理','ja':'紹介コード管理','hi':'रेफरल कोड प्रबंधन','pt':'Gerenciar códigos de indicação' },
   ref_hint: { zh: '管理员注册时校验的邀请码，新增/删除后注册校验即时同步',
               en: 'Invite codes validated at admin registration; add/delete takes effect immediately.','zh_tw':'管理員註冊時校驗的邀請碼，新增/刪除後註冊校驗即時同步','ja':'管理者登録時に検証される招待コード。追加/削除後、登録検証は即座に同期されます。','hi':'एडमिन पंजीकरण पर सत्यापित आमंत्रण कोड; जोड़ने/हटाने पर तुरंत प्रभावी।','pt':'Códigos de convite validados no registro de administradores; adicionar/excluir entra em vigor imediatamente.' },
@@ -413,6 +478,7 @@ const I18N = {
   copy_fail: { zh: '复制失败，请手动选择复制', en: 'Copy failed — please select manually','zh_tw':'複製失敗，請手動選擇複製','ja':'コピーに失敗しました。手動で選択してコピーしてください','hi':'कॉपी विफल — कृपया मैन्युअल चुनें','pt':'Falha ao copiar — selecione manualmente' },
   err_401: { zh: '登录已过期，请重新登录', en: 'Session expired — please sign in again','zh_tw':'登入已過期，請重新登入','ja':'セッションが期限切れです。再度ログインしてください','hi':'सत्र समाप्त हो गया — कृपया फिर से लॉगिन करें','pt':'Sessão expirada — faça login novamente' },
   net_error: { zh: '无法连接后端，请确认服务已启动', en: 'Cannot reach the backend — make sure it is running','zh_tw':'無法連線後端，請確認服務已啟動','ja':'バックエンドに接続できません。サービスが実行されていることを確認してください','hi':'बैकएंड से कनेक्ट नहीं हो सका — सुनिश्चित करें कि यह चल रहा है','pt':'Não foi possível conectar ao backend — verifique se está em execução' },
+  too_frequent: { zh: '操作过于频繁，请稍等片刻再试', en: 'Too many requests — please wait a moment','zh_tw':'操作過於頻繁，請稍等片刻再試','ja':'操作が多すぎます。しばらくしてからお試しください','hi':'बहुत सारे अनुरोध — कृपया एक पल प्रतीक्षा करें','pt':'Muitas solicitações — aguarde um momento' },
   footer: { zh: '© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台', en: '© 2026 SQL Adaptive Training · A personalized SQL learning platform','zh_tw':'© 2026 SQL 自適應訓練 · 千人千面的 SQL 學習平台','ja':'© 2026 SQL アダプティブトレーニング · 一人ひとりに合わせた SQL 学習プラットフォーム','hi':'© 2026 SQL अनुकूली प्रशिक्षण · एक व्यक्तिगत SQL सीखने का प्लेटफ़ॉर्म','pt':'© 2026 Treinamento Adaptativo SQL · Uma plataforma de aprendizado SQL personalizada' },
 };
 
@@ -487,8 +553,8 @@ function loadAdminKey() {
       return r.json();
     })
     .then(function(d) {
-      _adminKey = d.key || sessionStorage.getItem('admin_token') || '';
-      if (_adminKey) sessionStorage.setItem('admin_token', _adminKey);   // 与服务端实时对齐
+      // C2 重构：密钥仅用于展示/复制（admin-gate 双重验证登录），不再写回 Bearer token
+      _adminKey = d.key || '';
       renderKey();
     })
     .catch(function(e) {
@@ -519,8 +585,117 @@ function copyAdminKey() {
   copyText(_adminKey).then(ok => toast(ok ? t('copied') : t('copy_fail'), ok ? 'ok' : 'bad'));
 }
 
+/* ---- 主管理员监控：同事密钥（掩码显示，仅主管理员可见） ---- */
+var colleagueKeyShown = {};   // 每行密钥展开状态（索引键）
+
+function toggleColleagueKey(i) {
+  const c = colleaguesList[i];
+  if (!c || !c.personal_key) return;
+  colleagueKeyShown[i] = !colleagueKeyShown[i];
+  $('ck' + i).textContent = colleagueKeyShown[i] ? c.personal_key : KEY_MASK;
+  $('ck' + i).classList.toggle('revealed', !!colleagueKeyShown[i]);
+  $('ckEye' + i).textContent = colleagueKeyShown[i] ? t('key_hide') : t('key_show');
+}
+function copyColleagueKey(i) {
+  const c = colleaguesList[i];
+  if (!c || !c.personal_key) return;
+  copyText(c.personal_key).then(ok => toast(ok ? t('copied') : t('copy_fail'), ok ? 'ok' : 'bad'));
+}
+
+/* ---- 主管理员：停用/启用同事密钥（风险管控；停用 = 强制下线 + 禁止登录） ---- */
+var _keyToggleTarget = -1;   // colleaguesList 索引
+function openKeyToggle(i) {
+  const c = colleaguesList[i];
+  if (!c) return;
+  _keyToggleTarget = i;
+  const disabling = !c.key_disabled;
+  $('keyToggleTip').textContent = tf(disabling ? 'key_toggle_off_tip' : 'key_toggle_on_tip', c.username);
+  const btn = $('keyToggleOkBtn');
+  btn.textContent = t(disabling ? 'key_confirm_disable' : 'key_confirm_enable');
+  btn.style.background = disabling ? 'linear-gradient(135deg,#e04a55 0%,#c2333e 100%)' : '';
+  $('keyToggleModal').classList.add('show');
+}
+function closeKeyToggle() {
+  $('keyToggleModal').classList.remove('show');
+  _keyToggleTarget = -1;
+}
+function confirmKeyToggle() {
+  if (_keyToggleTarget < 0) return;
+  const c = colleaguesList[_keyToggleTarget];
+  const btn = $('keyToggleOkBtn');
+  btn.disabled = true;
+  adminFetch('/admin/key-toggle', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: c.username, disabled: !c.key_disabled })
+  })
+    .then(function(r) {
+      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(d) {
+      closeKeyToggle();
+      toast(tf(d.key_disabled ? 'key_toggle_off_ok' : 'key_toggle_on_ok', c.username), 'ok');
+      loadColleagues();   // 立即刷新（密钥状态列同步）
+    })
+    .catch(function(e) { if (e.message !== '401') toast(t('key_toggle_fail'), 'bad'); })
+    .finally(function() { btn.disabled = false; });
+}
+
+/* ---- 主管理员：重置同事密钥（一键生成新密钥并展示，旧密钥立即失效） ---- */
+var _keyResetTarget = -1;
+var _keyResetNewKey = '';
+function openKeyReset(i) {
+  const c = colleaguesList[i];
+  if (!c) return;
+  _keyResetTarget = i;
+  _keyResetNewKey = '';
+  $('keyResetTip').textContent = tf('key_reset_tip', c.username);
+  $('keyResetResult').style.display = 'none';
+  $('keyResetOkBtn').style.display = '';
+  $('keyResetModal').classList.add('show');
+}
+function closeKeyReset() {
+  $('keyResetModal').classList.remove('show');
+  _keyResetTarget = -1;
+  _keyResetNewKey = '';
+}
+function copyResetResult() {
+  if (!_keyResetNewKey) return;
+  copyText(_keyResetNewKey).then(ok => toast(ok ? t('copied') : t('copy_fail'), ok ? 'ok' : 'bad'));
+}
+function confirmKeyReset() {
+  if (_keyResetTarget < 0) return;
+  const c = colleaguesList[_keyResetTarget];
+  const btn = $('keyResetOkBtn');
+  btn.disabled = true;
+  adminFetch('/admin/key-reset', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: c.username })
+  })
+    .then(function(r) {
+      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(d) {
+      _keyResetNewKey = d.key || '';
+      $('keyResetTip').textContent = tf('key_reset_done_tip', c.username);
+      $('keyResetResultText').textContent = _keyResetNewKey;
+      $('keyResetResult').style.display = 'block';
+      $('keyResetOkBtn').style.display = 'none';
+      loadColleagues();   // 立即刷新（新密钥 + 已解除停用）
+    })
+    .catch(function(e) { if (e.message !== '401') toast(t('key_reset_fail'), 'bad'); })
+    .finally(function() { btn.disabled = false; });
+}
+
 /* ---- 数据加载 ---- */
 var _me = null;   // 当前管理员资料（colleagues 响应携带，含 is_primary）
+var colleaguesList = [];   // 同事列表（事件参数用索引引用，防用户名注入内联字符串）
+var codesList = [];        // 内推码列表（同上）
 
 function renderAll() {
   $('meName').textContent = ADMIN_USER;
@@ -537,35 +712,53 @@ function loadColleagues() {
     .then(function(d) {
       _me = d.me || null;
       $('primaryHint').style.display = (_me && _me.is_primary) ? 'block' : 'none';
-      // 主管理员专属：更换密钥 + 内推码管理
+      // 一人一钥：更换密钥为全员自助（不再限主管理员）；内推码管理仍仅主管理员
       const isPrimary = !!(d.me && d.me.is_primary);
-      $('keyChangeBtn').style.display = isPrimary ? '' : 'none';
+      $('keyColHead').style.display = isPrimary ? '' : 'none';
+      $('keyStatusColHead').style.display = isPrimary ? '' : 'none';
       $('referralCard').style.display = isPrimary ? '' : 'none';
       if (isPrimary) loadReferrals();
       const list = d.colleagues || [];
+      colleaguesList = list;
+      colleagueKeyShown = {};   // 每次刷新重置掩码展开状态
       const body = $('colleaguesBody');
-      if (!list.length) { body.innerHTML = '<tr><td colspan="3" class="empty">' + t('empty_colleagues') + '</td></tr>'; return; }
+      const colspan = isPrimary ? 5 : 3;
+      if (!list.length) { body.innerHTML = '<tr><td colspan="' + colspan + '" class="empty">' + t('empty_colleagues') + '</td></tr>'; return; }
       let html = '';
       for (let i = 0; i < list.length; i++) {
         const c = list[i];
         const badge = c.is_primary ? ' <span class="badge-primary">' + t('badge_primary') + '</span>' : '';
         // 操作列：修改密码 / 回退(n) / 删除管理员 —— 仅主管理员可见入口，且不对主管理员账号操作
+        // 事件参数一律用 colleaguesList 索引引用，绝不把用户数据拼进内联字符串（防引号注入 XSS）
         let ops = '';
-        if (_me && _me.is_primary && !c.is_primary) {
-          ops = '<button class="mini-btn" title="' + t('reset_pwd') + '" onclick="openReset(\'' + escapeHtml(c.username) + '\')">' + t('reset_pwd') + '</button>';
+        if (isPrimary && !c.is_primary) {
+          ops = '<button class="mini-btn" title="' + t('reset_pwd') + '" onclick="openReset(colleaguesList[' + i + '].username)">' + t('reset_pwd') + '</button>';
           if (c.rollback_count > 0) {
-            ops += ' <button class="mini-btn" title="' + t('rollback_title') + '" onclick="openRollback(\'' + escapeHtml(c.username) + '\',' + c.rollback_count + ')">' + t('rollback_btn') + '(' + c.rollback_count + ')</button>';
+            ops += ' <button class="mini-btn" title="' + t('rollback_title') + '" onclick="openRollback(colleaguesList[' + i + '].username,' + c.rollback_count + ')">' + t('rollback_btn') + '(' + c.rollback_count + ')</button>';
           }
-          ops += ' <button class="mini-btn danger" title="' + t('del_admin') + '" onclick="openDeleteAdmin(\'' + escapeHtml(c.username) + '\')">' + t('del_admin') + '</button>';
+          ops += ' <button class="mini-btn danger" title="' + t('del_admin') + '" onclick="openDeleteAdmin(colleaguesList[' + i + '].username)">' + t('del_admin') + '</button>';
+        }
+        // 一人一钥：主管理员在操作列后查看同事密钥（掩码 + 显示/复制）与密钥状态（停用/启用/重置）
+        let keyCells = '';
+        if (isPrimary) {
+          keyCells = '<td><code class="key-masked" id="ck' + i + '" style="font-size:12px;padding:5px 10px;margin:0">' + KEY_MASK + '</code>' +
+                     ' <button class="mini-btn" id="ckEye' + i + '" title="' + t('key_show') + '" onclick="toggleColleagueKey(' + i + ')">' + t('key_show') + '</button>' +
+                     ' <button class="mini-btn copy" title="' + t('key_copy') + '" onclick="copyColleagueKey(' + i + ')">' + t('key_copy') + '</button></td>' +
+                     '<td>' +
+                     (c.key_disabled ? '<span class="badge-disabled">' + t('key_disabled') + '</span>' : '') +
+                     (c.key_disabled
+                       ? '<button class="mini-btn" onclick="openKeyToggle(' + i + ')">' + t('key_enable') + '</button>'
+                       : '<button class="mini-btn danger" onclick="openKeyToggle(' + i + ')">' + t('key_disable') + '</button>') +
+                     ' <button class="mini-btn" title="' + t('key_reset') + '" onclick="openKeyReset(' + i + ')">' + t('key_reset') + '</button></td>';
         }
         html += '<tr><td><strong>' + escapeHtml(c.username) + '</strong>' + badge + '</td>' +
                 '<td style="color:var(--text-2);font-size:12.5px">' + fmtTime(c.last_login_at) + '</td>' +
-                '<td>' + ops + '</td></tr>';
+                '<td>' + ops + '</td>' + keyCells + '</tr>';
       }
       body.innerHTML = html;
     })
     .catch(function(e) {
-      if (e.message !== '401') $('colleaguesBody').innerHTML = '<tr><td colspan="3" class="empty" style="color:#b04a4a">' + t('net_error') + '</td></tr>';
+      if (e.message !== '401') $('colleaguesBody').innerHTML = '<tr><td colspan="' + ((_me && _me.is_primary) ? 5 : 3) + '" class="empty" style="color:#b04a4a">' + t('net_error') + '</td></tr>';
     });
 }
 
@@ -693,7 +886,7 @@ function confirmDeleteAdmin() {
     .finally(function() { btn.disabled = false; });
 }
 
-/* ---- 更换统一管理员密钥（主管理员专用；更换后对全部管理员生效） ---- */
+/* ---- 更换我的密钥（一人一钥：全员自助；更换后本人会话注销，需重新登录） ---- */
 function openKeyChange() {
   $('newKeyInput').value = '';
   $('keyModal').classList.add('show');
@@ -730,12 +923,13 @@ function confirmKeyChange() {
     })
     .then(function(d) {
       closeKeyChange();
-      // 本地 token 同步为新密钥，后续请求全部生效（"同步到子管理员"= 对方使用新密钥）
-      _adminKey = d.key || newKey;
-      ADMIN_TOKEN = _adminKey;
-      sessionStorage.setItem('admin_token', _adminKey);
-      renderKey();
+      // 一人一钥：更换本人密钥后全部会话注销（含当前），需重新登录
       toast(t('key_updated'), 'ok');
+      setTimeout(function() {
+        sessionStorage.removeItem('admin_token');
+        sessionStorage.removeItem('admin_user');
+        window.location.href = 'admin-auth';
+      }, 1500);
     })
     .catch(function(e) { /* 401 与已提示的错误不再重复提示 */ })
     .finally(function() { btn.disabled = false; });
@@ -743,6 +937,7 @@ function confirmKeyChange() {
 
 /* 解析后端错误响应为中文/英文提示（!r.ok 分支使用） */
 function toastServerError(r, fallback) {
+  if (r.status === 429) return toast(t('too_frequent'), 'bad');   // 限流命中：稍候自动恢复
   return r.json().then(function(d) { toast(d.error || fallback, 'bad'); })
                   .catch(function() { toast(fallback, 'bad'); });
 }
@@ -756,6 +951,7 @@ function loadReferrals() {
     })
     .then(function(d) {
       const list = d.codes || [];
+      codesList = list;
       const body = $('referralBody');
       if (!list.length) { body.innerHTML = '<tr><td colspan="4" class="empty">' + t('ref_empty') + '</td></tr>'; return; }
       let html = '';
@@ -764,7 +960,7 @@ function loadReferrals() {
         html += '<tr><td><code style="font-weight:700;color:var(--text-1)">' + escapeHtml(c.code) + '</code></td>' +
                 '<td style="color:var(--text-2);font-size:12.5px">' + escapeHtml(c.note || '-') + '</td>' +
                 '<td style="color:var(--text-2);font-size:12.5px">' + (c.created_at ? fmtTime(c.created_at) : '-') + '</td>' +
-                '<td><button class="mini-btn danger" onclick="delReferral(\'' + escapeHtml(c.code) + '\')" data-i18n="del_admin">删除</button></td></tr>';
+                '<td><button class="mini-btn danger" onclick="delReferral(codesList[' + i + '].code)" data-i18n="del_admin">删除</button></td></tr>';
       }
       body.innerHTML = html;
     })
@@ -812,7 +1008,7 @@ function delReferral(code) {
 }
 
 renderAll();
-setInterval(renderAll, 15000);   // 15s 自动刷新同事上线时间
+setInterval(renderAll, 30000);   // 30s 自动刷新同事上线时间
 </script>
 </body>
 </html>
