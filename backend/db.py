@@ -118,6 +118,10 @@ def init_db():
         password TEXT DEFAULT '',
         session_id TEXT NOT NULL UNIQUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    # GitHub 登录：绑定的 GitHub 数字 ID（部分唯一索引：一个 GitHub 账号只绑一个平台账号，存量 NULL 互不冲突）
+    try: c.execute("ALTER TABLE users ADD COLUMN github_id TEXT")
+    except: pass
+    c.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_github_id ON users(github_id) WHERE github_id IS NOT NULL")
     c.execute('''CREATE TABLE IF NOT EXISTS admin_users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL UNIQUE,

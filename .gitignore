@@ -24,6 +24,9 @@ backend/questions.db.bak
 # MCP 配置（含 API 密钥，不推送）
 .mcp.json
 
+# GitHub OAuth 凭证（client_secret 明文，不推送；模板见 oauth_config.example.json）
+backend/oauth_config.json
+
 # 大体积文档（本地保留，不上传）
 SQL自适应训练平台-功能与操作指南.pdf
 

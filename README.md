@@ -27,7 +27,7 @@
 - SQL 判题：SQL 规范化、只读单语句校验、沙箱执行、结果集比对
 - 题库：练习题库 58 题（29 道基础选择题 + 29 道进阶选择题，进阶题带建表数据与预期输出）+ 真题库 42 道经典 SQL 填空题（牛客风格，覆盖全部 29 个知识标签），完整题库备份于 `questions_full.json` / `exam_questions_full.json`
 - 学习闭环：水平诊断 → 自适应练习 → 错题集 → 图谱点亮 → 进阶选题
-- 账号体系：注册 / 登录 / 会话管理 / 管理员面板（统一密钥 + 邀请码）
+- 账号体系：注册 / 登录 / GitHub 一键登录（OAuth2，可选）/ 会话管理 / 管理员面板（统一密钥 + 邀请码）
 - 前端无框架依赖，图表库本地化，支持离线部署
 - 一键启动：自动探测并安装 Python、安装依赖、启动服务并打开浏览器
 
@@ -62,6 +62,27 @@ python backend/run.py
 # 访问 http://localhost:5000
 ```
 
+## GitHub 一键登录（可选）
+
+登录页的 GitHub 按钮走 OAuth2 授权码模式，免费注册即可启用：
+
+1. [github.com/settings/developers](https://github.com/settings/developers) → **New OAuth App**（注意是 OAuth App，不是 GitHub App）
+2. Application name 任意；Homepage URL 填 `http://localhost:5000`；**Authorization callback URL 填 `http://localhost:5000/api/oauth/github/callback`**（须与后端逐字符一致）；Enable Device Flow 不勾选
+3. 创建后复制 **Client ID**，点击 **Generate a new client secret** 生成 **Client Secret**（只显示一次，当场保存）
+4. 在 `backend/oauth_config.json` 中填写（已 gitignore，模板见 `backend/oauth_config.example.json`）：
+
+```json
+{ "github_client_id": "Ov1.xxxx", "github_client_secret": "xxxx" }
+```
+
+也可用环境变量 `GITHUB_OAUTH_CLIENT_ID` / `GITHUB_OAUTH_CLIENT_SECRET` 覆盖（优先级更高，服务器部署用）。
+
+行为说明：
+
+- GitHub 用户名与现有注册用户重名时自动加 `_gh` 后缀，互不影响；同一 GitHub 账号反复登录复用同一 `session_id`，进度连续
+- GitHub 账号不可走密码登录（密码为随机哈希）；管理员在面板中对该账号重置密码后可转为密码登录
+- GitHub OAuth App 只支持**一个**回调地址：改用 ngrok / 正式域名部署时，需同时更新 GitHub 后台的回调 URL 与本地启动地址，否则授权回跳指向 localhost
+
 ## 目录结构
 
 ```
@@ -71,7 +92,8 @@ python backend/run.py
 │   ├── sql_judge.py       # SQL 判题引擎
 │   ├── seeding.py         # 题库种子重建
 │   ├── scraper.py         # 题库抓取工具
-│   └── tests/             # pytest 测试套件（115 用例）
+│   ├── oauth.py           # GitHub OAuth 登录（配置 / 授权码流程 / 建档）
+│   └── tests/             # pytest 测试套件（144 用例）
 ├── frontend/              # 前端页面（原生 HTML/CSS/JS）
 │   ├── index.html         # 首页
 │   ├── knowledge_map.html # 知识图谱点亮视图
@@ -87,10 +109,10 @@ python backend/run.py
 
 ```bash
 cd backend
-pytest -v        # 123 个用例全绿
+pytest -v        # 144 个用例全绿
 ```
 
-覆盖：SQL 判题、图谱点亮规则、学习流程、种子重建、API 安全。
+覆盖：SQL 判题、图谱点亮规则、学习流程、种子重建、API 安全、GitHub OAuth 登录。
 
 ## 文档
 
@@ -100,4 +122,4 @@ pytest -v        # 123 个用例全绿
 ## 说明
 
 - 数据库（`backend/questions.db`）由题库数据源重建，不随仓库分发
-- 服务端密钥走环境变量 / 数据库存储，不硬编码于代码
+- 服务端密钥走环境变量 / 数据库存储，不硬编码于代码；GitHub OAuth 凭证走环境变量或 `backend/oauth_config.json`（均不随仓库分发）

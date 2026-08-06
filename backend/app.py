@@ -1,6 +1,7 @@
-import json, uuid, os, random, sys
+import json, uuid, os, random, secrets, hmac, sys
 
-from flask import Flask, jsonify, redirect, request, send_from_directory
+from urllib.parse import urlencode
+from flask import Flask, jsonify, redirect, request, send_from_directory, session
 from flask_cors import CORS
 from sql_judge import judge as judge_sql
 from db import init_db, get_connection, close_db
@@ -18,10 +19,14 @@ from auth import (login_user, register_user, login_or_register, check_username_e
     reset_personal_key, is_key_disabled, set_key_disabled,
     get_referral_codes, add_referral_code, delete_referral_code,
     create_admin_session, validate_admin_token, revoke_admin_sessions, is_primary_admin)
+import oauth   # 模块式 import：测试可 monkeypatch oauth.exchange_code 等内部函数
 from engine import init_journey, journey_next, get_journey_state, compute_lights
 from seeding import seed_questions, seed_exam_questions, seed_knowledge_graph
 
 app = Flask(__name__, static_folder=None)
+# GitHub OAuth state 用 Flask session cookie 签名；随机密钥重启即失效（进行中的授权重点一次即可自愈），
+# 需跨重启稳定可设 FLASK_SECRET_KEY 环境变量
+app.secret_key = os.environ.get('FLASK_SECRET_KEY') or secrets.token_hex(32)
 # 同源部署（Flask 托管前端 + /api），仅放行本机来源；跨域仅影响浏览器，不影响正常访问
 CORS(app, resources={r"/api/*": {"origins": [
     "http://localhost:5000", "http://127.0.0.1:5000", "http://localhost:3000", "http://127.0.0.1:3000",
@@ -119,6 +124,7 @@ def lib_assets(filename):
 # ---- 登录门槛：游客不允许读题/答题 ----
 # 公开端点白名单：登录注册、用户名检查、知识图谱结构、背景装饰标题、admin（自行校验 token）
 _PUBLIC_API_PATHS = {'/api/login', '/api/register', '/api/check-username',
+                     '/api/oauth/github', '/api/oauth/github/callback', '/api/oauth/github/check',
                      '/api/graph', '/api/admin/login', '/api/admin/auth-register',
                      '/api/admin/auth-login', '/api/admin/auth-check-username',
                      '/api/admin/stats', '/api/admin/users', '/api/admin/accounts',
@@ -544,6 +550,49 @@ def check_username():
         return jsonify({"exists": False})
     exists = check_username_exists(name)
     return jsonify({"exists": exists})
+
+# ---- GitHub OAuth 登录（2026-08-06）：授权码模式，state 存 Flask session 防 CSRF ----
+@app.route('/api/oauth/github')
+@limiter.limit("60 per minute")
+def oauth_github():
+    """发起 GitHub 授权：校验已配置 → 生成 state 存 session → 302 跳 GitHub"""
+    cfg = oauth.get_oauth_config()
+    if not cfg:
+        return redirect('/login_glass.html?oauth_error=1')
+    session['oauth_state'] = secrets.token_urlsafe(32)   # 每次重开流程都写新值，旧授权自动作废
+    return redirect(oauth.build_authorize_url(cfg['github_client_id'], session['oauth_state']))
+
+@app.route('/api/oauth/github/callback')
+@limiter.limit("30 per minute")
+def oauth_github_callback():
+    """GitHub 授权回跳：校验 state（单次使用）→ 换 token → 拉用户 → 建档/复用 → 回登录页携带 session_id"""
+    def fail():
+        session.pop('oauth_state', None)   # 单次使用：失败/拒绝也销毁，防重放
+        return redirect('/login_glass.html?oauth_error=1')
+
+    if request.args.get('error'):          # 用户在 GitHub 授权页点了拒绝（access_denied）
+        return fail()
+    got = request.args.get('state')
+    expected = session.get('oauth_state')
+    if not got or not expected or not hmac.compare_digest(got, expected):
+        return fail()                      # 缺 state / 无签发记录 / 不匹配（防 CSRF 与伪造回调）
+    code = request.args.get('code')
+    cfg = oauth.get_oauth_config()
+    if not code or not cfg:
+        return fail()
+    try:
+        token = oauth.exchange_code(code, cfg)
+        gh = oauth.fetch_github_user(token)
+        sid, uname = oauth.find_or_create_github_user(gh['id'], gh['login'])
+    except Exception:
+        return fail()                      # 网络异常 / GitHub 4xx / code 无效：统一转 oauth_error，绝不 500
+    session.pop('oauth_state', None)       # 单次使用：成功即销
+    return redirect('/login_glass.html?oauth=1&' + urlencode({'sid': sid, 'uname': uname}))
+
+@app.route('/api/oauth/github/check')
+def oauth_github_check():
+    """GitHub 登录是否已配置（前端按钮据此决定跳转或提示未配置）"""
+    return jsonify({"enabled": bool(oauth.get_oauth_config())})
 
 @app.route('/api/progress/<session_id>')
 def get_user_progress(session_id):

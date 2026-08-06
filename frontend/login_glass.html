@@ -160,7 +160,6 @@ body {
 }
 .oauth-btn { --oauth-hover: var(--accent); }
 .oauth-btn:hover { color: var(--oauth-hover); border-color: var(--oauth-hover); transform: translateY(-2px); box-shadow: 0 6px 18px rgba(58, 82, 148, 0.15); }
-.oauth-btn.oauth-wechat { --oauth-hover: #07c160; }
 .oauth-btn.oauth-github { --oauth-hover: #24292f; }
 .auth-foot { text-align: center; font-size: 12.5px; color: var(--text-3); margin-top: 18px; }
 .back-home { display: block; text-align: center; margin-top: 18px; font-size: 12.5px; color: var(--text-3); text-decoration: none; }
@@ -269,10 +268,7 @@ body {
       </form>
       <div class="divider" data-i18n="divider">其他方式</div>
       <div class="oauth-row">
-        <button class="oauth-btn oauth-wechat" title="微信登录（开发中）" data-i18n-title="wechat_dev" onclick="toast('info', t('wechat_dev'), 'info')">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .145.117.262.262.262a.262.262 0 0 0 .152-.049l1.826-1.109a.59.59 0 0 1 .49-.071 8.18 8.18 0 0 0 2.667.459c.11 0 .216-.008.326-.011a4.737 4.737 0 0 1-.225-1.469c0-3.006 2.872-5.443 6.415-5.443.32 0 .634.027.944.065C15.207 4.845 12.233 2.188 8.691 2.188zm-2.75 3.668c.585 0 1.058.473 1.058 1.058s-.473 1.058-1.058 1.058-1.058-.473-1.058-1.058.473-1.058 1.058-1.058zm5.48 0c.586 0 1.058.473 1.058 1.058s-.473 1.058-1.058 1.058-1.058-.473-1.058-1.058.473-1.058 1.058-1.058zM24 14.765c0-2.586-2.476-4.683-5.53-4.683-3.052 0-5.529 2.097-5.529 4.683s2.477 4.683 5.53 4.683c.647 0 1.271-.106 1.853-.307a.471.471 0 0 1 .391.058l1.459.886a.21.21 0 0 0 .121.039.21.21 0 0 0 .21-.21.77.77 0 0 0-.039-.17l-.31-1.181a.472.472 0 0 1 .17-.53A3.53 3.53 0 0 0 24 14.765zm-7.3-.684a.845.845 0 1 1 0-1.69.845.845 0 0 1 0 1.69zm3.548 0a.845.845 0 1 1 0-1.69.845.845 0 0 1 0 1.69z"/></svg>
-        </button>
-        <button class="oauth-btn oauth-github" title="GitHub 登录（开发中）" data-i18n-title="github_dev" onclick="toast('info', t('github_dev'), 'info')">
+        <button class="oauth-btn oauth-github" title="GitHub 登录" data-i18n-title="github" onclick="githubLogin()">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
         </button>
       </div>
@@ -360,8 +356,9 @@ const I18N = {
   forgot_toast: { zh: '请联系管理员重置密码', en: 'Contact the admin to reset your password','zh_tw':'請聯繫管理員重設密碼','ja':'管理者に連絡してパスワードをリセットしてください','hi':'कृपया पासवर्ड रीसेट करने के लिए एडमिन से संपर्क करें','pt':'Contate o administrador para redefinir a senha' },
   btn_login: { zh: '登 录', en: 'Log In','zh_tw':'登 入','ja':'ログイン','hi':'लॉग इन करें','pt':'Entrar' },
   divider: { zh: '其他方式', en: 'Other methods','zh_tw':'其他方式','ja':'その他の方法','hi':'अन्य तरीके','pt':'Outras formas' },
-  wechat_dev: { zh: '微信登录（开发中）', en: 'WeChat login (coming soon)','zh_tw':'微信登入（開發中）','ja':'WeChat ログイン（開発中）','hi':'WeChat लॉगिन (जल्द आ रहा है)','pt':'Login WeChat (em breve)' },
-  github_dev: { zh: 'GitHub 登录（开发中）', en: 'GitHub login (coming soon)','zh_tw':'GitHub 登入（開發中）','ja':'GitHub ログイン（開発中）','hi':'GitHub लॉगिन (जल्द आ रहा है)','pt':'Login GitHub (em breve)' },
+  github: { zh: 'GitHub 登录', en: 'Sign in with GitHub','zh_tw':'GitHub 登入','ja':'GitHub ログイン','hi':'GitHub लॉगिन','pt':'Entrar com GitHub' },
+  github_not_configured: { zh: 'GitHub 登录暂未配置', en: 'GitHub sign-in not configured','zh_tw':'GitHub 登入尚未配置','ja':'GitHub ログインは設定されていません','hi':'GitHub लॉगिन कॉन्फ़िगर नहीं है','pt':'Login GitHub não configurado' },
+  oauth_error: { zh: 'GitHub 登录失败，请重试', en: 'GitHub sign-in failed, please retry','zh_tw':'GitHub 登入失敗，請重試','ja':'GitHub ログインに失敗しました。もう一度お試しください','hi':'GitHub लॉगिन विफल रहा, कृपया पुनः प्रयास करें','pt':'Falha no login GitHub, tente novamente' },
   auth_foot_login: { zh: '还没有账号？<a class="link" href="javascript:void(0)" onclick="switchTab(\'register\')">立即注册</a>',
                      en: 'No account yet? <a class="link" href="javascript:void(0)" onclick="switchTab(\'register\')">Sign up now</a>',
                      'zh_tw':'還沒有帳號？<a class="link" href="javascript:void(0)" onclick="switchTab(\'register\')">立即註冊</a>',
@@ -699,6 +696,37 @@ function rememberLogin() {
   } catch (e) {}
 }
 rememberLogin();
+
+/* ---- GitHub 登录（OAuth 授权码模式） ---- */
+async function githubLogin() {
+  try {
+    const r = await fetch(API_BASE + '/oauth/github/check');
+    const d = await r.json();
+    if (d.enabled) {
+      window.location.href = API_BASE + '/oauth/github';   // 302 到 GitHub 授权页
+    } else {
+      toast('bad', t('github_not_configured'), 'bad');
+    }
+  } catch (err) {
+    toast('bad', t('net_error'), 'bad');
+  }
+}
+
+// OAuth 回跳处理：?oauth=1&sid=..&uname=.. 写入会话并跳转；?oauth_error=1 提示失败。
+// 处理完立即 replaceState 清掉 URL 参数，防止刷新页面重复触发登录跳转
+(function handleOAuthReturn() {
+  const q = new URLSearchParams(location.search);
+  const sid = q.get('sid'), uname = q.get('uname');
+  if (q.get('oauth') === '1' && sid && uname) {
+    history.replaceState({}, '', location.pathname);
+    sessionStorage.setItem('sql_user', JSON.stringify({ name: uname, session_id: sid, loggedIn: true, loginAt: Date.now() }));
+    toast('ok', t('login_ok_msg'), 'ok');
+    setTimeout(() => { window.location.href = 'index.html?new=1'; }, 800);
+  } else if (q.get('oauth_error') === '1') {
+    history.replaceState({}, '', location.pathname);
+    toast('bad', t('oauth_error'), 'bad');
+  }
+})();
 </script>
 </body>
 </html>
