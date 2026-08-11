@@ -356,16 +356,16 @@ root [SQL知识图谱]
 
 ```
 SQL自适应训练/
-├── 项目方案_AI参考手册.md          ← 【本文件】项目蓝图 + AI Agent 参考
+├── project_plan_ai_reference.md   ← 【本文件】项目蓝图 + AI Agent 参考
 ├── 新人接手指南.md                 ← 新人快速上手文档
 ├── 自适应算法指引.md               ← 自适应引擎设计文档（调研阶段产物）
-├── 填空题题目格式规范.md            ← 题目 12 字段详细规范
+├── fill_blank_format_spec.md      ← 题目 12 字段详细规范
 ├── modification.md                ← 近期改动汇总
 │
 ├── questions.py                   ← 题库（JSON 大数组）
 ├── exam_questions.json            ← 真题测试题库
 ├── knowledge_tags.csv             ← 29 个知识标签 + 难度星级
-├── 基础选择.csv / 进阶选择.csv     ← 选择题数据
+├── basic_select.csv / advanced_select.csv ← 选择题数据
 ├── LeetcodeSQL310.csv/json        ← LeetCode 题目元数据
 │
 ├── start_server.bat               ← 一键启动（Windows）
@@ -554,7 +554,7 @@ SQL自适应训练/
 - **要加 API：** 在 `backend/app.py` 加路由，逻辑放 `backend/engine.py` 或 `backend/repositories.py`
 - **要改知识图谱：** 改 `seeding.py` → `seed_knowledge_graph()` 中的节点/边定义，同步更新 `knowledge_tags.csv`
 - **要改前端渲染：** 参考 `docs/format_spec.md`（CSS 变量、渲染流水线、表格生成规则）
-- **题目格式规范：** 参考 `填空题题目格式规范.md`（12 字段定义 + 示例）
+- **题目格式规范：** 参考 `docs/fill_blank_format_spec.md`（12 字段定义 + 示例）
 - **项目启动：** `python backend/run.py` 或双击 `start_server.bat`
 - **公网访问：** 用 ngrok 暴露 5000 端口
 
@@ -566,7 +566,7 @@ SQL自适应训练/
 |---|---|
 | 新人接手指南 | `新人接手指南.md` |
 | 自适应算法设计大纲 | `自适应算法指引.md` / `文件/自适应算法指引.md` |
-| 题目格式规范（详细版） | `填空题题目格式规范.md` |
+| 题目格式规范（详细版） | `docs/fill_blank_format_spec.md` |
 | 前端渲染格式规范 | `docs/format_spec.md` |
 | 知识图谱节点树 | `docs/knowledge_map.md` |
 | 近期改动汇总 | `modification.md` |
