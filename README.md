@@ -1,125 +1,129 @@
-# SQL 自适应训练平台
+# SQL Adaptive Training Platform
 
-基于知识图谱点亮机制与自适应出题算法的 SQL 练习平台。练习题库 58 题（基础/进阶选择题）+ 真题库 42 题（牛客经典 SQL 填空题），覆盖基础语法、连接查询、子查询、聚合、窗口函数等常见知识点，练习进度通过知识图谱可视化呈现。
+An SQL practice platform powered by a knowledge-graph illumination mechanism and an adaptive question-generation algorithm. It includes 58 practice questions (basic / advanced multiple choice) plus 42 real-exam questions (classic Niuke-style SQL fill-in-the-blank), covering common knowledge points such as basic syntax, joins, subqueries, aggregation, and window functions. Practice progress is visualized through the knowledge graph.
 
-## 界面预览
+## Interface Preview
 
-**主页** — 门户入口，支持 6 语言切换
+**Home** — Portal entry, supports 6-language switching
 
-![主页](docs/screenshots/home.png)
+![Home](docs/screenshots/home.png)
 
-**了解我们** — 更新动态与项目初心
+**About Us** — Updates and project vision
 
-![了解我们](docs/screenshots/about.png)
+![About Us](docs/screenshots/about.png)
 
-**登录注册** — 随机用户名与安全密码生成
+**Login / Register** — Random username and secure password generation
 
-![登录](docs/screenshots/login.png)
+![Login](docs/screenshots/login.png)
 
-**刷题** — 自适应进阶与答题界面
+**Practice** — Adaptive progression and answer interface
 
-![刷题](docs/screenshots/practice.png)
+![Practice](docs/screenshots/practice.png)
 
-## 功能
+## Features
 
-- 知识图谱三级点亮：知识点按叶 / 枝 / 根组织，答对题目点亮节点，进度可视化
-- 自适应出题：每轮按「选择题 ×3 + 填空题 ×2」组织 5 题序列，跨练习池累计答对即点亮节点（幂等落库）
-- SQL 判题：SQL 规范化、只读单语句校验、沙箱执行、结果集比对
-- 题库：练习题库 58 题（29 道基础选择题 + 29 道进阶选择题，进阶题带建表数据与预期输出）+ 真题库 42 道经典 SQL 填空题（牛客风格，覆盖全部 29 个知识标签），完整题库备份于 `questions_full.json` / `exam_questions_full.json`
-- 学习闭环：水平诊断 → 自适应练习 → 错题集 → 图谱点亮 → 进阶选题
-- 账号体系：注册 / 登录 / GitHub 一键登录（OAuth2，可选）/ 会话管理 / 管理员面板（统一密钥 + 邀请码）
-- 前端无框架依赖，图表库本地化，支持离线部署
-- 一键启动：自动探测并安装 Python、安装依赖、启动服务并打开浏览器
+- Three-level knowledge-graph illumination: knowledge points are organized as leaf / branch / root; answering correctly illuminates nodes and visualizes progress
+- Adaptive question generation: each round composes a 5-question sequence of "3 multiple choice + 2 fill-in-the-blank"; correct answers accumulate across practice pools and illuminate nodes (idempotent persistence)
+- SQL judging: SQL normalization, read-only single-statement validation, sandboxed execution, and result-set comparison
+- Question bank: 58 practice questions (29 basic + 29 advanced multiple choice; advanced questions include table DDL and expected output) + 42 classic Niuke-style SQL fill-in-the-blank questions (covering all 29 knowledge tags); full backups at `data/questions_full.json` / `data/exam_questions_full.json`
+- Learning loop: level diagnosis → adaptive practice → mistake collection → graph illumination → advanced selection
+- Account system: register / login / GitHub one-click login (OAuth2, optional) / session management / admin panel (unified secret + invitation code)
+- Framework-free frontend with localized chart library, supports offline deployment
+- One-click startup: auto-detects and installs Python, installs dependencies, starts the service, and opens the browser
 
-## 技术栈
+## Tech Stack
 
-- 后端：Python / Flask / SQLite
-- 前端：原生 HTML / CSS / JS，ECharts（本地化资源）
-- 判题：自研 SQL 规范化 + 沙箱执行比对
-- 测试：pytest（123 用例）
+- Backend: Python / Flask / SQLite
+- Frontend: vanilla HTML / CSS / JS, ECharts (localized resources)
+- Judging: custom SQL normalization + sandboxed execution comparison
+- Testing: pytest (123 test cases)
 
-## 快速开始
+## Quick Start
 
-### Windows 一键启动
+### One-click startup on Windows
 
 ```bat
 start_server.bat
 ```
 
-脚本自动完成：探测可用 Python（缺失时自动下载安装）→ 安装依赖 → 启动服务 → 打开浏览器 `http://localhost:5000`
+The script automatically: detects an available Python (downloads and installs it if missing) → installs dependencies → starts the service → opens the browser at `http://localhost:5000`
 
-### 手动启动
+### Manual startup
 
 ```bash
-# 安装依赖
+# Install dependencies
 pip install -r backend/requirements.txt
 
-# 初始化题库
+# Initialize the question bank
 python backend/seeding.py
 
-# 启动服务
+# Start the service
 python backend/run.py
-# 访问 http://localhost:5000
+# Visit http://localhost:5000
 ```
 
-## GitHub 一键登录（可选）
+## GitHub One-Click Login (Optional)
 
-登录页的 GitHub 按钮走 OAuth2 授权码模式，免费注册即可启用：
+The GitHub button on the login page uses the OAuth2 authorization-code flow; anyone can enable it by registering for free:
 
-1. [github.com/settings/developers](https://github.com/settings/developers) → **New OAuth App**（注意是 OAuth App，不是 GitHub App）
-2. Application name 任意；Homepage URL 填 `http://localhost:5000`；**Authorization callback URL 填 `http://localhost:5000/api/oauth/github/callback`**（须与后端逐字符一致）；Enable Device Flow 不勾选
-3. 创建后复制 **Client ID**，点击 **Generate a new client secret** 生成 **Client Secret**（只显示一次，当场保存）
-4. 在 `backend/oauth_config.json` 中填写（已 gitignore，模板见 `backend/oauth_config.example.json`）：
+1. [github.com/settings/developers](https://github.com/settings/developers) → **New OAuth App** (note: an OAuth App, not a GitHub App)
+2. Set Application name to anything; set Homepage URL to `http://localhost:5000`; **set Authorization callback URL to `http://localhost:5000/api/oauth/github/callback`** (must match the backend character for character); do not check Enable Device Flow
+3. After creation, copy the **Client ID**, click **Generate a new client secret** to create the **Client Secret** (shown only once — save it immediately)
+4. Fill in `backend/oauth_config.json` (gitignored; template at `backend/oauth_config.example.json`):
 
 ```json
 { "github_client_id": "Ov1.xxxx", "github_client_secret": "xxxx" }
 ```
 
-也可用环境变量 `GITHUB_OAUTH_CLIENT_ID` / `GITHUB_OAUTH_CLIENT_SECRET` 覆盖（优先级更高，服务器部署用）。
+Environment variables `GITHUB_OAUTH_CLIENT_ID` / `GITHUB_OAUTH_CLIENT_SECRET` can also override these values (higher priority; recommended for server deployment).
 
-行为说明：
+Behavior notes:
 
-- GitHub 用户名与现有注册用户重名时自动加 `_gh` 后缀，互不影响；同一 GitHub 账号反复登录复用同一 `session_id`，进度连续
-- GitHub 账号不可走密码登录（密码为随机哈希）；管理员在面板中对该账号重置密码后可转为密码登录
-- GitHub OAuth App 只支持**一个**回调地址：改用 ngrok / 正式域名部署时，需同时更新 GitHub 后台的回调 URL 与本地启动地址，否则授权回跳指向 localhost
+- If a GitHub username collides with an existing registered user, `_gh` is appended automatically so the accounts do not interfere; repeated logins with the same GitHub account reuse the same `session_id`, keeping progress continuous
+- GitHub accounts cannot log in with a password (their password is a random hash); an admin can reset the password for such an account in the panel to switch it to password login
+- A GitHub OAuth App supports only **one** callback URL: when deploying via ngrok or a formal domain, update both the callback URL in GitHub's settings and the local startup address, otherwise the authorization redirect points back to localhost
 
-## 目录结构
+## Directory Structure
 
 ```
-├── backend/               # Flask 后端
-│   ├── app.py             # 路由 / API / 鉴权
-│   ├── engine.py          # 自适应出题引擎（图谱点亮）
-│   ├── sql_judge.py       # SQL 判题引擎
-│   ├── seeding.py         # 题库种子重建
-│   ├── scraper.py         # 题库抓取工具
-│   ├── oauth.py           # GitHub OAuth 登录（配置 / 授权码流程 / 建档）
-│   └── tests/             # pytest 测试套件（144 用例）
-├── frontend/              # 前端页面（原生 HTML/CSS/JS）
-│   ├── index.html         # 首页
-│   ├── knowledge_map.html # 知识图谱点亮视图
-│   ├── diagnostic.html    # 水平诊断
-│   └── admin*.html        # 管理面板
-├── docs/                  # 设计文档与规范
-├── questions.json         # 练习题库数据源（58 题选择题；完整题库备份于 questions_full.json）
-├── exam_questions.json    # 真题库数据源（42 题牛客 SQL 填空题；完整题库备份于 exam_questions_full.json）
-└── start_server.bat       # 一键启动脚本
+├── backend/               # Flask backend
+│   ├── app.py             # Routes / API / auth
+│   ├── engine.py          # Adaptive question engine (graph illumination)
+│   ├── sql_judge.py       # SQL judging engine
+│   ├── seeding.py         # Question-bank seed rebuild
+│   ├── scraper.py         # Question-bank scraping tool
+│   ├── oauth.py           # GitHub OAuth login (config / authorization-code flow / account creation)
+│   └── tests/             # pytest test suite (144 test cases)
+├── data/                  # Question-bank data sources (JSON / CSV)
+│   ├── questions.json     # Practice bank (58 multiple choice; full backup at questions_full.json)
+│   ├── exam_questions.json# Real-exam bank (42 Niuke SQL fill-in-the-blank; full backup at exam_questions_full.json)
+│   └── knowledge_tags.csv # Knowledge-tag difficulty mapping
+├── frontend/              # Frontend pages (vanilla HTML/CSS/JS)
+│   ├── index_glass.html   # Portal entry page
+│   ├── index.html         # Practice main interface
+│   ├── login_glass.html   # Login / register
+│   ├── knowledge_map.html # Knowledge-graph illumination view
+│   ├── diagnostic.html    # Level diagnosis
+│   └── admin*.html        # Admin panel
+├── docs/                  # Design docs, specs, and internal manuals
+└── start_server.bat       # One-click startup script
 ```
 
-## 测试
+## Testing
 
 ```bash
 cd backend
-pytest -v        # 144 个用例全绿
+pytest -v        # all 144 test cases pass
 ```
 
-覆盖：SQL 判题、图谱点亮规则、学习流程、种子重建、API 安全、GitHub OAuth 登录。
+Covers: SQL judging, graph-illumination rules, learning flow, seed rebuild, API security, and GitHub OAuth login.
 
-## 文档
+## Docs
 
-- [知识图谱设计](docs/knowledge_map.md)
-- [题目格式规范](docs/format_spec.md)
+- [Knowledge Graph Design](docs/knowledge_map.md)
+- [Question Format Spec](docs/format_spec.md)
 
-## 说明
+## Notes
 
-- 数据库（`backend/questions.db`）由题库数据源重建，不随仓库分发
-- 服务端密钥走环境变量 / 数据库存储，不硬编码于代码；GitHub OAuth 凭证走环境变量或 `backend/oauth_config.json`（均不随仓库分发）
+- The database (`backend/questions.db`) is rebuilt from the question-bank data sources and is not distributed with the repository
+- Server secrets are stored via environment variables / the database and are never hardcoded; GitHub OAuth credentials use environment variables or `backend/oauth_config.json` (neither is distributed with the repository)
