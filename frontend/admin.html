@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SQL 自适应训练 · 管理后台</title>
 <link href="lib/font-awesome/css/all.min.css" rel="stylesheet">
+<link rel="preload" href="lib/font-awesome/webfonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
 <style>
   :root { --bg: #eef3fc; --card: rgba(255,255,255,0.72); --text: #1b2747; --text2: #48577c; --border: rgba(88,110,170,0.16); --accent: #4a7dff; --accent-hover: #6a90ff; --tag-bg: rgba(88,110,170,0.08); --code-bg: rgba(255,255,255,0.75); --success: #0ea678; --error: #e04a55; --accent-grad: linear-gradient(135deg, #4a7dff 0%, #8b5bff 100%); }
   * { box-sizing: border-box; }
@@ -114,7 +115,8 @@
   <div class="card" style="padding:0.75rem 1rem;">
     <div class="flex justify-between items-center">
       <div><span style="font-weight:700;font-size:1.5rem;letter-spacing:0.02em;">SQL</span><span class="grad-text" style="font-weight:700;font-size:1.5rem;letter-spacing:0.02em;">管理后台</span><span style="font-size:0.6rem;color:var(--text2);margin-left:0.5rem;">ADMIN · DASHBOARD</span></div>
-      <button class="mini-btn" onclick="window.location.href='index_glass.html'">← 返回首页</button>
+      <button class="mini-btn" onclick="window.location.href='admin-panel'">← 管理后台</button>
+      <button class="mini-btn" onclick="window.location.href='index_glass.html'">返回首页</button>
     </div>
   </div>
 
@@ -232,12 +234,11 @@
 // 后台页支持 file:// 直接打开：必须用绝对地址（相对路径在 file:// 下会指向 file:///api）
 // 若服务部署在其他机器/端口，改这里即可，例如 'http://10.86.168.226:5000/api'
 const API_BASE = 'http://localhost:5000/api';
-// 管理员 Token：首次输入后保存在 sessionStorage，请求时带 Authorization: Bearer 头
+// 管理员 Token：登录后由管理后台（/admin-auth → /admin-panel）写入 sessionStorage，请求时带 Bearer 头
 var ADMIN_TOKEN = sessionStorage.getItem('admin_token');
 if (!ADMIN_TOKEN) {
-  // C2 重构：Bearer 为 per-admin 会话 Token（请先通过 /admin-gate 双重验证登录后进入本页）
-  ADMIN_TOKEN = prompt('请输入管理员会话 Token（请从 /admin-gate 登录获取）：') || '';
-  if (ADMIN_TOKEN) sessionStorage.setItem('admin_token', ADMIN_TOKEN);
+  // 密钥登录门已移除：未登录一律回到统一管理后台入口
+  window.location.href = 'admin-auth';
 }
 function adminFetch(path, opts) {
   opts = opts || {};

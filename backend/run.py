@@ -3,9 +3,13 @@ import sys, os, socket, signal, atexit, sqlite3
 sys.path.insert(0, os.path.dirname(__file__))
 from db import init_db, DB_PATH
 from seeding import seed_questions, seed_exam_questions, seed_knowledge_graph
+from backup import backup_database
+from maintenance import startup_maintenance
 
 # ---- 启动初始化 ----
 init_db()
+startup_maintenance()            # 启动治理：清理过期管理员会话等（静默失败）
+backup_database(tag='startup')   # 启动即备份一份（自动保留最近 20 份）
 seed_questions()
 seed_exam_questions()
 seed_knowledge_graph()
@@ -17,6 +21,8 @@ print(f"Local access:  http://localhost:5000")
 print(f"LAN access:    http://{local_ip}:5000")
 
 from app import app
+from logs import log_system
+log_system('info', '服务启动', detail=f'LAN: http://{local_ip}:5000', source='startup')
 
 # ---- 退出清理 ----
 _shutting_down = False

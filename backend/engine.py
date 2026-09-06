@@ -115,9 +115,10 @@ def _leaf_plan(mcq_ids, fillin_ids):
 # ==================== 点亮判定 ====================
 
 def _correct_counts(session_id):
-    """规则3 派生：累计答对每叶节点题数（幂等；真题记录 id 与练习重叠，仅统计练习池）"""
+    """规则3 派生：累计答对的每叶节点不同题数（幂等；真题记录 id 与练习重叠，仅统计练习池）。
+    DISTINCT：同题可循环复用，重复答对同一题不叠加点亮进度（2026-09-06 语义修正）"""
     conn = get_connection()
-    rows = conn.execute('''SELECT qk.node_id AS node_id, COUNT(*) AS c
+    rows = conn.execute('''SELECT qk.node_id AS node_id, COUNT(DISTINCT up.question_id) AS c
         FROM user_progress up JOIN question_knowledge qk ON up.question_id = qk.question_id
         WHERE up.session_id=? AND up.pool='practice' AND up.is_correct=1 GROUP BY qk.node_id''', (session_id,)).fetchall()
     return {r['node_id']: r['c'] for r in rows}
@@ -179,12 +180,14 @@ def _rule1_hit(answers):
     return True
 
 
-def compute_lights(session_id):
-    """全量点亮状态：叶 {lit, correct}；枝 {lit, x, y}；根 {lit, x, y}（journey 与 status 共用）"""
+def compute_lights(session_id, counts=None):
+    """全量点亮状态：叶 {lit, correct}；枝 {lit, x, y}；根 {lit, x, y}（journey 与 status 共用）。
+    counts 可选：调用方已算过 _correct_counts 时传入复用，避免同一请求内重复聚合（2026-08-12）"""
     conn = get_connection()
     stored = {r['node_id'] for r in conn.execute(
         'SELECT node_id FROM user_lights WHERE session_id=? AND lit=1', (session_id,)).fetchall()}
-    counts = _correct_counts(session_id)
+    if counts is None:
+        counts = _correct_counts(session_id)
     out = {}
     for top in TOP_ORDER:
         for leaf in LEAF_ORDER[top]:
@@ -242,6 +245,7 @@ def journey_next(session_id, just_answered_qid=None, was_correct=None, duration=
 
     rs = _load_round_state(state)
     lit_now = None
+    counts = None   # 规则3/点亮状态共用的累计答对数（仅作答登记时计算一次）
     if rs is None or rs['status'] == 'complete':
         # 首轮 / 上轮完成 → 新一轮（点亮状态保留）
         rs = _build_round(session_id)
@@ -250,7 +254,8 @@ def journey_next(session_id, just_answered_qid=None, was_correct=None, duration=
             # 所有叶节点已点亮
             rs['status'] = 'complete'
             _save_round_state(session_id, rs)
-            return _response(session_id, state, rs, question=None, round_complete=True, lit_now=lit_now)
+            return _response(session_id, state, rs, question=None, round_complete=True,
+                             lit_now=lit_now, counts=counts)
 
     entry = rs['entries'][rs['idx']] if rs['idx'] < len(rs['entries']) else None
 
@@ -267,9 +272,11 @@ def journey_next(session_id, just_answered_qid=None, was_correct=None, duration=
                     # 规则1：连对 3 + 间隔≤2min → 点亮并跳过剩余
                     _set_lit(session_id, entry['leaf'])
                     lit_now = entry['leaf']
-                elif _correct_counts(session_id).get(entry['leaf'], 0) >= CORRECT_LIT:
-                    # 规则3：跨池累计答对 10 道 → 点亮并跳过剩余
-                    lit_now = entry['leaf']
+                else:
+                    counts = _correct_counts(session_id)
+                    if counts.get(entry['leaf'], 0) >= CORRECT_LIT:
+                        # 规则3：跨池累计答对 10 道 → 点亮并跳过剩余
+                        lit_now = entry['leaf']
                 if lit_now:
                     if entry['leaf'] not in rs['lit_round']:
                         rs['lit_round'].append(entry['leaf'])
@@ -282,7 +289,8 @@ def journey_next(session_id, just_answered_qid=None, was_correct=None, duration=
         if rs['idx'] >= len(rs['entries']):
             rs['status'] = 'complete'
             _save_round_state(session_id, rs)
-            return _response(session_id, state, rs, question=None, round_complete=True, lit_now=lit_now)
+            return _response(session_id, state, rs, question=None, round_complete=True,
+                             lit_now=lit_now, counts=counts)
         entry = rs['entries'][rs['idx']]
         if rs['pos'] >= len(entry['plan']):
             # 规则2：本轮该叶全部答对（不计间隔）→ 点亮
@@ -299,7 +307,7 @@ def journey_next(session_id, just_answered_qid=None, was_correct=None, duration=
         rs['pos'] += 1
         _save_round_state(session_id, rs)
         return _response(session_id, state, rs, question=get_question_by_id(qid),
-                         round_complete=False, lit_now=lit_now)
+                         round_complete=False, lit_now=lit_now, counts=counts)
 
 
 # ==================== 响应组装 ====================
@@ -317,8 +325,8 @@ def _inject_round_hint(question):
         question['hint'] = ROUND_HINT
     return question
 
-def _response(session_id, state, rs, question=None, round_complete=False, lit_now=None):
-    """组装响应：保留前端兼容字段 + lights/round/round_complete"""
+def _response(session_id, state, rs, question=None, round_complete=False, lit_now=None, counts=None):
+    """组装响应：保留前端兼容字段 + lights/round/round_complete；counts 复用调用方已算的累计答对数"""
     entry = rs['entries'][rs['idx']] if rs['idx'] < len(rs['entries']) else None
     question = _inject_round_hint(question)
     return {
@@ -327,7 +335,7 @@ def _response(session_id, state, rs, question=None, round_complete=False, lit_no
         'question': question,
         'graph': get_graph(),
         'mastery': get_mastery(session_id),
-        'lights': compute_lights(session_id),
+        'lights': compute_lights(session_id, counts=counts),
         'round': {
             'status': rs['status'],
             'branch': entry['branch'] if entry else None,

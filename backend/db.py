@@ -5,6 +5,7 @@ import os
 from flask import g, has_app_context
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'questions.db')
+SCHEMA_VERSION = '1'   # 2026-09-03：schema 版本号落库，为后续破坏性迁移留依据
 
 def get_connection():
     """获取数据库连接。Flask请求上下文内复用 g 连接；外部创建独立连接。"""
@@ -48,6 +49,9 @@ def init_db():
     except: pass
     try: c.execute("ALTER TABLE questions ADD COLUMN q_level TEXT")
     except: pass
+    # 考察点限定（JSON）：判题时必须出现的构造，空则判题时从标准答案自动推导
+    try: c.execute("ALTER TABLE questions ADD COLUMN required_points TEXT")
+    except: pass
     # 真题测试题库（独立表，schema 同 questions）
     c.execute('''CREATE TABLE IF NOT EXISTS exam_questions (
         id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT NOT NULL,
@@ -55,6 +59,8 @@ def init_db():
         title TEXT NOT NULL, description TEXT NOT NULL, table_schema TEXT, initial_data TEXT,
         correct_answer TEXT NOT NULL, explanation TEXT, options TEXT, option_explanations TEXT,
         expected_output TEXT)''')
+    try: c.execute("ALTER TABLE exam_questions ADD COLUMN required_points TEXT")
+    except: pass
     c.execute('''CREATE TABLE IF NOT EXISTS user_progress (
         id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL,
         question_id INTEGER NOT NULL, user_answer TEXT,
@@ -82,7 +88,11 @@ def init_db():
         session_id TEXT NOT NULL, node_id TEXT NOT NULL REFERENCES knowledge_nodes(id),
         correct_count INTEGER DEFAULT 0, total_count INTEGER DEFAULT 0,
         alpha REAL DEFAULT 1.0, beta REAL DEFAULT 1.0,
+        ewma REAL,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    # 掌握度模型已从贝叶斯(Beta)迁移为 EWMA：存量库补 ewma 列（alpha/beta 列保留不再更新）
+    try: c.execute("ALTER TABLE user_mastery ADD COLUMN ewma REAL")
+    except: pass
     c.execute('''CREATE TABLE IF NOT EXISTS journey_state (
         session_id TEXT PRIMARY KEY,
         current_node TEXT, node_queue TEXT DEFAULT '[]',
@@ -120,6 +130,9 @@ def init_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     # GitHub 登录：绑定的 GitHub 数字 ID（部分唯一索引：一个 GitHub 账号只绑一个平台账号，存量 NULL 互不冲突）
     try: c.execute("ALTER TABLE users ADD COLUMN github_id TEXT")
+    except: pass
+    # 最后活跃时间：会话过期判定依据（登录/注册/复用时更新；登出时置为远古时间使其立即失效）
+    try: c.execute("ALTER TABLE users ADD COLUMN last_active TIMESTAMP")
     except: pass
     c.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_github_id ON users(github_id) WHERE github_id IS NOT NULL")
     c.execute('''CREATE TABLE IF NOT EXISTS admin_users (
@@ -182,6 +195,36 @@ def init_db():
         category TEXT NOT NULL,
         source TEXT DEFAULT 'derived',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    # 实时动态（2026-09-03）：用户动态（kind='user'）与管理员动态（kind='admin'）
+    # 普通管理员可查用户动态；管理员动态仅主管理员可见（定位与追责）
+    c.execute('''CREATE TABLE IF NOT EXISTS activity_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        kind TEXT NOT NULL,
+        actor TEXT NOT NULL,
+        action TEXT NOT NULL,
+        target TEXT DEFAULT '',
+        detail TEXT DEFAULT '',
+        extra TEXT DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_al_kind ON activity_log(kind, id)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_al_time ON activity_log(id)')
+    # 系统日志（2026-09-03）：异常/判题错误/失败登录/限流等，供管理员实时排查后反馈开发者
+    c.execute('''CREATE TABLE IF NOT EXISTS system_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        level TEXT NOT NULL DEFAULT 'info',
+        source TEXT NOT NULL DEFAULT 'app',
+        message TEXT NOT NULL,
+        detail TEXT DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_sl_time ON system_logs(id)')
+    # schema 版本（2026-09-03）：记录当前结构版本，迁移前先读旧版本
+    c.execute('''CREATE TABLE IF NOT EXISTS schema_meta (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    c.execute("INSERT INTO schema_meta(key, value) VALUES ('schema_version', ?)"
+              " ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP",
+              (SCHEMA_VERSION,))
     # ---- 性能索引 ----
     c.execute('CREATE INDEX IF NOT EXISTS idx_up_session ON user_progress(session_id)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_up_question ON user_progress(question_id)')

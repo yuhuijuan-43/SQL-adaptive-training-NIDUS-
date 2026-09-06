@@ -10,7 +10,7 @@ from collections import Counter
 
 sys.path.insert(0, r'E:\my normal txt\DigQuant\项目\SQL自适应训练\SQL自适应训练\backend')
 
-with open(r'E:\my normal txt\DigQuant\项目\SQL自适应训练\SQL自适应训练\exam_questions.json',
+with open(r'E:\my normal txt\DigQuant\项目\SQL自适应训练\SQL自适应训练\data\exam_questions.json',
           encoding='utf-8') as f:
     questions = json.load(f)
 

@@ -4,6 +4,7 @@ import os
 
 from db import get_connection
 from repositories import invalidate_graph_cache
+from backup import backup_database
 
 # ============================================================
 # 官方知识图谱结构（knowledge map.md + knowledge_tags.csv，2026-08）
@@ -417,9 +418,9 @@ def get_seed_questions():
 
 def seed_questions():
     conn = get_connection()
-    # 优先从 questions.json 加载（纯JSON，直接 json.load）；回退到 questions.py（旧格式，正则解析）
-    qpath_json = os.path.join(os.path.dirname(__file__), '..', 'questions.json')
-    qpath_py = os.path.join(os.path.dirname(__file__), '..', 'questions.py')
+    # 优先从 data/questions.json 加载（纯JSON，直接 json.load）；回退到 data/questions.py（旧格式，正则解析）
+    qpath_json = os.path.join(os.path.dirname(__file__), '..', 'data', 'questions.json')
+    qpath_py = os.path.join(os.path.dirname(__file__), '..', 'data', 'questions.py')
     questions = []
     if os.path.exists(qpath_json):
         with open(qpath_json, 'r', encoding='utf-8') as f:
@@ -442,6 +443,7 @@ def seed_questions():
         if count == len(questions):
             return
         print(f"[seed] 题库版本不一致（库内 {count} 题 vs 文件 {len(questions)} 题），自动重建题库...")
+        backup_database(tag='seed-rebuild-practice')   # 重建前自动备份，防止误操作丢数据
         conn.execute('DELETE FROM question_knowledge')
         conn.execute('DELETE FROM questions')
         # 重置 AUTOINCREMENT 序列：重建后 id 从 1 起按文件顺序重导，与本地/全新库一致（旧答题记录保持有效）
@@ -464,7 +466,7 @@ def seed_questions():
 def seed_exam_questions():
     """Load exam questions from exam_questions.json into exam_questions table."""
     conn = get_connection()
-    qpath = os.path.join(os.path.dirname(__file__), '..', 'exam_questions.json')
+    qpath = os.path.join(os.path.dirname(__file__), '..', 'data', 'exam_questions.json')
     if not os.path.exists(qpath):
         print("exam_questions.json not found, skipping exam seed.")
         return
@@ -476,6 +478,7 @@ def seed_exam_questions():
         if count == len(questions):
             return
         print(f"[seed] 真题库版本不一致（库内 {count} 题 vs 文件 {len(questions)} 题），自动重建...")
+        backup_database(tag='seed-rebuild-exam')
         conn.execute('DELETE FROM exam_questions')
         conn.execute("DELETE FROM sqlite_sequence WHERE name='exam_questions'")
         conn.commit()

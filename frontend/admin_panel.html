@@ -80,7 +80,7 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
 .mini-btn.danger:hover { color: var(--error); border-color: var(--error); }
 .mini-btn.copy { color: var(--success); border-color: rgba(14, 166, 120, 0.35); }
 .mini-btn.copy:hover { color: var(--success); border-color: var(--success); }
-/* 同事列表单元格内操作按钮：换行堆叠时保持纵向间距（停用/重置密钥等） */
+/* 同事列表单元格内操作按钮：换行堆叠时保持纵向间距 */
 #colleaguesBody td .mini-btn { margin: 3px 0; }
 .badge-primary {
   display: inline-block; margin-left: 8px; padding: 1px 10px; border-radius: 999px;
@@ -105,6 +105,54 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
   color: var(--text-1); user-select: all;
 }
 .key-masked.revealed { color: var(--accent); background: rgba(74, 125, 255, 0.06); border-color: rgba(74, 125, 255, 0.3); }
+/* 实时动态 / 系统日志卡片 */
+.live-badge {
+  display: inline-flex; align-items: center; gap: 5px; margin-left: auto;
+  padding: 2px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 700;
+  color: var(--success); background: rgba(14, 166, 120, 0.1);
+}
+.live-badge .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: livePulse 1.6s ease-in-out infinite; }
+@keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.feed { max-height: 380px; overflow-y: auto; margin-top: 4px; }
+.feed-row {
+  display: flex; align-items: baseline; gap: 10px; padding: 7px 2px;
+  border-bottom: 1px dashed rgba(88, 110, 170, 0.12); font-size: 13px; line-height: 1.55;
+}
+.feed-row:last-child { border-bottom: none; }
+.feed-time { flex-shrink: 0; font-family: var(--mono, 'SF Mono', Consolas, monospace); font-size: 11px; color: var(--text-3); min-width: 118px; }
+.feed-actor { flex-shrink: 0; font-weight: 700; color: var(--accent); }
+.feed-actor.admin { color: #e8783c; }
+.feed-actor.lockable { cursor: pointer; border-bottom: 1px dashed rgba(74,125,255,0.35); }
+.feed-actor.lockable:hover { color: #fff; background: var(--accent-grad); border-radius: 6px; padding: 0 4px; }
+.feed-act { flex: 1; min-width: 0; word-break: break-word; color: var(--text-1); }
+.feed-act .ok { color: var(--success); font-weight: 700; }
+.feed-act .bad { color: var(--error); font-weight: 700; }
+.feed-empty { text-align: center; color: var(--text-3); padding: 18px 0; font-size: 12.5px; }
+.log-lv { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; margin-right: 6px; }
+.log-lv.info { color: var(--accent); background: rgba(74, 125, 255, 0.1); }
+.log-lv.warn { color: #d0a24a; background: rgba(208, 162, 74, 0.12); }
+.log-lv.error { color: var(--error); background: rgba(224, 74, 85, 0.1); }
+.log-src { font-size: 10.5px; color: var(--text-3); font-family: var(--mono, 'SF Mono', Consolas, monospace); }
+.monitor-note { font-size: 11.5px; color: var(--text-3); margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+.filter-bar { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.filter-bar input {
+  flex: 1; min-width: 160px; height: 34px; padding: 0 12px; border-radius: 8px; outline: none;
+  background: rgba(255,255,255,0.75); border: 1px solid var(--glass-border);
+  color: var(--text-1); font-size: 12.5px;
+}
+.filter-bar input:focus { border-color: rgba(74,125,255,0.7); background: #fff; }
+.locked-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 700; color: var(--accent);
+  background: rgba(74,125,255,0.1); border: 1px solid rgba(74,125,255,0.25);
+}
+.locate-meta { font-size: 11.5px; color: var(--text-3); }
+.feed-pager {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 10px; flex-wrap: wrap;
+}
+.feed-pager .mini-btn { font-size: 11.5px; padding: 3px 10px; }
+.pager-info { font-size: 11.5px; color: var(--text-2); }
 .footer {
   border-top: 1px solid rgba(88, 110, 170, 0.14); padding: 20px 0 26px; text-align: center;
   font-size: 12px; color: var(--text-3); position: relative; z-index: 1;
@@ -185,7 +233,7 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
       <span>SQL 自适应训练</span>
     </div>
     <div class="nav-links">
-      <button class="nav-link active" data-i18n="nav_panel">管理员面板</button>
+      <button class="nav-link active" data-i18n="nav_panel">管理后台</button>
     </div>
 
 </div>
@@ -203,22 +251,62 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
         <div class="sec-tip" data-i18n="welcome_sub">这里是管理员的工作台：查看同事动态与团队信息</div>
       </div>
       <div style="display:flex;gap:8px">
+        <button class="mini-btn" onclick="window.location.href='admin'" data-i18n="open_dashboard">平台数据总览</button>
         <button class="mini-btn" onclick="window.location.href='index_glass.html'" data-i18n="back_portal">返回门户</button>
         <button class="mini-btn danger" onclick="logout()" data-i18n="logout">退出登录</button>
       </div>
     </div>
   </div>
 
-  <!-- 我的密钥（一人一钥：每位管理员专属） -->
+  <!-- 用户动态（实时，所有管理员可见） -->
   <div class="card glass">
-    <div class="card-title"><span class="ct-dot"></span><span data-i18n="key_title">我的密钥</span></div>
-    <div class="key-row">
-      <code class="key-masked" id="adminKeyText">••••••••••••••••••</code>
-      <button class="mini-btn" id="keyEyeBtn" onclick="toggleKeyShow()" data-i18n="key_show">显示</button>
-      <button class="mini-btn copy" onclick="copyAdminKey()" data-i18n="key_copy">复制密钥</button>
-      <button class="mini-btn" id="keyChangeBtn" onclick="openKeyChange()" data-i18n="key_change">更换密钥</button>
+    <div class="card-title"><span class="ct-dot" style="background:#0ea678"></span><span data-i18n="ua_title">用户动态</span><span class="live-badge"><span class="pulse-dot"></span><span data-i18n="live_now">实时</span></span></div>
+    <div class="sec-tip" data-i18n="ua_hint">平台学员的注册 / 登录 / 答题 / 摸底动态，约每 6 秒自动刷新 —— 便于快速定位问题并反馈给开发者</div>
+    <div class="filter-bar">
+      <input id="userLockInput" type="text" data-i18n-placeholder="locate_user_ph" placeholder="定位学员：输入用户名后点「定位」，显示该学员全部动态（不影响账号）" onkeydown="if(event.key==='Enter')lockFeed('user')">
+      <button class="mini-btn" onclick="lockFeed('user')" data-i18n="locate_btn">定位</button>
+      <button class="mini-btn" id="userLockClear" onclick="clearFeedLock('user')" style="display:none" data-i18n="locate_exit">退出定位</button>
+      <span class="locked-chip" id="userLockChip" style="display:none"></span>
+      <span class="locate-meta" id="userLocateMeta" style="display:none"></span>
     </div>
-    <div class="sec-tip" data-i18n="key_hint">此密钥为你的专属密钥，用于登录「管理后台」（双重验证），请勿泄露给他人</div>
+    <div class="feed" id="userActivityFeed"><div class="feed-empty" data-i18n="loading">加载中...</div></div>
+    <div class="feed-pager" id="userPager" style="display:none">
+      <button class="mini-btn" id="userPrevBtn" onclick="feedPage('user', -1)" data-i18n="pager_prev">上一页</button>
+      <span class="pager-info" id="userPagerInfo"></span>
+      <button class="mini-btn" id="userNextBtn" onclick="feedPage('user', 1)" data-i18n="pager_next">下一页</button>
+    </div>
+    <div class="monitor-note" data-i18n="ua_note">💡 如需查看某位用户的完整答题记录，请在「平台数据总览」的用户明细中点击该用户。</div>
+  </div>
+
+  <!-- 系统日志（实时，所有管理员可见） -->
+  <div class="card glass">
+    <div class="card-title"><span class="ct-dot" style="background:#e8783c"></span><span data-i18n="sl_title">系统日志</span><span class="live-badge"><span class="pulse-dot"></span><span data-i18n="live_now">实时</span></span></div>
+    <div class="sec-tip" data-i18n="sl_hint">后端异常 / 判题错误 / 失败登录 / 限流等系统记录，约每 6 秒自动刷新 —— 排查后可直接反馈给开发者</div>
+    <div class="feed" id="systemLogFeed"><div class="feed-empty" data-i18n="loading">加载中...</div></div>
+    <div class="feed-pager" id="sysPager" style="display:none">
+      <button class="mini-btn" id="sysPrevBtn" onclick="feedPage('sys', -1)" data-i18n="pager_prev">上一页</button>
+      <span class="pager-info" id="sysPagerInfo"></span>
+      <button class="mini-btn" id="sysNextBtn" onclick="feedPage('sys', 1)" data-i18n="pager_next">下一页</button>
+    </div>
+  </div>
+
+  <!-- 管理员动态（实时，仅主管理员可见：定位与追责） -->
+  <div class="card glass" id="adminActivityCard" style="display:none">
+    <div class="card-title"><span class="ct-dot" style="background:#8b5bff"></span><span data-i18n="aa_title">管理员动态</span><span class="live-badge"><span class="pulse-dot"></span><span data-i18n="live_now">实时</span></span></div>
+    <div class="sec-tip" data-i18n="aa_hint">仅主管理员可见：全部管理员的登录、注册与后台操作记录，约每 6 秒自动刷新 —— 方便定位与追责</div>
+    <div class="filter-bar">
+      <input id="adminLockInput" type="text" data-i18n-placeholder="locate_admin_ph" placeholder="定位管理员：输入用户名后点「定位」，显示该管理员全部动态" onkeydown="if(event.key==='Enter')lockFeed('admin')">
+      <button class="mini-btn" onclick="lockFeed('admin')" data-i18n="locate_btn">定位</button>
+      <button class="mini-btn" id="adminLockClear" onclick="clearFeedLock('admin')" style="display:none" data-i18n="locate_exit">退出定位</button>
+      <span class="locked-chip" id="adminLockChip" style="display:none"></span>
+      <span class="locate-meta" id="adminLocateMeta" style="display:none"></span>
+    </div>
+    <div class="feed" id="adminActivityFeed"><div class="feed-empty" data-i18n="loading">加载中...</div></div>
+    <div class="feed-pager" id="admPager" style="display:none">
+      <button class="mini-btn" id="admPrevBtn" onclick="feedPage('adm', -1)" data-i18n="pager_prev">上一页</button>
+      <span class="pager-info" id="admPagerInfo"></span>
+      <button class="mini-btn" id="admNextBtn" onclick="feedPage('adm', 1)" data-i18n="pager_next">下一页</button>
+    </div>
   </div>
 
   <!-- 内推码管理（仅主管理员可见） -->
@@ -243,7 +331,7 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
     <div class="card-title"><span class="ct-dot"></span><span data-i18n="colleagues_title">我的同事</span></div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th data-i18n="col_user">管理员用户名</th><th data-i18n="col_last">最后上线时间</th><th data-i18n="col_ops">操作</th><th id="keyColHead" style="display:none" data-i18n="col_key">密钥</th><th id="keyStatusColHead" style="display:none" data-i18n="col_key_status">密钥状态</th></tr></thead>
+        <thead><tr><th data-i18n="col_user">管理员用户名</th><th data-i18n="col_last">最后上线时间</th><th data-i18n="col_ops">操作</th></tr></thead>
         <tbody id="colleaguesBody"><tr><td colspan="3" class="empty" data-i18n="loading">加载中...</td></tr></tbody>
       </table>
     </div>
@@ -306,60 +394,6 @@ table tbody tr:hover td { background: rgba(88, 110, 170, 0.06); }
   </div>
 </div>
 
-<!-- 更换我的密钥弹窗（全员自助；更换后本人会话注销，需重新登录） -->
-<div class="modal-mask" id="keyModal" onclick="if(event.target===this)closeKeyChange()">
-  <div class="modal">
-    <div class="modal-head">
-      <span class="modal-title" data-i18n="key_change_title">更换我的密钥</span>
-      <button class="modal-close" onclick="closeKeyChange()">✕</button>
-    </div>
-    <div class="modal-tip" data-i18n="key_change_tip">更换后你的旧密钥立即失效，全部会话将注销，需重新登录。</div>
-    <div class="pwd-row">
-      <input type="text" id="newKeyInput" placeholder="New Key">
-      <button class="mini-btn" onclick="genKey()" data-i18n="gen">生成</button>
-      <button class="mini-btn copy" onclick="copyNewKey()" data-i18n="copy">复制</button>
-    </div>
-    <div class="modal-foot">
-      <button class="mini-btn" onclick="closeKeyChange()" data-i18n="cancel">取消</button>
-      <button class="btn-ok" id="keyOkBtn" onclick="confirmKeyChange()" data-i18n="confirm_change">确认更换</button>
-    </div>
-  </div>
-</div>
-
-<!-- 停用/启用同事密钥确认弹窗（主管理员专用；停用 = 强制下线 + 禁止登录） -->
-<div class="modal-mask" id="keyToggleModal" onclick="if(event.target===this)closeKeyToggle()">
-  <div class="modal">
-    <div class="modal-head">
-      <span class="modal-title" data-i18n="key_toggle_title">密钥状态变更</span>
-      <button class="modal-close" onclick="closeKeyToggle()">✕</button>
-    </div>
-    <div class="modal-tip" id="keyToggleTip"></div>
-    <div class="modal-foot">
-      <button class="mini-btn" onclick="closeKeyToggle()" data-i18n="cancel">取消</button>
-      <button class="btn-ok" id="keyToggleOkBtn" onclick="confirmKeyToggle()" data-i18n="key_confirm_disable">确认停用</button>
-    </div>
-  </div>
-</div>
-
-<!-- 重置同事密钥弹窗（主管理员专用；重置后展示新密钥） -->
-<div class="modal-mask" id="keyResetModal" onclick="if(event.target===this)closeKeyReset()">
-  <div class="modal">
-    <div class="modal-head">
-      <span class="modal-title" data-i18n="key_reset_title">重置密钥</span>
-      <button class="modal-close" onclick="closeKeyReset()">✕</button>
-    </div>
-    <div class="modal-tip" id="keyResetTip"></div>
-    <div class="modal-tip" id="keyResetResult" style="display:none">
-      <code class="key-masked revealed" id="keyResetResultText" style="display:block;margin:0 0 8px"></code>
-      <button class="mini-btn copy" onclick="copyResetResult()" data-i18n="key_copy">复制密钥</button>
-    </div>
-    <div class="modal-foot">
-      <button class="mini-btn" onclick="closeKeyReset()" data-i18n="cancel">取消</button>
-      <button class="btn-ok" id="keyResetOkBtn" onclick="confirmKeyReset()" data-i18n="key_confirm_reset">确认重置</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
@@ -380,17 +414,42 @@ function adminFetch(path, opts) {
 
 /* ---- 中英双语 ---- */
 const I18N = {
-  page_title: { zh: '管理员面板 · SQL 自适应训练', en: 'Admin Panel · SQL Adaptive Training','zh_tw':'管理員面板 · SQL 自適應訓練','ja':'管理者パネル · SQL適応型トレーニング','hi':'एडमिन पैनल · SQL अनुकूली प्रशिक्षण','pt':'Painel do Administrador · Treinamento Adaptativo SQL' },
-  nav_panel: { zh: '管理员面板', en: 'Admin Panel','zh_tw':'管理員面板','ja':'管理者パネル','hi':'एडमिन पैनल','pt':'Painel do Administrador' },
+  page_title: { zh: '管理后台 · SQL 自适应训练', en: 'Admin Console · SQL Adaptive Training','zh_tw':'管理後台 · SQL 自適應訓練','ja':'管理コンソール · SQLアダプティブトレーニング','hi':'व्यवस्थापक कंसोल · SQL अनुकूली प्रशिक्षण','pt':'Painel de Administração · Treinamento Adaptativo SQL' },
+  nav_panel: { zh: '管理后台', en: 'Admin Console','zh_tw':'管理後台','ja':'管理コンソール','hi':'व्यवस्थापक कंसोल','pt':'Painel de Administração' },
   welcome: { zh: '你好，', en: 'Hello, ','zh_tw':'你好，','ja':'こんにちは、','hi':'नमस्ते, ','pt':'Olá, ' },
-  welcome_sub: { zh: '这里是管理员的工作台：查看同事动态与团队信息', en: 'Your admin workspace: see colleagues\' activity and manage platform user passwords','zh_tw':'這裡是管理員的工作台：查看同事動態與團隊信息','ja':'ここは管理者のワークスペースです：同僚の活動とチーム情報を確認できます','hi':'यह एडमिन का कार्यक्षेत्र है: सहकर्मियों की गतिविधि और टीम जानकारी देखें','pt':'Este é o espaço de trabalho do administrador: veja a atividade dos colegas e as informações da equipe' },
+  welcome_sub: { zh: '管理后台工作台：实时用户动态 / 系统日志 / 管理员动态（仅主管理员）与团队管理',
+                 en: 'Admin console: live user activity · system logs · admin activity (primary only) · team management','zh_tw':'管理後台工作台：即時使用者動態 / 系統日誌 / 管理員動態（僅主管理員）與團隊管理','ja':'管理コンソール：リアルタイムのユーザー動向 · システムログ · 管理者の動向（プライマリのみ） · チーム管理','hi':'व्यवस्थापक कंसोल: लाइव उपयोगकर्ता गतिविधि · सिस्टम लॉग · एडमिन गतिविधि (केवल प्राथमिक) · टीम प्रबंधन','pt':'Painel de administração: atividade de usuários ao vivo · logs do sistema · atividade dos administradores (somente principal) · gestão de equipe' },
   back_portal: { zh: '返回门户', en: 'Back to Portal','zh_tw':'返回入口','ja':'ポータルに戻る','hi':'पोर्टल पर वापस जाएं','pt':'Voltar ao Portal' },
+  open_dashboard: { zh: '平台数据总览', en: 'Data Overview','zh_tw':'平台數據總覽','ja':'データダッシュボード','hi':'डेटा अवलोकन','pt':'Visão Geral dos Dados' },
   logout: { zh: '退出登录', en: 'Log Out','zh_tw':'登出','ja':'ログアウト','hi':'लॉग आउट','pt':'Sair' },
+  live_now: { zh: '实时', en: 'LIVE','zh_tw':'即時','ja':'リアルタイム','hi':'लाइव','pt':'Ao vivo' },
+  locate_user_ph: { zh: '定位学员：输入用户名后点「定位」，显示该学员全部动态（不影响账号）', en: 'Locate learner: enter a username and click Locate to see all of that learner\'s activity (does not affect the account)','zh_tw':'定位學員：輸入使用者名稱後點「定位」，顯示該學員全部動態（不影響帳號）','ja':'学習者を検索：ユーザー名を入力して「表示」をクリックすると、その学習者のすべての動向を表示します（アカウントには影響しません）','hi':'शिक्षार्थी खोजें: उपयोगकर्ता नाम दर्ज करें और देखें पर क्लिक करें — उस शिक्षार्थी की पूरी गतिविधि दिखाई देगी (खाते पर कोई असर नहीं)','pt':'Localizar aluno: digite o nome de usuário e clique em Localizar para ver toda a atividade dele (não afeta a conta)' },
+  locate_admin_ph: { zh: '定位管理员：输入用户名后点「定位」，显示该管理员全部动态', en: 'Locate admin: enter a username and click Locate to see all of that admin\'s activity','zh_tw':'定位管理員：輸入使用者名稱後點「定位」，顯示該管理員全部動態','ja':'管理者を検索：ユーザー名を入力して「表示」をクリックすると、その管理者のすべての動向を表示します','hi':'एडमिन खोजें: उपयोगकर्ता नाम दर्ज करें और देखें पर क्लिक करें — उस एडमिन की पूरी गतिविधि दिखाई देगी','pt':'Localizar admin: digite o nome de usuário e clique em Localizar para ver toda a atividade dele' },
+  locate_btn: { zh: '定位', en: 'Locate','zh_tw':'定位','ja':'表示','hi':'देखें','pt':'Localizar' },
+  locate_exit: { zh: '退出定位', en: 'Clear focus','zh_tw':'退出定位','ja':'表示を終了','hi':'खोज समाप्त करें','pt':'Sair da localização' },
+  locating_tip: { zh: '🔍 正在查看：{0}', en: '🔍 Viewing: {0}','zh_tw':'🔍 正在查看：{0}','ja':'🔍 表示中：{0}','hi':'🔍 देखा जा रहा है: {0}','pt':'🔍 Visualizando: {0}' },
+  locate_meta: { zh: '共 {0} 条动态记录', en: '{0} activity records in total','zh_tw':'共 {0} 條動態記錄','ja':'合計 {0} 件の動向','hi':'कुल {0} गतिविधि रिकॉर्ड','pt':'{0} registros de atividade no total' },
+  ua_title: { zh: '用户动态', en: 'User Activity','zh_tw':'使用者動態','ja':'ユーザー動向','hi':'उपयोगकर्ता गतिविधि','pt':'Atividade de usuários' },
+  ua_hint: { zh: '平台学员的注册 / 登录 / 答题 / 摸底动态，约每 6 秒自动刷新 —— 便于快速定位问题并反馈给开发者',
+             en: 'Platform learners\' sign-ups / logins / answers / diagnostics — auto-refresh every ~6s to spot issues and report to developers','zh_tw':'平台學員的註冊 / 登入 / 答題 / 摸底動態，約每 6 秒自動刷新 —— 便於快速定位問題並回饋給開發者','ja':'プラットフォーム学習者の登録・ログイン・回答・診断 — 約6秒ごとに自動更新、問題を素早く見つけて開発者に報告できます','hi':'प्लेटफ़ॉर्म शिक्षार्थियों के पंजीकरण / लॉगिन / उत्तर / निदान — लगभग हर 6 सेकंड में अपडेट, समस्या ढूंढकर डेवलपर को रिपोर्ट करें','pt':'Registros / logins / respostas / diagnósticos dos alunos — atualização automática a cada ~6s para identificar problemas e reportar aos desenvolvedores' },
+  ua_note: { zh: '💡 需要查看某位用户的完整答题记录？前往「平台数据总览」的用户明细中点击该用户。',
+             en: '💡 Want the full answer history of a user? Open "Data Overview" and click the user in the list.','zh_tw':'💡 需要查看某位使用者的完整答題記錄？前往「平台數據總覽」的使用者明細中點擊該使用者。','ja':'💡 ユーザーの回答履歴全体を見るには「データダッシュボード」でユーザーをクリックしてください。','hi':'💡 किसी उपयोगकर्ता का पूरा उत्तर इतिहास चाहते हैं? "डेटा अवलोकन" में उपयोगकर्ता पर क्लिक करें।','pt':'💡 Quer o histórico completo de respostas de um usuário? Abra a "Visão Geral dos Dados" e clique no usuário.' },
+  sl_title: { zh: '系统日志', en: 'System Logs','zh_tw':'系統日誌','ja':'システムログ','hi':'सिस्टम लॉग','pt':'Logs do Sistema' },
+  sl_hint: { zh: '后端异常 / 判题错误 / 失败登录 / 限流等系统记录，约每 6 秒自动刷新 —— 排查后可直接反馈给开发者',
+             en: 'Backend errors / SQL judge issues / failed logins / rate limits — auto-refresh every ~6s; report them to developers after checking','zh_tw':'後端異常 / 判題錯誤 / 失敗登入 / 限流等系統記錄，約每 6 秒自動刷新 —— 排查後可直接回饋給開發者','ja':'バックエンド例外・判定エラー・ログイン失敗・レート制限など — 約6秒ごとに自動更新。確認後、開発者に報告できます','hi':'बैकएंड त्रुटियाँ / SQL निर्णय समस्याएँ / असफल लॉगिन / रेट सीमाएँ — हर ~6 सेकंड में अपडेट; जाँच के बाद डेवलपर को रिपोर्ट करें','pt':'Erros de backend / problemas de julgamento SQL / logins falhos / limites de taxa — atualização automática a cada ~6s; reporte aos desenvolvedores após verificar' },
+  aa_title: { zh: '管理员动态', en: 'Admin Activity','zh_tw':'管理員動態','ja':'管理者の動向','hi':'एडमिन गतिविधि','pt':'Atividade dos administradores' },
+  aa_hint: { zh: '仅主管理员可见：全部管理员的登录、注册与后台操作记录，约每 6 秒自动刷新 —— 方便定位与追责',
+             en: 'Primary admin only: all admins\' logins, registrations and console actions — auto-refresh every ~6s for accountability','zh_tw':'僅主管理員可見：全部管理員的登入、註冊與後台操作記錄，約每 6 秒自動刷新 —— 方便定位與追責','ja':'プライマリ管理者のみ：全管理者のログイン・登録・コンソール操作 — 約6秒ごとに自動更新、責任の追跡に便利','hi':'केवल प्राथमिक एडमिन: सभी एडमिन के लॉगिन, पंजीकरण और कंसोल क्रियाएँ — हर ~6 सेकंड में अपडेट, जवाबदेही के लिए','pt':'Somente administrador principal: logins, registros e ações de console de todos os administradores — atualização automática a cada ~6s para responsabilização' },
   colleagues_title: { zh: '我的同事', en: 'My Colleagues','zh_tw':'我的同事','ja':'同僚','hi':'मेरे सहयोगी','pt':'Meus Colegas' },
   col_user: { zh: '管理员用户名', en: 'Admin Username','zh_tw':'管理員使用者名稱','ja':'管理者ユーザー名','hi':'एडमिन उपयोगकर्ता नाम','pt':'Nome de usuário do administrador' },
   col_last: { zh: '最后上线时间', en: 'Last Online','zh_tw':'最後上線時間','ja':'最終オンライン時刻','hi':'अंतिम ऑनलाइन समय','pt':'Último acesso' },
   col_ops: { zh: '操作', en: 'Actions','zh_tw':'操作','ja':'操作','hi':'क्रियाएँ','pt':'Ações' },
   loading: { zh: '加载中...', en: 'Loading...','zh_tw':'載入中...','ja':'読み込み中...','hi':'लोड हो रहा है...','pt':'Carregando...' },
+  empty_feed: { zh: '暂无记录', en: 'No records yet','zh_tw':'暫無記錄','ja':'記録はまだありません','hi':'अभी कोई रिकॉर्ड नहीं','pt':'Nenhum registro ainda' },
+  feed_error: { zh: '动态加载失败：请确认后端已启动且会话有效', en: 'Failed to load activity — make sure the backend is running and your session is valid','zh_tw':'動態載入失敗：請確認後端已啟動且工作階段有效','ja':'動向の読み込みに失敗しました：バックエンドが起動し、セッションが有効であることを確認してください','hi':'गतिविधि लोड विफल — सुनिश्चित करें कि बैकएंड चल रहा है और आपका सत्र मान्य है','pt':'Falha ao carregar atividade — verifique se o backend está em execução e sua sessão é válida' },
+  pager_prev: { zh: '上一页', en: 'Prev','zh_tw':'上一頁','ja':'前へ','hi':'पिछला','pt':'Anterior' },
+  pager_next: { zh: '下一页', en: 'Next','zh_tw':'下一頁','ja':'次へ','hi':'अगला','pt':'Próximo' },
+  pager_info: { zh: '第 {0}/{1} 页 · 每页 5 条 · 共 {2} 条', en: 'Page {0}/{1} · 5 per page · {2} in total','zh_tw':'第 {0}/{1} 頁 · 每頁 5 條 · 共 {2} 條','ja':'{0}/{1} ページ · 各5件 · 合計 {2} 件','hi':'पृष्ठ {0}/{1} · 5 प्रति पृष्ठ · कुल {2}','pt':'Página {0}/{1} · 5 por página · {2} no total' },
   empty_colleagues: { zh: '暂无其他管理员', en: 'No other admins yet','zh_tw':'暫無其他管理員','ja':'他の管理者はいません','hi':'अभी कोई अन्य एडमिन नहीं है','pt':'Ainda não há outros administradores' },
   never: { zh: '从未上线', en: 'Never','zh_tw':'從未上線','ja':'オンライン履歴なし','hi':'कभी ऑनलाइन नहीं','pt':'Nunca' },
   badge_primary: { zh: '主管理员', en: 'Primary','zh_tw':'主管理員','ja':'プライマリ','hi':'प्राथमिक','pt':'Principal' },
@@ -424,42 +483,6 @@ const I18N = {
   del_admin_ok: { zh: '删除完毕：管理员「{0}」及其数据已从数据库移除', en: 'Done: admin "{0}" and their data removed','zh_tw':'刪除完畢：管理員「{0}」及其資料已從資料庫移除','ja':'削除完了：管理者「{0}」とそのデータがデータベースから削除されました','hi':'हो गया: एडमिन «{0}» और उसका डेटा डेटाबेस से हटा दिया गया','pt':'Concluído: Administrador "{0}" e seus dados foram removidos do banco de dados' },
   del_admin_fail: { zh: '删除失败', en: 'Delete failed','zh_tw':'刪除失敗','ja':'削除に失敗しました','hi':'हटाना विफल','pt':'Falha na exclusão' },
   copy: { zh: '复制', en: 'Copy','zh_tw':'複製','ja':'コピー','hi':'कॉपी करें','pt':'Copiar' },
-  key_title: { zh: '我的密钥', en: 'My Key','zh_tw':'我的密鑰','ja':'マイキー','hi':'मेरी कुंजी','pt':'Minha chave' },
-  key_show: { zh: '显示', en: 'Show','zh_tw':'顯示','ja':'表示','hi':'दिखाएँ','pt':'Mostrar' },
-  key_hide: { zh: '隐藏', en: 'Hide','zh_tw':'隱藏','ja':'非表示','hi':'छिपाएँ','pt':'Ocultar' },
-  key_copy: { zh: '复制密钥', en: 'Copy Key','zh_tw':'複製密鑰','ja':'キーをコピー','hi':'कुंजी कॉपी करें','pt':'Copiar chave' },
-  key_hint: { zh: '此密钥为你的专属密钥，用于登录「管理后台」（双重验证），请勿泄露给他人',
-              en: 'This is your personal key for the Admin Dashboard double verification — do not share it.','zh_tw':'此密鑰為你的專屬密鑰，用於登入「管理後台」（雙重驗證），請勿洩露給他人','ja':'これはあなた専用のキーです（管理ダッシュボードの二重認証に使用）。他人と共有しないでください。','hi':'यह आपकी निजी कुंजी है (एडमिन डैशबोर्ड दोहरे सत्यापन के लिए)। इसे साझा न करें।','pt':'Esta é sua chave pessoal para a verificação dupla do painel de administração — não a compartilhe.' },
-  key_change: { zh: '更换密钥', en: 'Change Key','zh_tw':'更換密鑰','ja':'キーを変更','hi':'कुंजी बदलें','pt':'Alterar chave' },
-  key_change_title: { zh: '更换我的密钥', en: 'Change My Key','zh_tw':'更換我的密鑰','ja':'マイキーを変更','hi':'मेरी कुंजी बदलें','pt':'Alterar minha chave' },
-  key_change_tip: { zh: '更换后你的旧密钥立即失效，全部会话将注销，需重新登录。',
-                    en: 'After changing, your old key stops working and all your sessions are revoked — please sign in again.','zh_tw':'更換後你的舊密鑰立即失效，全部工作階段將登出，需重新登入。','ja':'変更後、古いキーは直ちに無効になり、すべてのセッションが終了します。再度ログインしてください。','hi':'बदलने के बाद आपकी पुरानी कुंजी तुरंत अमान्य हो जाएगी और सभी सत्र समाप्त हो जाएंगे — कृपया फिर से लॉगिन करें।','pt':'Após a alteração, sua chave antiga para de funcionar e todas as suas sessões são revogadas — faça login novamente.' },
-  confirm_change: { zh: '确认更换', en: 'Confirm Change','zh_tw':'確認更換','ja':'変更を確認','hi':'परिवर्तन की पुष्टि करें','pt':'Confirmar alteração' },
-  key_rule: { zh: '密钥需为 8-64 个字符', en: 'Key must be 8-64 characters','zh_tw':'密鑰需為 8-64 個字元','ja':'キーは8〜64文字である必要があります','hi':'कुंजी 8-64 अक्षरों की होनी चाहिए','pt':'A chave deve ter de 8 a 64 caracteres' },
-  key_updated: { zh: '密钥已更换，请用新密钥重新登录', en: 'Key changed — sign in again with the new key','zh_tw':'密鑰已更換，請用新密鑰重新登入','ja':'キーが変更されました。新しいキーで再度ログインしてください','hi':'कुंजी बदल दी गई — नई कुंजी से फिर से लॉगिन करें','pt':'Chave alterada — entre novamente com a nova chave' },
-  col_key: { zh: '密钥', en: 'Key','zh_tw':'密鑰','ja':'キー','hi':'कुंजी','pt':'Chave' },
-  col_key_status: { zh: '密钥状态', en: 'Key Status','zh_tw':'密鑰狀態','ja':'キーの状態','hi':'कुंजी स्थिति','pt':'Status da chave' },
-  key_disabled: { zh: '已停用', en: 'Disabled','zh_tw':'已停用','ja':'無効化済み','hi':'अक्षम','pt':'Desativada' },
-  key_disable: { zh: '停用', en: 'Disable','zh_tw':'停用','ja':'無効化','hi':'अक्षम करें','pt':'Desativar' },
-  key_enable: { zh: '启用', en: 'Enable','zh_tw':'啟用','ja':'有効化','hi':'सक्षम करें','pt':'Ativar' },
-  key_reset: { zh: '重置密钥', en: 'Reset Key','zh_tw':'重置密鑰','ja':'キーをリセット','hi':'कुंजी रीसेट करें','pt':'Redefinir chave' },
-  key_toggle_title: { zh: '密钥状态变更', en: 'Change Key Status','zh_tw':'密鑰狀態變更','ja':'キーの状態変更','hi':'कुंजी स्थिति बदलें','pt':'Alterar status da chave' },
-  key_toggle_off_tip: { zh: '停用「{0}」的密钥？停用后其全部会话将立即注销，且无法再登录管理后台。',
-                         en: 'Disable {0}\'s key? All their sessions will be revoked immediately and they can no longer sign in to the admin dashboard.','zh_tw':'停用「{0}」的密鑰？停用後其全部工作階段將立即登出，且無法再登入管理後台。','ja':'「{0}」のキーを無効化しますか？無効化後、すべてのセッションが直ちに終了し、管理ダッシュボードにログインできなくなります。','hi':'«{0}» की कुंजी अक्षम करें? अक्षम करने पर उनके सभी सत्र तुरंत समाप्त हो जाएंगे और वे एडमिन डैशबोर्ड में लॉगिन नहीं कर पाएंगे।','pt':'Desativar a chave de "{0}"? Todas as sessões serão revogadas imediatamente e eles não poderão mais entrar no painel de administração.' },
-  key_toggle_on_tip: { zh: '启用「{0}」的密钥？启用后该管理员可正常登录。',
-                        en: 'Enable {0}\'s key? They will be able to sign in again.','zh_tw':'啟用「{0}」的密鑰？啟用後該管理員可正常登入。','ja':'「{0}」のキーを有効化しますか？有効化後、この管理者はログインできるようになります。','hi':'«{0}» की कुंजी सक्षम करें? सक्षम करने पर वे फिर से लॉगिन कर सकेंगे।','pt':'Ativar a chave de "{0}"? Eles poderão entrar novamente.' },
-  key_confirm_disable: { zh: '确认停用', en: 'Confirm Disable','zh_tw':'確認停用','ja':'無効化を確認','hi':'अक्षम करने की पुष्टि करें','pt':'Confirmar desativação' },
-  key_confirm_enable: { zh: '确认启用', en: 'Confirm Enable','zh_tw':'確認啟用','ja':'有効化を確認','hi':'सक्षम करने की पुष्टि करें','pt':'Confirmar ativação' },
-  key_toggle_off_ok: { zh: '已停用「{0}」的密钥', en: 'Key disabled for {0}','zh_tw':'已停用「{0}」的密鑰','ja':'「{0}」のキーを無効化しました','hi':'«{0}» की कुंजी अक्षम कर दी गई','pt':'Chave desativada para {0}' },
-  key_toggle_on_ok: { zh: '已启用「{0}」的密钥', en: 'Key enabled for {0}','zh_tw':'已啟用「{0}」的密鑰','ja':'「{0}」のキーを有効化しました','hi':'«{0}» की कुंजी सक्षम कर दी गई','pt':'Chave ativada para {0}' },
-  key_toggle_fail: { zh: '密钥状态变更失败', en: 'Failed to change key status','zh_tw':'密鑰狀態變更失敗','ja':'キーの状態変更に失敗しました','hi':'कुंजी स्थिति बदलने में विफल','pt':'Falha ao alterar o status da chave' },
-  key_reset_title: { zh: '重置密钥', en: 'Reset Key','zh_tw':'重置密鑰','ja':'キーをリセット','hi':'कुंजी रीसेट करें','pt':'Redefinir chave' },
-  key_reset_tip: { zh: '为「{0}」生成全新密钥：旧密钥立即失效、全部会话注销。确认重置？',
-                    en: 'Generate a brand-new key for {0}: the old key stops working and all sessions are revoked. Confirm?','zh_tw':'為「{0}」生成全新密鑰：舊密鑰立即失效、全部工作階段登出。確認重置？','ja':'「{0}」の新しいキーを生成します：旧キーは直ちに無効になり、すべてのセッションが終了します。リセットを確認しますか？','hi':'«{0}» के लिए नई कुंजी उत्पन्न करें: पुरानी कुंजी तुरंत अमान्य हो जाएगी और सभी सत्र समाप्त हो जाएंगे। पुष्टि करें?','pt':'Gerar uma nova chave para {0}: a chave antiga para de funcionar e todas as sessões são revogadas. Confirmar?' },
-  key_reset_done_tip: { zh: '「{0}」的新密钥已生成，请复制并转交给对方。',
-                         en: 'New key for {0} generated — copy it and hand it to them.','zh_tw':'「{0}」的新密鑰已生成，請複製並轉交給對方。','ja':'「{0}」の新しいキーが生成されました。コピーして相手に渡してください。','hi':'«{0}» के लिए नई कुंजी उत्पन्न हुई — कॉपी करके उन्हें दें।','pt':'Nova chave para {0} gerada — copie e entregue a eles.' },
-  key_confirm_reset: { zh: '确认重置', en: 'Confirm Reset','zh_tw':'確認重置','ja':'リセットを確認','hi':'रीसेट की पुष्टि करें','pt':'Confirmar redefinição' },
-  key_reset_fail: { zh: '重置失败', en: 'Reset failed','zh_tw':'重置失敗','ja':'リセットに失敗しました','hi':'रीसेट विफल','pt':'Falha na redefinição' },
   ref_title: { zh: '内推码管理', en: 'Referral Codes','zh_tw':'內推碼管理','ja':'紹介コード管理','hi':'रेफरल कोड प्रबंधन','pt':'Gerenciar códigos de indicação' },
   ref_hint: { zh: '管理员注册时校验的邀请码，新增/删除后注册校验即时同步',
               en: 'Invite codes validated at admin registration; add/delete takes effect immediately.','zh_tw':'管理員註冊時校驗的邀請碼，新增/刪除後註冊校驗即時同步','ja':'管理者登録時に検証される招待コード。追加/削除後、登録検証は即座に同期されます。','hi':'एडमिन पंजीकरण पर सत्यापित आमंत्रण कोड; जोड़ने/हटाने पर तुरंत प्रभावी।','pt':'Códigos de convite validados no registro de administradores; adicionar/excluir entra em vigor imediatamente.' },
@@ -541,166 +564,248 @@ function copyText(text) {
   return Promise.resolve(ok);
 }
 
-/* ---- 统一管理员密钥（掩码显示，复制为真实值） ---- */
-var _adminKey = '';
-var _keyShown = false;
-var KEY_MASK = '••••••••••••••••••';
-
-function loadAdminKey() {
-  adminFetch('/admin/key')
-    .then(function(r) {
-      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
-      return r.json();
-    })
-    .then(function(d) {
-      // C2 重构：密钥仅用于展示/复制（admin-gate 双重验证登录），不再写回 Bearer token
-      _adminKey = d.key || '';
-      renderKey();
-    })
-    .catch(function(e) {
-      if (e.message !== '401') {
-        _adminKey = sessionStorage.getItem('admin_token') || '';          // 兜底用本地值
-        renderKey();
-      }
-    });
-}
-function renderKey() {
-  const el = $('adminKeyText');
-  if (_keyShown && _adminKey) {
-    el.textContent = _adminKey;
-    el.classList.add('revealed');
-    $('keyEyeBtn').textContent = t('key_hide');
-  } else {
-    el.textContent = _adminKey ? KEY_MASK : t('loading');
-    el.classList.remove('revealed');
-    $('keyEyeBtn').textContent = t('key_show');
-  }
-}
-function toggleKeyShow() {
-  _keyShown = !_keyShown;
-  renderKey();
-}
-function copyAdminKey() {
-  if (!_adminKey) return;
-  copyText(_adminKey).then(ok => toast(ok ? t('copied') : t('copy_fail'), ok ? 'ok' : 'bad'));
-}
-
-/* ---- 主管理员监控：同事密钥（掩码显示，仅主管理员可见） ---- */
-var colleagueKeyShown = {};   // 每行密钥展开状态（索引键）
-
-function toggleColleagueKey(i) {
-  const c = colleaguesList[i];
-  if (!c || !c.personal_key) return;
-  colleagueKeyShown[i] = !colleagueKeyShown[i];
-  $('ck' + i).textContent = colleagueKeyShown[i] ? c.personal_key : KEY_MASK;
-  $('ck' + i).classList.toggle('revealed', !!colleagueKeyShown[i]);
-  $('ckEye' + i).textContent = colleagueKeyShown[i] ? t('key_hide') : t('key_show');
-}
-function copyColleagueKey(i) {
-  const c = colleaguesList[i];
-  if (!c || !c.personal_key) return;
-  copyText(c.personal_key).then(ok => toast(ok ? t('copied') : t('copy_fail'), ok ? 'ok' : 'bad'));
-}
-
-/* ---- 主管理员：停用/启用同事密钥（风险管控；停用 = 强制下线 + 禁止登录） ---- */
-var _keyToggleTarget = -1;   // colleaguesList 索引
-function openKeyToggle(i) {
-  const c = colleaguesList[i];
-  if (!c) return;
-  _keyToggleTarget = i;
-  const disabling = !c.key_disabled;
-  $('keyToggleTip').textContent = tf(disabling ? 'key_toggle_off_tip' : 'key_toggle_on_tip', c.username);
-  const btn = $('keyToggleOkBtn');
-  btn.textContent = t(disabling ? 'key_confirm_disable' : 'key_confirm_enable');
-  btn.style.background = disabling ? 'linear-gradient(135deg,#e04a55 0%,#c2333e 100%)' : '';
-  $('keyToggleModal').classList.add('show');
-}
-function closeKeyToggle() {
-  $('keyToggleModal').classList.remove('show');
-  _keyToggleTarget = -1;
-}
-function confirmKeyToggle() {
-  if (_keyToggleTarget < 0) return;
-  const c = colleaguesList[_keyToggleTarget];
-  const btn = $('keyToggleOkBtn');
-  btn.disabled = true;
-  adminFetch('/admin/key-toggle', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: c.username, disabled: !c.key_disabled })
-  })
-    .then(function(r) {
-      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(function(d) {
-      closeKeyToggle();
-      toast(tf(d.key_disabled ? 'key_toggle_off_ok' : 'key_toggle_on_ok', c.username), 'ok');
-      loadColleagues();   // 立即刷新（密钥状态列同步）
-    })
-    .catch(function(e) { if (e.message !== '401') toast(t('key_toggle_fail'), 'bad'); })
-    .finally(function() { btn.disabled = false; });
-}
-
-/* ---- 主管理员：重置同事密钥（一键生成新密钥并展示，旧密钥立即失效） ---- */
-var _keyResetTarget = -1;
-var _keyResetNewKey = '';
-function openKeyReset(i) {
-  const c = colleaguesList[i];
-  if (!c) return;
-  _keyResetTarget = i;
-  _keyResetNewKey = '';
-  $('keyResetTip').textContent = tf('key_reset_tip', c.username);
-  $('keyResetResult').style.display = 'none';
-  $('keyResetOkBtn').style.display = '';
-  $('keyResetModal').classList.add('show');
-}
-function closeKeyReset() {
-  $('keyResetModal').classList.remove('show');
-  _keyResetTarget = -1;
-  _keyResetNewKey = '';
-}
-function copyResetResult() {
-  if (!_keyResetNewKey) return;
-  copyText(_keyResetNewKey).then(ok => toast(ok ? t('copied') : t('copy_fail'), ok ? 'ok' : 'bad'));
-}
-function confirmKeyReset() {
-  if (_keyResetTarget < 0) return;
-  const c = colleaguesList[_keyResetTarget];
-  const btn = $('keyResetOkBtn');
-  btn.disabled = true;
-  adminFetch('/admin/key-reset', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: c.username })
-  })
-    .then(function(r) {
-      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(function(d) {
-      _keyResetNewKey = d.key || '';
-      $('keyResetTip').textContent = tf('key_reset_done_tip', c.username);
-      $('keyResetResultText').textContent = _keyResetNewKey;
-      $('keyResetResult').style.display = 'block';
-      $('keyResetOkBtn').style.display = 'none';
-      loadColleagues();   // 立即刷新（新密钥 + 已解除停用）
-    })
-    .catch(function(e) { if (e.message !== '401') toast(t('key_reset_fail'), 'bad'); })
-    .finally(function() { btn.disabled = false; });
-}
-
 /* ---- 数据加载 ---- */
 var _me = null;   // 当前管理员资料（colleagues 响应携带，含 is_primary）
 var colleaguesList = [];   // 同事列表（事件参数用索引引用，防用户名注入内联字符串）
 var codesList = [];        // 内推码列表（同上）
+var _monitorStarted = false;
+var _userLock = '';        // 用户动态定位目标（只看某学员的全部动态，不影响账号）
+var _adminLock = '';       // 管理员动态定位目标（只看某管理员的全部动态）
+var _userEvs = [];         // 最近用户动态（行内定位用索引引用，防注入）
+var _adminEvs = [];        // 最近管理员动态（同上）
+var _userPage = 1, _userPages = 1;   // 用户动态分页
+var _sysPage = 1, _sysPages = 1;     // 系统日志分页
+var _admPage = 1, _admPages = 1;     // 管理员动态分页
+
+function renderFeedPager(scope, d) {
+  const prefix = scope === 'user' ? 'user' : (scope === 'sys' ? 'sys' : 'adm');
+  const wrap = $(prefix + 'Pager');
+  if (!wrap) return;
+  const page = (d && d.page) || 1;
+  const pages = (d && d.pages) || 1;
+  const total = (d && d.total) || 0;
+  if (scope === 'user') { _userPage = page; _userPages = pages; }
+  else if (scope === 'sys') { _sysPage = page; _sysPages = pages; }
+  else { _admPage = page; _admPages = pages; }
+  if (total <= ((d && d.page_size) || 5)) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  $(prefix + 'PagerInfo').textContent = tf('pager_info', page, pages, total);
+  $(prefix + 'PrevBtn').disabled = page <= 1;
+  $(prefix + 'NextBtn').disabled = page >= pages;
+}
+
+function resetFeedPage(scope) {
+  if (scope === 'user') { _userPage = 1; _userPages = 1; }
+  else if (scope === 'sys') { _sysPage = 1; _sysPages = 1; }
+  else { _admPage = 1; _admPages = 1; }
+}
+
+function feedPage(scope, delta) {
+  let page, pages;
+  if (scope === 'user') { page = _userPage; pages = _userPages; }
+  else if (scope === 'sys') { page = _sysPage; pages = _sysPages; }
+  else { page = _admPage; pages = _admPages; }
+  page = Math.min(Math.max(1, page + delta), Math.max(1, pages));
+  if (scope === 'user') _userPage = page;
+  else if (scope === 'sys') _sysPage = page;
+  else _admPage = page;
+  if (scope === 'user') loadUserActivity();
+  else if (scope === 'sys') loadSystemLogs();
+  else loadAdminActivity();
+}
+
+function renderLockChip(scope) {
+  const lock = scope === 'user' ? _userLock : _adminLock;
+  const chip = $(scope + 'LockChip');
+  const clearBtn = $(scope + 'LockClear');
+  if (!lock) {
+    chip.style.display = 'none';
+    clearBtn.style.display = 'none';
+    const meta = $(scope + 'LocateMeta');
+    if (meta) meta.style.display = 'none';
+    return;
+  }
+  chip.textContent = tf('locating_tip', lock);
+  chip.style.display = '';
+  clearBtn.style.display = '';
+}
+function lockFeed(scope) {
+  const name = ($(scope + 'LockInput').value || '').trim();
+  if (!name) return;
+  if (scope === 'user') _userLock = name;
+  else _adminLock = name;
+  resetFeedPage(scope);
+  renderLockChip(scope);
+  if (scope === 'user') loadUserActivity(); else loadAdminActivity();
+}
+function lockFeedActor(scope, i) {
+  const evs = scope === 'user' ? _userEvs : _adminEvs;
+  const e = evs[i];
+  if (!e || !e.actor) return;
+  $(scope + 'LockInput').value = e.actor;
+  if (scope === 'user') _userLock = e.actor;
+  else _adminLock = e.actor;
+  resetFeedPage(scope);
+  renderLockChip(scope);
+  if (scope === 'user') loadUserActivity(); else loadAdminActivity();
+}
+function clearFeedLock(scope) {
+  $(scope + 'LockInput').value = '';
+  if (scope === 'user') _userLock = ''; else _adminLock = '';
+  resetFeedPage(scope);
+  renderLockChip(scope);
+  if (scope === 'user') loadUserActivity(); else loadAdminActivity();
+}
+
+/* ---- 实时动态 / 系统日志渲染（融合后的管理后台监控） ---- */
+function shortTime(ts) {
+  if (!ts) return '-';
+  const d = new Date(String(ts).replace(' ', 'T') + 'Z');
+  if (isNaN(d.getTime())) return escapeHtml(ts);
+  const p = n => String(n).padStart(2, '0');
+  return (d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+function feedEmptyHtml() { return '<div class="feed-empty">' + t('empty_feed') + '</div>'; }
+function feedErrHtml() { return '<div class="feed-empty" style="color:#b04a4a">' + t('feed_error') + '</div>'; }
+
+function userActionHtml(e, i) {
+  let act = escapeHtml(e.action || '');
+  if (e.action === 'register') act = '注册账号';
+  else if (e.action === 'login') act = '登录平台' + (e.detail ? '（' + escapeHtml(e.detail) + '）' : '');
+  else if (e.action === 'logout') act = '退出登录';
+  else if (e.action === 'journey_start') act = '开启自适应练习';
+  else if (e.action === 'diagnostic') act = '完成摸底诊断' + (e.detail ? '（' + escapeHtml(e.detail) + '）' : '');
+  else if (e.action === 'answer') {
+    const ok = e.detail === '答对';
+    act = '答题「' + escapeHtml(e.target || '') + '」 ' +
+          (ok ? '<span class="ok">答对</span>' : '<span class="bad">答错</span>');
+  }
+  const actor = '<span class="feed-actor lockable" title="' + t('locate_btn') + '" onclick="lockFeedActor(\'user\',' + i + ')">' +
+                escapeHtml(e.actor || '?') + '</span>';
+  return actor + '<span class="feed-act">' + act + '</span>';
+}
+
+function adminActionHtml(e, i) {
+  const map = {
+    login: '登录管理后台', register: '注册管理员账号', reset_user: '重置平台用户密码',
+    reset_admin: '重置管理员密码', rollback_user: '回退平台用户密码', rollback_admin: '回退管理员密码',
+    delete_user: '删除平台用户', delete_admin: '删除管理员',
+    add_referral: '新增内推码', delete_referral: '删除内推码'
+  };
+  let act = escapeHtml(map[e.action] || e.action || '');
+  if (e.target) act += ' → ' + escapeHtml(e.target);
+  const actor = '<span class="feed-actor admin lockable" title="' + t('locate_btn') + '" onclick="lockFeedActor(\'admin\',' + i + ')">' +
+                escapeHtml(e.actor || '?') + '</span>';
+  return actor + '<span class="feed-act">' + act + '</span>';
+}
+
+function feedRow(time, innerHtml) {
+  return '<div class="feed-row"><span class="feed-time">' + shortTime(time) + '</span>' + innerHtml + '</div>';
+}
+
+function loadUserActivity() {
+  let url = '/admin/user-activity?page=' + _userPage + '&page_size=5';
+  if (_userLock) url += '&actor=' + encodeURIComponent(_userLock);
+  adminFetch(url)
+    .then(function(r) {
+      if (r.status === 401) { sessionStorage.removeItem('admin_token'); sessionStorage.removeItem('admin_user'); window.location.href = 'admin-auth'; throw '401'; }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(d) {
+      const evs = (d && d.events) || [];
+      _userEvs = evs;
+      let html = '';
+      evs.forEach(function(e, i) { html += feedRow(e.created_at, userActionHtml(e, i)); });
+      $('userActivityFeed').innerHTML = html || feedEmptyHtml();
+      renderLockChip('user');
+      renderFeedPager('user', d);
+      const meta = $('userLocateMeta');
+      if (_userLock && d && d.total != null) {
+        meta.textContent = tf('locate_meta', d.total);
+        meta.style.display = '';
+      } else if (meta) meta.style.display = 'none';
+    })
+    .catch(function(e) { if (e !== '401' && (!e || e.message !== '401')) $('userActivityFeed').innerHTML = feedErrHtml(); });
+}
+
+function loadSystemLogs() {
+  adminFetch('/admin/system-logs?page=' + _sysPage + '&page_size=5')
+    .then(function(r) {
+      if (r.status === 401) { sessionStorage.removeItem('admin_token'); sessionStorage.removeItem('admin_user'); window.location.href = 'admin-auth'; throw '401'; }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(d) {
+      const logs = (d && d.logs) || [];
+      let html = '';
+      logs.forEach(function(l) {
+        const lv = ['info', 'warn', 'error'].indexOf(l.level) >= 0 ? l.level : 'info';
+        let msg = escapeHtml(l.message || '');
+        if (l.detail) msg += ' <span class="log-src">' + escapeHtml(String(l.detail).slice(0, 220)) + '</span>';
+        html += '<div class="feed-row"><span class="feed-time">' + shortTime(l.created_at) + '</span>' +
+                '<span class="feed-act"><span class="log-lv ' + lv + '">' + lv.toUpperCase() + '</span>' + msg + '</span></div>';
+      });
+      $('systemLogFeed').innerHTML = html || feedEmptyHtml();
+      renderFeedPager('sys', d);
+    })
+    .catch(function(e) { if (e !== '401' && (!e || e.message !== '401')) $('systemLogFeed').innerHTML = feedErrHtml(); });
+}
+
+function loadAdminActivity() {
+  if (!_me || !_me.is_primary) return;
+  let url = '/admin/admin-activity?page=' + _admPage + '&page_size=5';
+  if (_adminLock) url += '&actor=' + encodeURIComponent(_adminLock);
+  adminFetch(url)
+    .then(function(r) {
+      if (r.status === 401) { sessionStorage.removeItem('admin_token'); sessionStorage.removeItem('admin_user'); window.location.href = 'admin-auth'; throw '401'; }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(d) {
+      const evs = (d && d.events) || [];
+      _adminEvs = evs;
+      let html = '';
+      evs.forEach(function(e, i) { html += feedRow(e.created_at, adminActionHtml(e, i)); });
+      $('adminActivityFeed').innerHTML = html || feedEmptyHtml();
+      renderLockChip('admin');
+      renderFeedPager('adm', d);
+      const meta = $('adminLocateMeta');
+      if (_adminLock && d && d.total != null) {
+        meta.textContent = tf('locate_meta', d.total);
+        meta.style.display = '';
+      } else if (meta) meta.style.display = 'none';
+    })
+    .catch(function(e) { if (e !== '401' && (!e || e.message !== '401')) $('adminActivityFeed').innerHTML = feedErrHtml(); });
+}
+
+function ensureAdminActivity() {
+  if (!_me || !_me.is_primary) return;
+  $('adminActivityCard').style.display = '';
+  loadAdminActivity();
+}
+
+function startMonitorPolling() {
+  if (_monitorStarted) return;
+  _monitorStarted = true;
+  loadUserActivity();
+  loadSystemLogs();
+  ensureAdminActivity();
+  setInterval(function() {
+    if (document.visibilityState === 'hidden') return;
+    loadUserActivity();
+    loadSystemLogs();
+    loadAdminActivity();
+  }, 6000);
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') { loadUserActivity(); loadSystemLogs(); loadAdminActivity(); }
+  });
+}
 
 function renderAll() {
   $('meName').textContent = ADMIN_USER;
-  loadAdminKey();
   loadColleagues();
+  startMonitorPolling();
 }
 
 function loadColleagues() {
@@ -712,17 +817,14 @@ function loadColleagues() {
     .then(function(d) {
       _me = d.me || null;
       $('primaryHint').style.display = (_me && _me.is_primary) ? 'block' : 'none';
-      // 一人一钥：更换密钥为全员自助（不再限主管理员）；内推码管理仍仅主管理员
+      // 密钥体系已移除；内推码管理仍仅主管理员；管理员动态卡片仅主管理员显示
       const isPrimary = !!(d.me && d.me.is_primary);
-      $('keyColHead').style.display = isPrimary ? '' : 'none';
-      $('keyStatusColHead').style.display = isPrimary ? '' : 'none';
       $('referralCard').style.display = isPrimary ? '' : 'none';
-      if (isPrimary) loadReferrals();
+      if (isPrimary) { loadReferrals(); ensureAdminActivity(); }
       const list = d.colleagues || [];
       colleaguesList = list;
-      colleagueKeyShown = {};   // 每次刷新重置掩码展开状态
       const body = $('colleaguesBody');
-      const colspan = isPrimary ? 5 : 3;
+      const colspan = 3;
       if (!list.length) { body.innerHTML = '<tr><td colspan="' + colspan + '" class="empty">' + t('empty_colleagues') + '</td></tr>'; return; }
       let html = '';
       for (let i = 0; i < list.length; i++) {
@@ -738,27 +840,14 @@ function loadColleagues() {
           }
           ops += ' <button class="mini-btn danger" title="' + t('del_admin') + '" onclick="openDeleteAdmin(colleaguesList[' + i + '].username)">' + t('del_admin') + '</button>';
         }
-        // 一人一钥：主管理员在操作列后查看同事密钥（掩码 + 显示/复制）与密钥状态（停用/启用/重置）
-        let keyCells = '';
-        if (isPrimary) {
-          keyCells = '<td><code class="key-masked" id="ck' + i + '" style="font-size:12px;padding:5px 10px;margin:0">' + KEY_MASK + '</code>' +
-                     ' <button class="mini-btn" id="ckEye' + i + '" title="' + t('key_show') + '" onclick="toggleColleagueKey(' + i + ')">' + t('key_show') + '</button>' +
-                     ' <button class="mini-btn copy" title="' + t('key_copy') + '" onclick="copyColleagueKey(' + i + ')">' + t('key_copy') + '</button></td>' +
-                     '<td>' +
-                     (c.key_disabled ? '<span class="badge-disabled">' + t('key_disabled') + '</span>' : '') +
-                     (c.key_disabled
-                       ? '<button class="mini-btn" onclick="openKeyToggle(' + i + ')">' + t('key_enable') + '</button>'
-                       : '<button class="mini-btn danger" onclick="openKeyToggle(' + i + ')">' + t('key_disable') + '</button>') +
-                     ' <button class="mini-btn" title="' + t('key_reset') + '" onclick="openKeyReset(' + i + ')">' + t('key_reset') + '</button></td>';
-        }
         html += '<tr><td><strong>' + escapeHtml(c.username) + '</strong>' + badge + '</td>' +
                 '<td style="color:var(--text-2);font-size:12.5px">' + fmtTime(c.last_login_at) + '</td>' +
-                '<td>' + ops + '</td>' + keyCells + '</tr>';
+                '<td>' + ops + '</td></tr>';
       }
       body.innerHTML = html;
     })
     .catch(function(e) {
-      if (e.message !== '401') $('colleaguesBody').innerHTML = '<tr><td colspan="' + ((_me && _me.is_primary) ? 5 : 3) + '" class="empty" style="color:#b04a4a">' + t('net_error') + '</td></tr>';
+      if (e.message !== '401') $('colleaguesBody').innerHTML = '<tr><td colspan="3" class="empty" style="color:#b04a4a">' + t('net_error') + '</td></tr>';
     });
 }
 
@@ -884,62 +973,6 @@ function confirmDeleteAdmin() {
     })
     .catch(function(e) { if (e.message !== '401') toast(t('del_admin_fail'), 'bad'); })
     .finally(function() { btn.disabled = false; });
-}
-
-/* ---- 更换我的密钥（一人一钥：全员自助；更换后本人会话注销，需重新登录） ---- */
-function openKeyChange() {
-  $('newKeyInput').value = '';
-  $('keyModal').classList.add('show');
-  setTimeout(function() { $('newKeyInput').focus(); }, 50);
-}
-function closeKeyChange() {
-  $('keyModal').classList.remove('show');
-}
-function genKey() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  let key = '';
-  for (let i = 0; i < 24; i++) key += chars[Math.floor(Math.random() * chars.length)];
-  $('newKeyInput').value = key;
-}
-function copyNewKey() {
-  const v = $('newKeyInput').value;
-  if (!v) return;
-  copyText(v).then(ok => toast(ok ? t('copied') : t('copy_fail'), ok ? 'ok' : 'bad'));
-}
-function confirmKeyChange() {
-  const newKey = $('newKeyInput').value.trim();
-  if (!(newKey.length >= 8 && newKey.length <= 64)) { toast(t('key_rule'), 'bad'); return; }
-  const btn = $('keyOkBtn');
-  btn.disabled = true;
-  adminFetch('/admin/key-update', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ operator: ADMIN_USER, new_key: newKey })
-  })
-    .then(function(r) {
-      if (r.status === 401) { sessionStorage.removeItem('admin_token'); window.location.href = 'admin-auth'; throw new Error('401'); }
-      if (!r.ok) { toastServerError(r, t('key_rule')); throw new Error('HTTP ' + r.status); }
-      return r.json();
-    })
-    .then(function(d) {
-      closeKeyChange();
-      // 一人一钥：更换本人密钥后全部会话注销（含当前），需重新登录
-      toast(t('key_updated'), 'ok');
-      setTimeout(function() {
-        sessionStorage.removeItem('admin_token');
-        sessionStorage.removeItem('admin_user');
-        window.location.href = 'admin-auth';
-      }, 1500);
-    })
-    .catch(function(e) { /* 401 与已提示的错误不再重复提示 */ })
-    .finally(function() { btn.disabled = false; });
-}
-
-/* 解析后端错误响应为中文/英文提示（!r.ok 分支使用） */
-function toastServerError(r, fallback) {
-  if (r.status === 429) return toast(t('too_frequent'), 'bad');   // 限流命中：稍候自动恢复
-  return r.json().then(function(d) { toast(d.error || fallback, 'bad'); })
-                  .catch(function() { toast(fallback, 'bad'); });
 }
 
 /* ---- 内推码管理（主管理员专用；注册校验即时同步） ---- */

@@ -22,6 +22,8 @@ DATA = "INSERT INTO employees VALUES (1,'张三','技术部',15000),(2,'李四',
 def test_db(tmp_path, monkeypatch):
     import db
     monkeypatch.setattr(db, 'DB_PATH', str(tmp_path / 'test.db'))
+    import backup
+    monkeypatch.setattr(backup, 'BACKUP_DIR', str(tmp_path / 'backups'))
     db.init_db()
     conn = db.get_connection()
     # q1: select_basic 进阶选择题（有 options、无 q_level → 非 basic）
@@ -82,14 +84,6 @@ def _register_admin(client, username):
         'username': username, 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
     assert r.status_code == 200, r.get_json()
     return r.get_json()['token']
-
-
-def _get_admin_key(username):
-    """读取某管理员的个人密钥（一人一钥：gate 登录第二重验证用它）"""
-    import db
-    conn = db.get_connection()
-    row = conn.execute('SELECT personal_key FROM admin_users WHERE username=?', (username,)).fetchone()
-    return row['personal_key'] if row else None
 
 
 def _make_primary(username):

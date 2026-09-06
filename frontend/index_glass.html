@@ -29,7 +29,7 @@
   --shadow: 0 10px 34px rgba(58, 82, 148, 0.13);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-y: scroll; scrollbar-gutter: stable; }
 body {
   font-family: var(--sans); color: var(--text-1); line-height: 1.6; overflow-x: hidden;
   background:
@@ -229,8 +229,7 @@ body {
       <button class="nav-link active" onclick="scrollToId('top')" data-i18n="nav_home">首页</button>
       <button class="nav-link" onclick="window.location.href='about.html'" data-i18n="nav_about">了解我们</button>
       <button class="nav-link" onclick="window.location.href='login_glass.html'" data-i18n="nav_enter">进入平台</button>
-      <button class="nav-link" onclick="window.location.href='admin-gate'" data-i18n="nav_admin">管理后台</button>
-      <button class="nav-link" onclick="window.location.href='admin-auth'" data-i18n="nav_join">加入我们</button>
+      <button class="nav-link" onclick="window.location.href='admin-auth'" data-i18n="nav_admin">管理后台</button>
     </div>
     
 <div id="langWrap" style="position:relative;display:inline-block;z-index:99999">
@@ -255,7 +254,7 @@ body {
     <div class="hero-left">
       <div class="hero-head">
         <div class="fade-up" style="animation-delay:0s">
-          <span class="badge"><span class="pulse-dot"></span><span data-i18n="badge_live">自适应引擎在线 · BKT 画像实时更新</span></span>
+          <span class="badge"><span class="pulse-dot"></span><span data-i18n="badge_live">自适应引擎在线 · EWMA 画像实时更新</span></span>
         </div>
         <div class="hero-title-wrap fade-up" style="animation-delay:0.06s">
         <h1 class="hero-title">
@@ -268,7 +267,7 @@ body {
       </div>
       </div>
       <p class="hero-desc fade-up" style="animation-delay:0.14s" data-i18n="hero_desc">
-        基于贝叶斯知识追踪（BKT）与 Thompson 采样构建的自适应刷题平台。
+        基于指数加权移动平均（EWMA）掌握度追踪构建的自适应刷题平台。
         系统读懂你的每一次作答，自动推送最适合当前水平的下一道题——答对了就往前走，答错了就陪你练到掌握。
       </p>
       <div class="hero-feats fade-up" style="animation-delay:0.2s">
@@ -294,8 +293,8 @@ body {
         <div class="cta-sub" data-i18n-html="cta_about_sub"><b>查看最新功能与更新动态</b><br>开发进度 · 持续迭代</div>
       </div>
       <div class="cta-card glass" onclick="window.location.href='admin-auth'">
-        <div class="cta-title" data-i18n="cta_join_t">加入我们<span class="arrow">→</span></div>
-        <div class="cta-sub" data-i18n-html="cta_join_sub"><b>凭内推码注册成为管理员</b><br>与团队共建 · 管理平台</div>
+        <div class="cta-title" data-i18n="cta_admin_t">管理后台<span class="arrow">→</span></div>
+        <div class="cta-sub" data-i18n-html="cta_admin_sub"><b>登录或凭内推码注册，进入管理后台</b><br>实时动态 · 系统日志 · 快速排查</div>
       </div>
     </div>
   </section>
@@ -330,15 +329,14 @@ const I18N = {
   nav_about: { zh: '了解我们', en: 'About','zh_tw':'了解我們','ja':'私たちについて','hi':'हमारे बारे में','pt':'Sobre' },
   nav_enter: { zh: '进入平台', en: 'Enter','zh_tw':'進入平台','ja':'プラットフォームへ','hi':'प्रवेश करें','pt':'Entrar' },
   nav_admin: { zh: '管理后台', en: 'Admin','zh_tw':'管理後台','ja':'管理','hi':'व्यवस्थापक','pt':'Admin' },
-  nav_join: { zh: '加入我们', en: 'Join Us','zh_tw':'加入我們','ja':'参加する','hi':'शामिल हों','pt':'Junte-se' },
-  badge_live: { zh: '自适应引擎在线 · BKT 画像实时更新', en: 'Adaptive engine online · BKT profile updating live','zh_tw':'自適應引擎在線 · BKT 畫像即時更新','ja':'適応エンジンオンライン · BKT プロファイルライブ更新','hi':'अनुकूली इंजन ऑनलाइन · BKT प्रोफ़ाइल लाइव अपडेट हो रही है','pt':'Motor adaptativo online · Perfil BKT atualizando ao vivo' },
+  badge_live: { zh: '自适应引擎在线 · EWMA 画像实时更新', en: 'Adaptive engine online · EWMA profile updating live','zh_tw':'自適應引擎在線 · EWMA 畫像即時更新','ja':'適応エンジンオンライン · EWMA プロファイルライブ更新','hi':'अनुकूली इंजन ऑनलाइन · EWMA प्रोफ़ाइल लाइव अपडेट हो रही है','pt':'Motor adaptativo online · Perfil EWMA atualizando ao vivo' },
   h1_a: { zh: '让 SQL 学习', en: 'Make SQL learning','zh_tw':'讓 SQL 學習','ja':'SQL 学習を','hi':'SQL सीखने को','pt':'Torne o aprendizado de SQL' },
   data_q: { zh: '精选题目', en: 'curated questions','zh_tw':'精選題目','ja':'厳選された問題','hi':'चुनिंदा प्रश्न','pt':'perguntas selecionadas' },
   data_free: { zh: '免费使用', en: 'free forever','zh_tw':'免費使用','ja':'無料','hi':'हमेशा मुफ़्त','pt':'gratuito para sempre' },
   h1_b: { zh: '像打怪升级一样', en: 'an adventure —','zh_tw':'像打怪升級一樣','ja':'冒険のように','hi':'एक रोमांच —','pt':'uma aventura —' },
   h1_grad: { zh: '千人千面', en: 'tailored to you','zh_tw':'千人千面','ja':'あなたに合わせて','hi':'आपके अनुरूप','pt':'adaptado a você' },
-  hero_desc: { zh: '基于贝叶斯知识追踪（BKT）与 Thompson 采样构建的自适应刷题平台。系统读懂你的每一次作答，自动推送最适合当前水平的下一道题——答对了就往前走，答错了就陪你练到掌握。',
-               en: 'An adaptive practice platform built on Bayesian Knowledge Tracing (BKT) and Thompson sampling. It reads every answer you give and recommends the next question at the right level — move forward when you get it right, drill until mastery when you don\'t.','zh_tw':'基於貝氏知識追蹤（BKT）與 Thompson 採樣構建的自適應刷題平台。系統讀懂你的每一次作答，自動推送最適合目前水準的下一道題——答對了就往前走，答錯了就陪你練到掌握。','ja':'ベイズ知識追跡（BKT）と Thompson サンプリングに基づく適応型練習プラットフォーム。あなたの各回答を読み取り、現在のレベルに最適な次の問題を自動的に推奨します——正解すれば前進、間違えれば習得まで練習します。','hi':'बायेसियन नॉलेज ट्रेसिंग (BKT) और Thompson सैंपलिंग पर निर्मित एक अनुकूली अभ्यास मंच। यह आपके हर उत्तर को पढ़ता है और सही स्तर पर अगला प्रश्न सुझाता है — सही होने पर आगे बढ़ें, गलत होने पर महारत तक अभ्यास करें।','pt':'Uma plataforma de prática adaptativa construída em Rastreamento de Conhecimento Bayesiano (BKT) e amostragem de Thompson. Ela lê cada resposta sua e recomenda a próxima pergunta no nível certo — avance quando acertar, pratique até dominar quando errar.' },
+  hero_desc: { zh: '基于指数加权移动平均（EWMA）掌握度追踪构建的自适应刷题平台。系统读懂你的每一次作答，自动推送最适合当前水平的下一道题——答对了就往前走，答错了就陪你练到掌握。',
+               en: 'An adaptive practice platform built on exponentially weighted (EWMA) mastery tracking. It reads every answer you give and recommends the next question at the right level — move forward when you get it right, drill until mastery when you don\'t.','zh_tw':'基於指數加權移動平均（EWMA）掌握度追蹤構建的自適應刷題平台。系統讀懂你的每一次作答，自動推送最適合目前水準的下一道題——答對了就往前走，答錯了就陪你練到掌握。','ja':'指数加重移動平均（EWMA）による習得度追跡に基づく適応型練習プラットフォーム。あなたの各回答を読み取り、現在のレベルに最適な次の問題を自動的に推奨します——正解すれば前進、間違えれば習得まで練習します。','hi':'एक्सपोनेंशियली वेटेड (EWMA) महारत ट्रैकिंग पर निर्मित एक अनुकूली अभ्यास मंच। यह आपके हर उत्तर को पढ़ता है और सही स्तर पर अगला प्रश्न सुझाता है — सही होने पर आगे बढ़ें, गलत होने पर महारत तक अभ्यास करें।','pt':'Uma plataforma de prática adaptativa baseada em acompanhamento de proficiência exponencialmente ponderado (EWMA). Ela lê cada resposta sua e recomenda a próxima pergunta no nível certo — avance quando acertar, pratique até dominar quando errar.' },
   feat1_t: { zh: '知识图谱驱动', en: 'Knowledge-graph driven','zh_tw':'知識圖譜驅動','ja':'ナレッジグラフ駆動','hi':'ज्ञान-ग्राफ संचालित','pt':'Impulsionado por grafo de conhecimento' },
   feat1_d: { zh: '37 个知识点 · 三层结构 · 前置依赖一目了然', en: '37 knowledge points · 3-tier structure · prerequisites at a glance','zh_tw':'37 個知識點 · 三層結構 · 前置依賴一目了然','ja':'37 知識ポイント · 3 層構造 · 前提条件が一目瞭然','hi':'37 ज्ञान बिंदु · 3-स्तरीय संरचना · पूर्वापेक्षाएँ एक नज़र में','pt':'37 pontos de conhecimento · estrutura de 3 camadas · pré-requisitos à vista' },
   feat2_t: { zh: '自适应推荐引擎', en: 'Adaptive recommendation engine','zh_tw':'自適應推薦引擎','ja':'適応型レコメンデーションエンジン','hi':'अनुकूली अनुशंसा इंजन','pt':'Motor de recomendação adaptativa' },
@@ -351,9 +349,9 @@ const I18N = {
   cta_about_t: { zh: '了解我们', en: 'About Us','zh_tw':'了解我們','ja':'私たちについて','hi':'हमारे बारे में','pt':'Sobre nós' },
   cta_about_sub: { zh: '<b>查看最新功能与更新动态</b><br>开发进度 · 持续迭代',
                    en: '<b>See the latest features & updates</b><br>Development progress · Continuous iteration','zh_tw':'<b>查看最新功能與更新動態</b><br>開發進度 · 持續迭代','ja':'<b>最新機能とアップデートを見る</b><br>開発進捗 · 継続的な改善','hi':'<b>नवीनतम सुविधाएँ और अपडेट देखें</b><br>विकास प्रगति · निरंतर पुनरावृत्ति','pt':'<b>Veja os últimos recursos e atualizações</b><br>Progresso do desenvolvimento · Iteração contínua' },
-  cta_join_t: { zh: '加入我们', en: 'Join Us','zh_tw':'加入我們','ja':'参加する','hi':'शामिल हों','pt':'Junte-se' },
-  cta_join_sub: { zh: '<b>凭内推码注册成为管理员</b><br>与团队共建 · 管理平台',
-                  en: '<b>Register as an admin with a referral code</b><br>Build together · Manage the platform','zh_tw':'<b>憑內推碼註冊成為管理員</b><br>與團隊共建 · 管理平台','ja':'<b>紹介コードで管理者として登録</b><br>一緒に構築 · プラットフォーム管理','hi':'<b>रेफ़रल कोड से व्यवस्थापक के रूप में पंजीकरण करें</b><br>मिलकर बनाएँ · मंच प्रबंधित करें','pt':'<b>Registre-se como administrador com um código de indicação</b><br>Construa junto · Gerencie a plataforma' },
+  cta_admin_t: { zh: '管理后台', en: 'Admin Console','zh_tw':'管理後台','ja':'管理','hi':'व्यवस्थापक','pt':'Painel de Administração' },
+  cta_admin_sub: { zh: '<b>登录或凭内推码注册，进入管理后台</b><br>实时动态 · 系统日志 · 快速排查',
+                   en: '<b>Sign in or register with a referral code</b><br>Live activity · System logs · Fast troubleshooting','zh_tw':'<b>登入或憑內推碼註冊，進入管理後台</b><br>即時動態 · 系統日誌 · 快速排查','ja':'<b>ログインまたは紹介コードで登録</b><br>リアルタイム動向 · システムログ · 迅速な調査','hi':'<b>लॉगिन करें या रेफ़रल कोड से पंजीकरण करें</b><br>लाइव गतिविधि · सिस्टम लॉग · तेज़ समस्या निवारण','pt':'<b>Entre ou registre-se com um código de indicação</b><br>Atividade ao vivo · Logs do sistema · Solução rápida de problemas' },
   footer: { zh: '© 2026 SQL 自适应训练 · 千人千面的 SQL 学习平台 — <a href="login_glass.html">进入做题前端</a>',
             en: '© 2026 SQL Adaptive Training · A personalized SQL learning platform — <a href="login_glass.html">Enter Practice</a>','zh_tw':'© 2026 SQL 自適應訓練 · 千人千面的 SQL 學習平台 — <a href="login_glass.html">進入做題前端</a>','ja':'© 2026 SQL アダプティブトレーニング · 個別化された SQL 学習プラットフォーム — <a href="login_glass.html">練習に入る</a>','hi':'© 2026 SQL अनुकूली प्रशिक्षण · एक वैयक्तिकृत SQL सीखने का मंच — <a href="login_glass.html">अभ्यास में प्रवेश करें</a>','pt':'© 2026 Treinamento adaptativo de SQL · Uma plataforma personalizada de aprendizado de SQL — <a href="login_glass.html">Entrar na prática</a>' },
 };

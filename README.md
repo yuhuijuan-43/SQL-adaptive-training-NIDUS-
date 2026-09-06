@@ -27,7 +27,7 @@ An SQL practice platform powered by a knowledge-graph illumination mechanism and
 - SQL judging: SQL normalization, read-only single-statement validation, sandboxed execution, and result-set comparison
 - Question bank: 58 practice questions (29 basic + 29 advanced multiple choice; advanced questions include table DDL and expected output) + 42 classic Niuke-style SQL fill-in-the-blank questions (covering all 29 knowledge tags); full backups at `data/questions_full.json` / `data/exam_questions_full.json`
 - Learning loop: level diagnosis → adaptive practice → mistake collection → graph illumination → advanced selection
-- Account system: register / login / GitHub one-click login (OAuth2, optional) / session management / admin panel (unified secret + invitation code)
+- Account system: register / login / GitHub one-click login (OAuth2, optional) / session management / admin console (password login + referral-code registration, real-time user activity & system logs, admin-activity audit for the primary admin)
 - Framework-free frontend with localized chart library, supports offline deployment
 - One-click startup: auto-detects and installs Python, installs dependencies, starts the service, and opens the browser
 
@@ -36,7 +36,7 @@ An SQL practice platform powered by a knowledge-graph illumination mechanism and
 - Backend: Python / Flask / SQLite
 - Frontend: vanilla HTML / CSS / JS, ECharts (localized resources)
 - Judging: custom SQL normalization + sandboxed execution comparison
-- Testing: pytest (123 test cases)
+- Testing: pytest (149 test cases)
 
 ## Quick Start
 
@@ -93,7 +93,7 @@ Behavior notes:
 │   ├── seeding.py         # Question-bank seed rebuild
 │   ├── scraper.py         # Question-bank scraping tool
 │   ├── oauth.py           # GitHub OAuth login (config / authorization-code flow / account creation)
-│   └── tests/             # pytest test suite (144 test cases)
+│   └── tests/             # pytest test suite (149 test cases)
 ├── data/                  # Question-bank data sources (JSON / CSV)
 │   ├── questions.json     # Practice bank (58 multiple choice; full backup at questions_full.json)
 │   ├── exam_questions.json# Real-exam bank (42 Niuke SQL fill-in-the-blank; full backup at exam_questions_full.json)
@@ -113,7 +113,7 @@ Behavior notes:
 
 ```bash
 cd backend
-pytest -v        # all 144 test cases pass
+pytest -v        # all 149 test cases pass
 ```
 
 Covers: SQL judging, graph-illumination rules, learning flow, seed rebuild, API security, and GitHub OAuth login.

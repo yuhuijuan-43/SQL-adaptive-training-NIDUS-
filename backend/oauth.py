@@ -91,13 +91,15 @@ def find_or_create_github_user(gh_id, gh_login):
     gh_id = str(gh_id)
     row = conn.execute('SELECT session_id, username FROM users WHERE github_id=?', (gh_id,)).fetchone()
     if row:
+        conn.execute('UPDATE users SET last_active=CURRENT_TIMESTAMP WHERE github_id=?', (gh_id,))
+        conn.commit()
         return row['session_id'], row['username']
 
     username = _resolve_unique_username(gh_login)
     pw_hash = _random_bcrypt_hash()
     sid = str(uuid.uuid4())
     try:
-        conn.execute('INSERT INTO users (username, password, session_id, github_id) VALUES (?,?,?,?)',
+        conn.execute('INSERT INTO users (username, password, session_id, github_id, last_active) VALUES (?,?,?,?,CURRENT_TIMESTAMP)',
                      (username, pw_hash, sid, gh_id))
         conn.commit()
     except sqlite3.IntegrityError:

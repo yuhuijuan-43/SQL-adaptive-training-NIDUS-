@@ -5,11 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SQL 自适应练习</title>
 <link href="lib/font-awesome/css/all.min.css" rel="stylesheet">
+<link rel="preload" href="lib/font-awesome/webfonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
 <link href="lib/codemirror/codemirror.min.css" rel="stylesheet">
 <style>
   :root { --bg: #eef3fc; --card: rgba(255,255,255,0.72); --text: #1b2747; --text2: #48577c; --border: rgba(88,110,170,0.16); --accent: #4a7dff; --accent-hover: #6a90ff; --tag-bg: rgba(88,110,170,0.08); --code-bg: rgba(255,255,255,0.75); --success: #0ea678; --error: #e04a55; --accent-grad: linear-gradient(135deg, #4a7dff 0%, #8b5bff 100%); }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
+  /* 预留滚动条槽位：滚动条出现/消失时页面不再水平位移（消除“滚动条闪现”抖动） */
+  html { overflow-y: scroll; scrollbar-gutter: stable; }
   body { background:
     radial-gradient(1100px 700px at 88% -12%, rgba(140,120,255,0.16), transparent 60%),
     radial-gradient(900px 620px at -8% 18%, rgba(80,140,255,0.15), transparent 55%),
@@ -101,6 +104,8 @@
   .question-item p { font-size: 0.7rem; color: var(--text2); margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   #questionDetail { display: none; }
   #questionDetail.visible { display: block; }
+  /* 异步加载期间保持占位高度，避免“加载中 → 列表/详情”切换时页面高度塌陷 */
+  #practiceList, #questionDetail { min-height: 320px; }
   .back-link { font-size: 0.7rem; color: var(--accent); cursor: pointer; margin-bottom: 0.75rem; display: inline-block; }
   .back-link:hover { text-decoration: underline; }
   .page { display: none; }
@@ -287,13 +292,13 @@
   <div class="flex gap-1 mt-4 mb-3">
     <button class="nav-btn active" data-page="journey" data-i18n="自适应进阶" onclick="showPage('journey')"><i class="fas fa-route mr-1"></i> 自适应进阶</button>
     <button class="nav-btn" data-page="practice" data-i18n="自主练习" onclick="currentPool='practice';showPage('practice')"><i class="fas fa-code mr-1"></i> 自主练习</button>
-    <button class="nav-btn" data-page="practice" data-i18n="真题测试" onclick="currentPool='exam';showPage('practice')"><i class="fas fa-file-alt mr-1"></i> 真题测试</button>
+    <button class="nav-btn" data-page="practice" data-i18n="面试真题" onclick="currentPool='exam';showPage('practice')"><i class="fas fa-file-alt mr-1"></i> 面试真题</button>
     <button class="nav-btn" data-page="wrongset" data-i18n="错题集" onclick="showPage('wrongset')"><i class="fas fa-exclamation-triangle mr-1"></i> 错题集</button>
     <button class="nav-btn" data-i18n="返回主页" onclick="window.location.href='index_glass.html'"><i class="fas fa-home mr-1"></i> 返回主页</button>
   </div>
 
   <!-- ============ 自适应进阶 Journey ============ -->
-  <div id="page-journey" class="page">
+  <div id="page-journey" class="page active">
     <!-- 图谱入口视图：自适应图谱 + 点亮节点 + 开始适应 -->
     <div id="journeyMapView" class="card p-4 md:p-5">
       <div class="highlight-box">
@@ -408,7 +413,7 @@ const I18N = {
   '自适应训练': { en: 'Adaptive Training','zh_tw':'自適應訓練','ja':'アダプティブトレーニング','hi':'अनुकूली प्रशिक्षण','pt':'Treinamento adaptativo' },
   '自适应进阶': { en: 'Adaptive Journey','zh_tw':'自適應進階','ja':'アダプティブジャーニー','hi':'अनुकूली यात्रा','pt':'Jornada adaptativa' },
   '自主练习': { en: 'Practice','zh_tw':'自主練習','ja':'練習','hi':'अभ्यास','pt':'Prática' },
-  '真题测试': { en: 'Exam','zh_tw':'真題測試','ja':'本番テスト','hi':'वास्तविक परीक्षा','pt':'Exame' },
+  '面试真题': { en: 'Exam','zh_tw':'面試真題','ja':'本番テスト','hi':'वास्तविक परीक्षा','pt':'Exame' },
   '错题集': { en: 'Wrong Answers','zh_tw':'錯題集','ja':'間違い問題集','hi':'गलत उत्तर संग्रह','pt':'Erros' },
   // Journey
   '自适应进阶模式': { en: 'Adaptive Journey Mode','zh_tw':'自適應進階模式','ja':'アダプティブジャーニーモード','hi':'अनुकूली यात्रा मोड','pt':'Modo de jornada adaptativa' },
@@ -491,7 +496,7 @@ const I18N = {
   // 补充
   '🔍 搜索题目...': { en: '🔍 Search questions...','zh_tw':'🔍 搜尋題目...','ja':'🔍 問題を検索...','hi':'🔍 प्रश्न खोजें...','pt':'🔍 Buscar perguntas...' },
   '记录你在自适应进阶和练习中答错的题目，方便集中复习巩固。': { en: 'Questions you answered wrong in the adaptive journey and practice are collected here for focused review.','zh_tw':'記錄你在自適應進階和練習中答錯的題目，方便集中複習鞏固。','ja':'アダプティブジャーニーと練習で間違えた問題をまとめて、集中的に復習できます。','hi':'अनुकूली यात्रा और अभ्यास में गलत उत्तर वाले प्रश्न यहाँ एकत्र हैं, केंद्रित समीक्षा के लिए।','pt':'Perguntas que você errou na jornada adaptativa e na prática ficam reunidas aqui para revisão focada.' },
-  '🎯 真题测试': { en: '🎯 Exam','zh_tw':'🎯 真題測試','ja':'🎯 本番テスト','hi':'🎯 परीक्षा','pt':'🎯 Exame' },
+  '🎯 面试真题': { en: '🎯 Exam','zh_tw':'🎯 面試真題','ja':'🎯 本番テスト','hi':'🎯 परीक्षा','pt':'🎯 Exame' },
   '📝 自主练习': { en: '📝 Practice','zh_tw':'📝 自主練習','ja':'📝 練習','hi':'📝 अभ्यास','pt':'📝 Prática' },
   '点击清除分类筛选': { en: 'Click to clear category filter','zh_tw':'點擊清除分類篩選','ja':'クリックでカテゴリ絞り込みを解除','hi':'श्रेणी फ़िल्टर साफ़ करने के लिए क्लिक करें','pt':'Clique para limpar o filtro de categoria' },
   '展开 SQL': { en: 'Show SQL','zh_tw':'展開 SQL','ja':'SQL を展開','hi':'SQL दिखाएं','pt':'Mostrar SQL' },
@@ -516,25 +521,6 @@ function t(text) {
   if (!e) return text;
   if (LANG === 'zh') return text;
   return e[langKey()] || e.en || text;
-}
-function tf(text) {
-  const s = t(text);
-  const args = Array.prototype.slice.call(arguments, 1);
-  return s.replace(/\{(\d+)\}/g, function(m, i) { return args[+i] != null ? args[+i] : m; });
-}
-function applyI18n() {
-  document.querySelectorAll('[data-i18n]').forEach(function(el) { el.innerHTML = t(el.getAttribute('data-i18n')); });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
-  document.querySelectorAll('[data-i18n-title]').forEach(function(el) { el.title = t(el.getAttribute('data-i18n-title')); });
-  var btn = document.getElementById('langBtn');
-  document.title = t('SQL 自适应练习');
-  document.documentElement.lang = LANG === 'zh-TW' ? 'zh-TW' : (LANG === 'zh' ? 'zh-CN' : 'en');
-}
-function toggleLang() {
-  LANG = LANG === 'zh' ? 'en' : 'zh';
-  localStorage.setItem('lang', LANG);
-  // 全量重载：题目卡、分类标签等动态内容统一按新语言渲染
-  window.location.reload();
 }
 
 
@@ -603,6 +589,8 @@ function initCodeMirror(ta) {
   if (typeof CodeMirror === 'undefined') return; // CDN 不可用时降级
   try {
     ta.classList.add('cm-initialized');
+    // 先读取原始高度（此时 textarea 仍可见），再隐藏，避免“隐藏后读取”造成的强制同步布局
+    var initH = ta.offsetHeight || 72;
     ta.style.display = 'none';
     var wrapper = document.createElement('div');
     ta.parentNode.insertBefore(wrapper, ta);
@@ -619,7 +607,7 @@ function initCodeMirror(ta) {
       hintOptions: { tables: {} }
     });
 
-    cm.setSize('100%', Math.max(72, ta.offsetHeight || 72));
+    cm.setSize('100%', Math.max(72, initH));
     cm.on('change', function() { validateSQL(cm); });
     cm.on('cursorActivity', function() { validateSQL(cm); });
     ta._cm = cm;
@@ -781,8 +769,12 @@ function validateSessionSilently() {
 }
 validateSessionSilently();
 
-// 切换用户：先清除本地会话再进登录页，避免登录页的"已登录自动跳回"逻辑误触发
+// 切换用户：先通知服务端注销会话（best effort，失败也继续本地清理），再进登录页
 function switchUser() {
+  try {
+    fetch(API_BASE + '/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }) }).catch(function() {});
+  } catch (e) {}
   sessionStorage.removeItem('sql_user');
   window.location.href = '/login';
 }
@@ -810,7 +802,7 @@ let currentPracticeQ = null;
 let currentDerivedQ = null;
 let currentPrototypeQ = null;
 let journeyQuestionStart = 0;
-let currentPool = 'practice';  // 'practice' (自主练习) or 'exam' (真题测试)
+let currentPool = 'practice';  // 'practice' (自主练习) or 'exam' (面试真题)
 let _catSelectBuilt = false;  // 分类下拉框是否已构建
 // 29 basic + 29 advanced = 58 total
 const STATIC_QUESTIONS = [
@@ -2480,6 +2472,10 @@ function onCatParentHover(e) {
   if (!expand) { hideSubPanel(); return; }
 
   var panel = document.getElementById('catSubPanel');
+  // 先读取定位所需尺寸（面板为 absolute，填充内容不影响父级位置），再写 DOM，避免强制同步布局
+  var rect = this.getBoundingClientRect();
+  var cascade = document.getElementById('catCascade');
+  var cascadeRect = cascade.getBoundingClientRect();
   panel.innerHTML = '';
   // "全部"选项
   var allItem = document.createElement('div');
@@ -2498,10 +2494,6 @@ function onCatParentHover(e) {
   buildSubItems(panel, root, 1);
   if (extra) buildSubItems(panel, extra, 1);
 
-  // 定位面板
-  var rect = this.getBoundingClientRect();
-  var cascade = document.getElementById('catCascade');
-  var cascadeRect = cascade.getBoundingClientRect();
   panel.style.left = (rect.left - cascadeRect.left) + 'px';
   panel.style.top = (cascadeRect.height + 4) + 'px';
   panel.style.display = 'block';
@@ -2753,7 +2745,7 @@ function showPage(name) {
   if (btns.length > 1 && currentPool === 'exam') btns[1].classList.add('active');
   else if (btns.length > 0) btns[0].classList.add('active');
   if (name === 'practice') {
-    document.getElementById('poolLabel').textContent = currentPool === 'exam' ? t('🎯 真题测试') : t('📝 自主练习');
+    document.getElementById('poolLabel').textContent = currentPool === 'exam' ? t('🎯 面试真题') : t('📝 自主练习');
     if (!_catSelectBuilt) { buildCategorySelect(); _catSelectBuilt = true; }
     loadPracticeQuestions();
   }
@@ -2775,13 +2767,28 @@ function withSessionParam(path) {
   return path + (path.indexOf('?') === -1 ? '?' : '&') + 'session_id=' + encodeURIComponent(sessionId);
 }
 
+// 非 2xx 响应 → 解析后端 {"error": "..."} 中文文案，供 catch 直接展示（2026-08-12 透传后端错误）
+async function _extractApiError(r) {
+  try {
+    var b = await r.json();
+    if (b && b.error) return String(b.error);
+  } catch (e) {}
+  return '请求失败（HTTP ' + r.status + '）';
+}
+
+// catch 展示助手：透传后端中文文案；'unauthorized' 已由 redirectIfUnauthorized 处理跳转，不再弹窗
+function errMsg(e, fallback) {
+  var m = (e && e.message) ? String(e.message) : '';
+  return (m && m !== 'unauthorized') ? m : fallback;
+}
+
 async function apiGet(path) {
   var t0 = performance.now();
   const r = await fetch(API_BASE + withSessionParam(path));
   var ms = Math.round(performance.now() - t0);
   _showPerf(ms, path.split('?')[0]);
   if (redirectIfUnauthorized(r)) throw new Error('unauthorized');
-  if (!r.ok) throw new Error('API error');
+  if (!r.ok) throw new Error(await _extractApiError(r));
   return r.json();
 }
 
@@ -2794,7 +2801,7 @@ async function apiPost(path, data) {
   var ms = Math.round(performance.now() - t0);
   _showPerf(ms, path.split('?')[0]);
   if (redirectIfUnauthorized(r)) throw new Error('unauthorized');
-  if (!r.ok) throw new Error('API error');
+  if (!r.ok) throw new Error(await _extractApiError(r));
   return r.json();
 }
 
@@ -3035,7 +3042,7 @@ async function submitJourneyAnswer(qid) { saveAllCM();
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('已提交'); }
     journeyData = resp;
     document.getElementById('journeyNextBtn').style.display = 'inline-flex';
-  } catch (e) { alert(t('提交失败')); }
+  } catch (e) { alert(errMsg(e, t('提交失败'))); }
 }
 
 
@@ -3081,7 +3088,7 @@ async function loadPracticeQuestions() {
     }
     renderPracticeList();
   } catch (e) {
-    document.getElementById('practiceList').innerHTML = '<p style="color:#b04a4a;text-align:center">' + t('加载失败，请确保后端已启动') + '</p>';
+    document.getElementById('practiceList').innerHTML = '<p style="color:#b04a4a;text-align:center">' + t('加载失败，请确保后端已启动') + (errMsg(e, '') ? '：' + errMsg(e, '') : '') + '</p>';
   }
 }
 
@@ -3349,7 +3356,7 @@ async function startDerivedPractice(prototypeId) {
     currentDerivedQ = resp.derived_question;
     renderDerivedQuestion(currentDerivedQ);
   } catch(e) {
-    area.innerHTML = '<p style="color:#b04a4a">' + t('生成失败') + '</p>';
+    area.innerHTML = '<p style="color:#b04a4a">' + t('生成失败') + (errMsg(e, '') ? '：' + errMsg(e, '') : '') + '</p>';
   }
 }
 
@@ -3488,7 +3495,7 @@ async function loadWrongSet() {
     renderWrongSummary(data);
     renderWrongList();
   } catch (e) {
-    el.innerHTML = '<p style="color:#b04a4a;text-align:center">' + t('加载失败') + '</p>';
+    el.innerHTML = '<p style="color:#b04a4a;text-align:center">' + t('加载失败') + (errMsg(e, '') ? '：' + errMsg(e, '') : '') + '</p>';
   }
 }
 
@@ -3581,7 +3588,7 @@ showPage = function(name) {
   if (btns.length > 1 && currentPool === 'exam') btns[1].classList.add('active');
   else if (btns.length > 0) btns[0].classList.add('active');
   if (name === 'journey') { loadJourneyMap(); }
-  else if (name === 'practice') { document.getElementById('poolLabel').textContent = currentPool === 'exam' ? t('🎯 真题测试') : t('📝 自主练习'); if (!_catSelectBuilt) { buildCategorySelect(); _catSelectBuilt = true; } loadPracticeQuestions(); }
+  else if (name === 'practice') { document.getElementById('poolLabel').textContent = currentPool === 'exam' ? t('🎯 面试真题') : t('📝 自主练习'); if (!_catSelectBuilt) { buildCategorySelect(); _catSelectBuilt = true; } loadPracticeQuestions(); }
   else if (name === 'wrongset') { summaryExpanded = false; document.getElementById('summaryBody').style.display = 'none'; document.getElementById('summaryToggle').innerHTML = '<i class="fas fa-chevron-down"></i>'; loadWrongSet(); }
 };
 

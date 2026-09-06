@@ -1,11 +1,12 @@
 """API 安全测试：admin 鉴权、密码策略、匿名访问契约
 
-C2 重构后语义：Bearer 一律使用 per-admin 会话 token（admin_session fixture），
-不再使用旧共享密钥；操作者身份由 token 解析，请求体里的 operator / ?me= 不再生效。
-一人一钥（C3）：登录门第二重验证为各管理员个人密钥；主管理员可查看/停用/重置同事密钥。
+当前语义（2026-09-03 融合「管理后台 + 加入我们」）：
+- Bearer 一律使用 per-admin 会话 token（admin_session fixture），操作者身份由 token 解析；
+- 管理后台统一入口：管理员账号密码登录 / 内推码注册，个人密钥体系已移除；
+- 所有管理员可实时查询用户动态与系统日志；管理员动态仅主管理员可见。
 """
 import db
-from conftest import _register_admin, _make_primary, _get_admin_key
+from conftest import _register_admin, _make_primary
 from repositories import get_progress
 
 
@@ -32,35 +33,32 @@ class TestAdminAuth:
         r = client.get('/api/admin/users', headers=_h(admin_session))
         assert r.status_code == 200
 
-    def test_admin_login_double_verify(self, client):
-        """管理后台登录双重验证：管理员账号密码 + 个人密钥（一人一钥）；登录返回 per-admin 会话 token"""
+    def test_admin_login_password_only(self, client):
+        """融合后管理后台登录：仅账号密码（个人密钥已移除）；登录返回 per-admin 会话 token"""
         _register_admin(client, 'gate_admin')
-        key = _get_admin_key('gate_admin')
-        # 全对 → 200，token 为随机会话 token（不是密钥本身），且可用于访问
-        r = client.post('/api/admin/login', json={
-            'username': 'gate_admin', 'password': 'Passw0rd1', 'key': key})
-        assert r.status_code == 200
-        assert r.get_json()['token'] != key
-        assert client.get('/api/admin/stats', headers=_h(r.get_json()['token'])).status_code == 200
-        # 密码错 → 401
-        r = client.post('/api/admin/login', json={
-            'username': 'gate_admin', 'password': 'wrong', 'key': key})
-        assert r.status_code == 401
-        # 密钥错（他人密钥/任意错误值）→ 401
-        r = client.post('/api/admin/login', json={
-            'username': 'gate_admin', 'password': 'Passw0rd1', 'key': 'wrong'})
-        assert r.status_code == 401
-        # 缺密钥 → 401
+        # 账号密码正确 → 200，token 为随机会话 token，且可用于访问
         r = client.post('/api/admin/login', json={
             'username': 'gate_admin', 'password': 'Passw0rd1'})
+        assert r.status_code == 200
+        assert client.get('/api/admin/stats', headers=_h(r.get_json()['token'])).status_code == 200
+        # 缺密码 → 400
+        r = client.post('/api/admin/login', json={'username': 'gate_admin'})
+        assert r.status_code == 400
+        # 密码错 → 401
+        r = client.post('/api/admin/login', json={
+            'username': 'gate_admin', 'password': 'wrong'})
         assert r.status_code == 401
         # 用户名不存在 → 404（提示先注册）
         r = client.post('/api/admin/login', json={
-            'username': 'nobody', 'password': 'Passw0rd1', 'key': key})
+            'username': 'nobody', 'password': 'Passw0rd1'})
         assert r.status_code == 404
 
-    def test_admin_gate_page_served(self, client):
+    def test_admin_gate_redirects_to_unified_auth(self, client):
+        """旧 /admin-gate 已融合为 /admin-auth 单一入口（302 跳转）"""
         r = client.get('/admin-gate')
+        assert r.status_code == 302
+        assert '/admin-auth' in r.headers['Location']
+        r = client.get('/admin-auth')
         assert r.status_code == 200
         assert '管理员' in r.get_data(as_text=True) or 'admin' in r.get_data(as_text=True).lower()
 
@@ -208,16 +206,6 @@ class TestAdminAccount:
                 'username': 'stu_rb3', 'password': expect}).status_code == 200
         r = client.post('/api/admin/password-rollback', json={'username': 'stu_rb3'}, headers=H)
         assert r.status_code == 409
-
-    def test_admin_key_requires_token(self, client):
-        assert client.get('/api/admin/key').status_code == 401
-
-    def test_admin_key_returns_own_key(self, client, admin_session):
-        """一人一钥：/api/admin/key 返回的是该管理员自己的个人密钥（= DB personal_key）"""
-        r = client.get('/api/admin/key', headers=_h(admin_session))
-        assert r.status_code == 200
-        assert r.get_json()['key'] == _get_admin_key('primary_admin')
-        assert r.get_json()['key_disabled'] is False
 
     def test_password_rollback_requires_token(self, client):
         r = client.post('/api/admin/password-rollback', json={'username': 'x'})
@@ -441,6 +429,48 @@ class TestLoginGate:
         assert len(get_progress(sid)) == 1
 
 
+class TestSessionLifecycle:
+    """会话生命周期（2026-08-12 新增）：登出立即失效、90 天不活跃过期、重新登录恢复"""
+
+    def _register(self, client, name='u_sess'):
+        return client.post('/api/register', json={
+            'username': name, 'password': 'password123'}).get_json()['session_id']
+
+    def test_logout_invalidates_session(self, client):
+        sid = self._register(client, 'u_logout')
+        assert client.get('/api/questions?session_id=' + sid).status_code == 200
+        r = client.post('/api/logout', json={'session_id': sid})
+        assert r.status_code == 200
+        # 登出后同一 session_id 立即 401（服务端已标记过期）
+        assert client.get('/api/questions?session_id=' + sid).status_code == 401
+
+    def test_logout_idempotent_and_anonymous(self, client):
+        # 未登录 / 未知 session_id / 缺参数：一律幂等 ok
+        assert client.post('/api/logout', json={}).status_code == 200
+        assert client.post('/api/logout', json={'session_id': 'ghost-sid'}).status_code == 200
+
+    def test_login_restores_logged_out_session(self, client):
+        """登出 → 重新登录 → 同一 session_id 恢复可用（last_active 刷新）"""
+        sid = self._register(client, 'u_relogin')
+        client.post('/api/logout', json={'session_id': sid})
+        assert client.get('/api/questions?session_id=' + sid).status_code == 401
+        r = client.post('/api/login', json={'username': 'u_relogin', 'password': 'password123'})
+        assert r.status_code == 200 and r.get_json()['session_id'] == sid
+        assert client.get('/api/questions?session_id=' + sid).status_code == 200
+
+    def test_stale_session_expires(self, client):
+        """last_active 距今超 90 天 → 会话过期 401"""
+        sid = self._register(client, 'u_stale')
+        conn = db.get_connection()
+        conn.execute("UPDATE users SET last_active='2020-01-01 00:00:00' WHERE session_id=?", (sid,))
+        conn.commit()
+        assert client.get('/api/questions?session_id=' + sid).status_code == 401
+        # 重新登录（刷新 last_active）后恢复
+        r = client.post('/api/login', json={'username': 'u_stale', 'password': 'password123'})
+        assert r.status_code == 200
+        assert client.get('/api/questions?session_id=' + r.get_json()['session_id']).status_code == 200
+
+
 class TestAdminUserDelete:
     """管理员删除用户：Bearer 鉴权 + confirm 显式确认 + 同步删除全部关联数据"""
 
@@ -524,16 +554,7 @@ class TestPrimaryAdmin:
         names = {c['username']: c for c in r['colleagues']}
         assert 'primary_admin' not in names
         assert names['p_a']['is_primary'] == 1 and names['p_b']['is_primary'] == 0
-        # 一人一钥：主管理员视角同事列表附带个人密钥与停用标记（监控）
-        assert names['p_a']['personal_key'] and names['p_a']['key_disabled'] == 0
-        assert names['p_b']['personal_key'] and names['p_b']['key_disabled'] == 0
-
-    def test_colleagues_keys_only_visible_to_primary(self, client, admin_session):
-        """一人一钥：子管理员（非主管理员）的同事列表不附带他人密钥"""
-        sub_token = _register_admin(client, 'key_peek')
-        client.post('/api/admin/auth-register', json={
-            'username': 'key_peer', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
-        r = client.get('/api/admin/colleagues', headers=_h(sub_token)).get_json()
+        # 密钥体系已移除：任何视角的同事列表都不含 personal_key / key_disabled
         assert all('personal_key' not in c and 'key_disabled' not in c for c in r['colleagues'])
 
     def test_reset_admin_requires_primary_operator(self, client, admin_session):
@@ -668,151 +689,6 @@ class TestAdminDelete:
         assert r.status_code == 404
 
 
-class TestAdminKeyUpdate:
-    """一人一钥：更换个人密钥为自助操作（每位管理员可更换自己的密钥，无需主管理员）；
-    更换后本人全部会话注销（含当前），需重新登录"""
-
-    def test_key_update_requires_token(self, client):
-        r = client.post('/api/admin/key-update', json={
-            'new_key': 'newkey-1234'})
-        assert r.status_code == 401
-
-    def test_key_update_self_service(self, client):
-        """任意管理员（含子管理员）可更换本人密钥"""
-        sub_token = _register_admin(client, 'ku_sub')
-        r = client.post('/api/admin/key-update', json={
-            'new_key': 'newkey-1234'}, headers=_h(sub_token))
-        assert r.status_code == 200 and r.get_json()['key'] == 'newkey-1234'
-        assert _get_admin_key('ku_sub') == 'newkey-1234'
-
-    def test_key_update_validation(self, client, admin_session):
-        H = _h(admin_session)
-        # 过短 / 与当前相同 → 400
-        assert client.post('/api/admin/key-update', json={
-            'new_key': 'short'}, headers=H).status_code == 400
-        assert client.post('/api/admin/key-update', json={
-            'new_key': _get_admin_key('primary_admin')}, headers=H).status_code == 400
-
-    def test_key_update_revokes_own_sessions(self, client, admin_session):
-        """更换密钥后本人全部会话失效（含操作者自身）；新密钥可重新登录"""
-        H = _h(admin_session)
-        old_key = _get_admin_key('primary_admin')
-        r = client.post('/api/admin/key-update', json={
-            'new_key': 'brand-new-key-0001'}, headers=H)
-        assert r.status_code == 200 and r.get_json()['key'] == 'brand-new-key-0001'
-        # 旧会话失效、旧密钥登录被拒
-        assert client.get('/api/admin/key', headers=H).status_code == 401
-        assert client.post('/api/admin/login', json={
-            'username': 'primary_admin', 'password': 'Passw0rd1', 'key': old_key}).status_code == 401
-        # 新密钥重新登录 → 新随机会话可访问，且 /api/admin/key 返回新密钥
-        r = client.post('/api/admin/login', json={
-            'username': 'primary_admin', 'password': 'Passw0rd1', 'key': 'brand-new-key-0001'})
-        assert r.status_code == 200
-        new_token = r.get_json()['token']
-        assert new_token and new_token != 'brand-new-key-0001'
-        assert client.get('/api/admin/key', headers=_h(new_token)).get_json()['key'] == 'brand-new-key-0001'
-        # 新注册的管理员仍拿到随机会话 token，可访问管理接口
-        r = client.post('/api/admin/auth-register', json={
-            'username': 'ku_sub2', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
-        assert r.status_code == 200 and r.get_json()['token']
-        assert client.get('/api/admin/stats', headers=_h(r.get_json()['token'])).status_code == 200
-
-    def test_key_update_blocked_when_disabled(self, client, admin_session):
-        """密钥被停用时该管理员会话已注销：旧 token 调用任何接口（含 key-update）一律 401"""
-        H = _h(admin_session)
-        sub_token = _register_admin(client, 'ku_locked')
-        client.post('/api/admin/key-toggle', json={
-            'username': 'ku_locked', 'disabled': True}, headers=H)
-        assert client.post('/api/admin/key-update', json={
-            'new_key': 'newkey-1234'}, headers=_h(sub_token)).status_code == 401
-
-
-class TestAdminKeyControl:
-    """主管理员风险管控：停用/启用/重置同事的个人密钥（一人一钥）"""
-
-    def test_toggle_and_reset_require_token(self, client):
-        assert client.post('/api/admin/key-toggle', json={
-            'username': 'x', 'disabled': True}).status_code == 401
-        assert client.post('/api/admin/key-reset', json={
-            'username': 'x'}).status_code == 401
-
-    def test_toggle_and_reset_require_primary(self, client):
-        sub_token = _register_admin(client, 'kc_sub')
-        assert client.post('/api/admin/key-toggle', json={
-            'username': 'any', 'disabled': True}, headers=_h(sub_token)).status_code == 403
-        assert client.post('/api/admin/key-reset', json={
-            'username': 'any'}, headers=_h(sub_token)).status_code == 403
-
-    def test_cannot_operate_on_self(self, client, admin_session):
-        """主管理员不能停用/重置自己的密钥（自身密钥走自助更换）"""
-        H = _h(admin_session)
-        assert client.post('/api/admin/key-toggle', json={
-            'username': 'primary_admin', 'disabled': True}, headers=H).status_code == 400
-        assert client.post('/api/admin/key-reset', json={
-            'username': 'primary_admin'}, headers=H).status_code == 400
-
-    def test_disable_kills_sessions_and_blocks_login(self, client, admin_session):
-        """停用 = 立即注销该管理员全部会话（强制下线）+ gate 与账号登录均被拒绝（防绕过）"""
-        H = _h(admin_session)
-        sub_token = _register_admin(client, 'kc_sub')
-        # 停用前：子管理员可正常访问
-        assert client.get('/api/admin/stats', headers=_h(sub_token)).status_code == 200
-        r = client.post('/api/admin/key-toggle', json={
-            'username': 'kc_sub', 'disabled': True}, headers=H)
-        assert r.status_code == 200 and r.get_json()['key_disabled'] is True
-        # 旧会话立即失效（强制下线）
-        assert client.get('/api/admin/stats', headers=_h(sub_token)).status_code == 401
-        # gate 登录（个人密钥）被拒 403
-        r = client.post('/api/admin/login', json={
-            'username': 'kc_sub', 'password': 'Passw0rd1', 'key': _get_admin_key('kc_sub')})
-        assert r.status_code == 403
-        # 账号登录（免密钥入口）同样被拒 403
-        r = client.post('/api/admin/auth-login', json={
-            'username': 'kc_sub', 'password': 'Passw0rd1'})
-        assert r.status_code == 403
-
-    def test_enable_restores_login(self, client, admin_session):
-        H = _h(admin_session)
-        _register_admin(client, 'kc_sub')
-        client.post('/api/admin/key-toggle', json={
-            'username': 'kc_sub', 'disabled': True}, headers=H)
-        r = client.post('/api/admin/key-toggle', json={
-            'username': 'kc_sub', 'disabled': False}, headers=H)
-        assert r.status_code == 200 and r.get_json()['key_disabled'] is False
-        r = client.post('/api/admin/login', json={
-            'username': 'kc_sub', 'password': 'Passw0rd1', 'key': _get_admin_key('kc_sub')})
-        assert r.status_code == 200
-
-    def test_toggle_unknown_admin(self, client, admin_session):
-        H = _h(admin_session)
-        assert client.post('/api/admin/key-toggle', json={
-            'username': 'ghost', 'disabled': True}, headers=H).status_code == 404
-        assert client.post('/api/admin/key-reset', json={
-            'username': 'ghost'}, headers=H).status_code == 404
-
-    def test_reset_generates_new_key_and_revokes_sessions(self, client, admin_session):
-        """重置 = 生成新密钥（旧密钥立即失效）+ 注销全部会话 + 自动解除停用"""
-        H = _h(admin_session)
-        sub_token = _register_admin(client, 'kc_sub')
-        old_key = _get_admin_key('kc_sub')
-        # 先停用再重置：重置后应自动恢复可用
-        client.post('/api/admin/key-toggle', json={
-            'username': 'kc_sub', 'disabled': True}, headers=H)
-        r = client.post('/api/admin/key-reset', json={'username': 'kc_sub'}, headers=H)
-        assert r.status_code == 200
-        new_key = r.get_json()['key']
-        assert new_key and new_key != old_key
-        assert _get_admin_key('kc_sub') == new_key
-        # 旧会话失效、旧密钥失效
-        assert client.get('/api/admin/stats', headers=_h(sub_token)).status_code == 401
-        assert client.post('/api/admin/login', json={
-            'username': 'kc_sub', 'password': 'Passw0rd1', 'key': old_key}).status_code == 401
-        # 新密钥可登录（已自动解除停用）
-        r = client.post('/api/admin/login', json={
-            'username': 'kc_sub', 'password': 'Passw0rd1', 'key': new_key})
-        assert r.status_code == 200
-
-
 class TestReferralCodes:
     """主管理员内推码管理：查看/新增/删除，与注册校验实时同步"""
 
@@ -864,3 +740,118 @@ class TestReferralCodes:
         # 不存在 → 404
         assert client.post('/api/admin/referral-delete', json={
             'code': 'GHOST'}, headers=H).status_code == 404
+
+
+class TestAdminMonitoring:
+    """融合后的管理后台监控：用户动态/系统日志全管理员可见，管理员动态仅主管理员（定位与追责）"""
+
+    def test_monitoring_endpoints_require_token(self, client):
+        assert client.get('/api/admin/user-activity').status_code == 401
+        assert client.get('/api/admin/system-logs').status_code == 401
+        assert client.get('/api/admin/admin-activity').status_code == 401
+
+    def test_user_activity_records_register_and_answer(self, client, admin_session):
+        H = _h(admin_session)
+        sid = client.post('/api/register', json={
+            'username': 'mon_u', 'password': 'Password1'}).get_json()['session_id']
+        client.post('/api/submit', json={
+            'question_id': 1, 'answer': 'SELECT * FROM employees', 'session_id': sid})
+        d = client.get('/api/admin/user-activity', headers=H).get_json()
+        events = d['events']
+        actions = [e['action'] for e in events]
+        assert 'register' in actions and 'answer' in actions
+        answer = next(e for e in events if e['action'] == 'answer')
+        assert answer['actor'] == 'mon_u'
+        # 按用户名筛选/锁定：只看该用户的动态
+        d = client.get('/api/admin/user-activity?actor=mon_u', headers=H).get_json()
+        only = d['events']
+        assert only and all(e['actor'] == 'mon_u' for e in only)
+        assert d['total'] >= len(only)
+        d2 = client.get('/api/admin/user-activity?actor=ghost_no_one', headers=H).get_json()
+        assert d2['events'] == [] and d2['total'] == 0
+
+    def test_system_logs_and_user_activity_visible_to_sub_admin(self, client):
+        sub_token = _register_admin(client, 'mon_sub')
+        # 触发一次失败的管理员登录 → 系统日志应记录 warn
+        assert client.post('/api/admin/auth-login', json={
+            'username': 'mon_sub', 'password': 'WrongPass1'}).status_code == 401
+        logs = client.get('/api/admin/system-logs', headers=_h(sub_token)).get_json()['logs']
+        assert any(l['level'] == 'warn' and '登录失败' in l['message'] for l in logs)
+        # 用户动态：普通管理员同样可见
+        r = client.get('/api/admin/user-activity', headers=_h(sub_token))
+        assert r.status_code == 200 and 'events' in r.get_json()
+        # 管理员动态：普通管理员 403（仅主管理员）
+        assert client.get('/api/admin/admin-activity', headers=_h(sub_token)).status_code == 403
+
+    def test_admin_activity_primary_only_and_tracks_actions(self, client, admin_session):
+        H = _h(admin_session)
+        sub_token = _register_admin(client, 'mon_peer')
+        # 主管理员操作一次平台用户重置密码 → 应进入管理员动态
+        client.post('/api/register', json={'username': 'mon_stu', 'password': 'Password1'})
+        assert client.post('/api/admin/user-reset', json={
+            'username': 'mon_stu', 'new_password': 'PassNew123'}, headers=H).status_code == 200
+        # 子管理员不能查看管理员动态
+        assert client.get('/api/admin/admin-activity', headers=_h(sub_token)).status_code == 403
+        # 主管理员可见全部管理员动态（含本人操作与注册记录）
+        d = client.get('/api/admin/admin-activity', headers=H).get_json()
+        events = d['events']
+        assert events
+        actors = {e['actor'] for e in events}
+        assert 'primary_admin' in actors and 'mon_peer' in actors
+        assert any(e['action'] == 'reset_user' and e['target'] == 'mon_stu' for e in events)
+        # 按管理员用户名筛选/锁定：只看该管理员的动态
+        d = client.get('/api/admin/admin-activity?actor=mon_peer', headers=H).get_json()
+        only = d['events']
+        assert only and all(e['actor'] == 'mon_peer' for e in only)
+        assert d['total'] >= len(only)
+
+    def test_user_activity_pagination_five_per_page(self, client, admin_session):
+        """每页 5 条：产生 6 条用户动态后，第 1 页 5 条、第 2 页 1 条，总数正确"""
+        H = _h(admin_session)
+        sid = client.post('/api/register', json={
+            'username': 'page_user', 'password': 'Password1'}).get_json()['session_id']
+        client.post('/api/login', json={'username': 'page_user', 'password': 'Password1'})
+        client.post('/api/logout', json={'session_id': sid})
+        client.post('/api/login', json={'username': 'page_user', 'password': 'Password1'})
+        client.post('/api/submit', json={
+            'question_id': 1, 'answer': 'SELECT * FROM employees', 'session_id': sid})
+        client.post('/api/submit', json={
+            'question_id': 2, 'answer': 'SELECT name FROM employees', 'session_id': sid})
+        d1 = client.get('/api/admin/user-activity?page=1&page_size=5', headers=H).get_json()
+        d2 = client.get('/api/admin/user-activity?page=2&page_size=5', headers=H).get_json()
+        assert d1['total'] >= 6 and d1['pages'] >= 2
+        assert len(d1['events']) == 5 and len(d2['events']) >= 1
+        # 两页 id 不重复（同一条记录不会同时出现在两页）
+        ids1 = {e['id'] for e in d1['events']}
+        ids2 = {e['id'] for e in d2['events']}
+        assert not (ids1 & ids2)
+
+
+class TestAdminRegistrationSecurity:
+    """注册入口安全收敛（2026-09-03）：默认码仅引导期种入；可整体关闭管理员注册"""
+
+    def test_default_code_not_reseeded_once_admins_exist(self, client, admin_session):
+        # 已有管理员后清空内推码：默认码不得自动“复活”
+        conn = db.get_connection()
+        conn.execute('DELETE FROM referral_codes')
+        conn.commit()
+        from auth import get_referral_codes
+        assert get_referral_codes() == []
+        r = client.post('/api/admin/auth-register', json={
+            'username': 'no_default_code', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
+        assert r.status_code == 403
+
+    def test_registration_can_be_closed_by_env(self, client, admin_session, monkeypatch):
+        monkeypatch.setenv('ADMIN_REGISTRATION_OPEN', '0')
+        r = client.post('/api/admin/auth-register', json={
+            'username': 'blocked_reg', 'password': 'Passw0rd1', 'referral_code': 'NIDUS_Agent'})
+        assert r.status_code == 403
+        assert '注册已关闭' in r.get_json()['error']
+        # 已有管理员仍可正常登录
+        assert client.post('/api/admin/auth-login', json={
+            'username': 'primary_admin', 'password': 'Passw0rd1'}).status_code == 200
+
+    def test_registration_status_endpoint(self, client, admin_session):
+        d = client.get('/api/admin/registration-status').get_json()
+        assert d['bootstrap'] is False
+        assert d['open'] is True

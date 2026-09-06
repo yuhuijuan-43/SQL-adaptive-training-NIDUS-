@@ -6,6 +6,7 @@ import secrets
 import uuid
 
 from db import get_connection
+from logs import log_user_event, log_admin_event, log_system
 
 # 用户名白名单：2-32 位字母/数字/下划线/中文（注册时校验，防 HTML/引号注入管理页面）
 _USERNAME_RE = re.compile(r'^[\w一-龥]{2,32}$')
@@ -14,10 +15,17 @@ def valid_username(username):
     """用户名是否合法（白名单字符集）"""
     return bool(_USERNAME_RE.match(username or ''))
 
+# 平台会话有效期：last_active 距今超过该天数视为过期，需重新登录
+SESSION_MAX_AGE_DAYS = 90
+
 def _is_authenticated(session_id):
-    """检查 session_id 是否属于已注册用户"""
+    """检查 session_id 是否属于已注册用户且会话未过期。
+    last_active 为 NULL（存量用户）视为有效，首次登录后自动写入。"""
     conn = get_connection()
-    row = conn.execute('SELECT id FROM users WHERE session_id=?', (session_id,)).fetchone()
+    row = conn.execute(
+        "SELECT id FROM users WHERE session_id=? AND (last_active IS NULL"
+        " OR last_active >= datetime('now', ?))",
+        (session_id, f'-{SESSION_MAX_AGE_DAYS} days')).fetchone()
     return row is not None
 
 def _upgrade_to_bcrypt(conn, username, password):
@@ -44,22 +52,27 @@ def login_user(username, password):
     stored = dict(row)['password'] or ''
     session_id = dict(row)['session_id']
 
+    ok = False
     # bcrypt格式（$2b$或$2a$开头）
     if stored.startswith('$2b$') or stored.startswith('$2a$'):
-        if _verify_bcrypt(stored, password):
-            return session_id, None
+        ok = _verify_bcrypt(stored, password)
     # 旧sha256格式（salt:sha256hash）
     elif ':' in stored:
         salt, stored_hash = stored.split(':', 1)
-        if hashlib.sha256((salt + password).encode('utf-8')).hexdigest() == stored_hash:
+        ok = hashlib.sha256((salt + password).encode('utf-8')).hexdigest() == stored_hash
+        if ok:
             _upgrade_to_bcrypt(conn, username, password)
-            return session_id, None
     # 明文（极旧用户，自动升级后移除该分支）
     elif stored == password:
+        ok = True
         _upgrade_to_bcrypt(conn, username, password)
-        return session_id, None
-
-    return None, 'wrong_password'
+    if not ok:
+        log_system('warn', '用户登录失败：密码错误', detail=f'username={username}', source='login')
+        return None, 'wrong_password'
+    conn.execute('UPDATE users SET last_active=CURRENT_TIMESTAMP WHERE username=?', (username,))
+    conn.commit()
+    log_user_event(username, 'login')
+    return session_id, None
 
 def register_user(username, password):
     """注册：使用bcrypt存储密码"""
@@ -76,9 +89,10 @@ def register_user(username, password):
         return None, 'exists'   # 全局唯一：平台用户名不得与管理员重复
     pw_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     session_id = str(uuid.uuid4())
-    conn.execute('INSERT INTO users (username, password, session_id) VALUES (?,?,?)',
+    conn.execute('INSERT INTO users (username, password, session_id, last_active) VALUES (?,?,?,CURRENT_TIMESTAMP)',
                  (username, pw_hash, session_id))
     conn.commit()
+    log_user_event(username, 'register')
     return session_id, None
 
 def check_username_exists(username):
@@ -103,57 +117,25 @@ def login_or_register(username, password=''):
     return None, False
 
 # ---- 平台级设置：内推码（主管理员可管理，DB 存储） ----
-DEFAULT_REFERRAL_CODE = 'NIDUS_Agent'   # 默认内推码（首次使用时种入，可增删）
+DEFAULT_REFERRAL_CODE = 'NIDUS_Agent'   # 默认内推码（仅首次引导注册首个管理员时种入）
 
-# ---- 一人一钥：每位管理员专属个人密钥（登录门第二重验证；主管理员可监控/停用/重置） ----
 
-def generate_personal_key():
-    """生成新个人密钥（token_urlsafe(16) → 22 字符，满足 8-64 字符校验）"""
-    return secrets.token_urlsafe(16)
-
-def get_personal_key(username):
-    """返回管理员的个人密钥；NULL（存量管理员）时惰性生成并落库"""
+def admin_bootstrap_pending():
+    """是否处于引导期：还没有任何管理员（此时允许用默认内推码注册首个管理员）"""
     conn = get_connection()
-    row = conn.execute('SELECT personal_key FROM admin_users WHERE username=?', (username,)).fetchone()
-    if not row:
-        return None
-    key = row['personal_key']
-    if not key:
-        key = generate_personal_key()
-        conn.execute('UPDATE admin_users SET personal_key=? WHERE username=?', (key, username))
-        conn.commit()
-    return key
-
-def set_personal_key(username, new_key):
-    """更换个人密钥（自助；更换后由调用方注销该管理员全部会话）"""
-    conn = get_connection()
-    conn.execute('UPDATE admin_users SET personal_key=? WHERE username=?', (new_key, username))
-    conn.commit()
-
-def reset_personal_key(username):
-    """一键重置个人密钥（主管理员用）：生成新密钥并落库，返回新密钥"""
-    key = generate_personal_key()
-    set_personal_key(username, key)
-    return key
-
-def is_key_disabled(username):
-    """该管理员个人密钥是否已被主管理员停用"""
-    conn = get_connection()
-    row = conn.execute('SELECT key_disabled FROM admin_users WHERE username=?', (username,)).fetchone()
-    return bool(row and row['key_disabled'])
-
-def set_key_disabled(username, disabled):
-    """停用/启用个人密钥（停用时调用方负责注销该管理员全部会话）"""
-    conn = get_connection()
-    conn.execute('UPDATE admin_users SET key_disabled=? WHERE username=?', (1 if disabled else 0, username))
-    conn.commit()
+    row = conn.execute('SELECT COUNT(*) FROM admin_users').fetchone()
+    return bool(row and row[0] == 0)
 
 def get_referral_codes():
-    """全部内推码（首次使用时惰性种入默认码，保证至少一个可用）"""
+    """全部内推码。
+
+    安全收敛（2026-09-03）：默认码 NIDUS_Agent 只在「尚无任何管理员」的引导期种入一次；
+    一旦平台已有管理员，即使码被清空也不会自动补回默认码（防止公开部署后默认码“复活”）。
+    """
     conn = get_connection()
     rows = conn.execute('SELECT code, note, created_at FROM referral_codes ORDER BY id').fetchall()
     codes = [dict(r) for r in rows]
-    if not codes:
+    if not codes and admin_bootstrap_pending():
         conn.execute('INSERT OR IGNORE INTO referral_codes (code, note) VALUES (?,?)', (DEFAULT_REFERRAL_CODE, '默认内推码'))
         conn.commit()
         return [{'code': DEFAULT_REFERRAL_CODE, 'note': '默认内推码', 'created_at': None}]
@@ -200,9 +182,8 @@ def register_admin(username, password, referral_code):
     if conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone():
         return None, 'exists'
     pw_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-    personal_key = generate_personal_key()   # 一人一钥：注册即签发专属密钥
-    conn.execute('INSERT INTO admin_users (username, password, referral_code, personal_key) VALUES (?,?,?,?)',
-                 (username, pw_hash, referral_code.strip(), personal_key))
+    conn.execute('INSERT INTO admin_users (username, password, referral_code) VALUES (?,?,?)',
+                 (username, pw_hash, referral_code.strip()))
     conn.commit()
     return True, None
 
@@ -216,11 +197,20 @@ def login_admin(username, password):
     stored = dict(row)['password']
     try:
         if not bcrypt.checkpw(password.encode('utf-8'), stored.encode('utf-8')):
+            log_system('warn', '管理员登录失败：密码错误', detail=f'username={username}', source='admin-login')
             return None, 'wrong_password'
     except Exception:
+        log_system('warn', '管理员登录失败：密码校验异常', detail=f'username={username}', source='admin-login')
         return None, 'wrong_password'
     conn.execute('UPDATE admin_users SET last_login_at=CURRENT_TIMESTAMP WHERE username=?', (username,))
     conn.commit()
+    # 数据治理：顺手批量清理过期会话 token（防堆积；validate_admin_token 只清被用到的）
+    try:
+        from maintenance import cleanup_expired_admin_sessions
+        cleanup_expired_admin_sessions()
+    except Exception:
+        pass
+    log_admin_event(username, 'login')
     return True, None
 
 def check_admin_username_exists(username):
@@ -233,17 +223,17 @@ def check_admin_username_exists(username):
     return False
 
 def get_admin_profile(username):
-    """返回管理员个人资料（含是否主管理员 is_primary、密钥是否停用）；不存在返回 None"""
+    """返回管理员个人资料（含是否主管理员 is_primary）；不存在返回 None"""
     conn = get_connection()
-    row = conn.execute('SELECT username, is_primary, key_disabled FROM admin_users WHERE username=?', (username,)).fetchone()
+    row = conn.execute('SELECT username, is_primary FROM admin_users WHERE username=?', (username,)).fetchone()
     return dict(row) if row else None
 
 # ---- 管理员会话（per-admin token，2026-08-05 C2 鉴权重构） ----
-# 此前所有 /api/admin/* 仅校验统一密钥（Bearer == 密钥），且主管理员权限依赖请求体自报的 operator 字段，
-# 任意持有密钥者（每个管理员都有密钥）可伪装主管理员。现改为登录/注册时签发随机会话 token：
+# 历史背景（C2 前）：所有 /api/admin/* 仅校验统一密钥，主管理员权限依赖自报 operator。
+# 现改为登录/注册时签发随机会话 token（Bearer 绑定管理员身份）：
 # - Bearer token 与管理员身份一一绑定，服务端从 token 解析真实操作者，废弃 operator 自声明
-# - auth-login / auth-register 不再返回统一密钥
-# - 更换统一密钥时清空全部会话，强制重新登录
+# - auth-login / auth-register / admin-login 均签发随机会话 token
+# - 管理员密码被重置/回退或账号被删除时清空其会话，强制重新登录
 SESSION_TTL_DAYS = 30
 
 def create_admin_session(username):
@@ -275,7 +265,7 @@ def validate_admin_token(token):
     return row['username']
 
 def revoke_admin_sessions(username=None):
-    """注销会话：username=None 时清空全部（更换统一密钥时强制全员重新登录）"""
+    """注销会话：username=None 时清空全部（管理员改密/回退/删除时强制其重新登录）"""
     conn = get_connection()
     if username:
         conn.execute('DELETE FROM admin_sessions WHERE username=?', (username,))
@@ -288,24 +278,14 @@ def is_primary_admin(username):
     profile = get_admin_profile(username)
     return bool(profile and profile.get('is_primary'))
 
-def get_admin_colleagues(exclude_username=None, include_keys=False):
-    """我的同事：其他管理员的用户名、最后上线时间、是否主管理员与可回退次数；
-    include_keys（主管理员视角）时附带个人密钥 personal_key 与停用标记 key_disabled。
-    存量管理员（一人一钥上线前创建）的 personal_key 可能为 NULL，此处惰性生成并落库，
-    否则主管理员查看同事密钥时按钮会静默失效（前端对 null 密钥不响应）"""
+def get_admin_colleagues(exclude_username=None):
+    """我的同事：其他管理员的用户名、最后上线时间、是否主管理员与可回退次数"""
     conn = get_connection()
     base = '''SELECT a.username, a.last_login_at, a.is_primary,
-        (SELECT COUNT(*) FROM user_password_history h WHERE h.username=a.username AND h.kind='admin') as rollback_count'''
-    if include_keys:
-        base += ', a.personal_key, a.key_disabled'
-    base += ' FROM admin_users a'
+        (SELECT COUNT(*) FROM user_password_history h WHERE h.username=a.username AND h.kind='admin') as rollback_count
+        FROM admin_users a'''
     if exclude_username:
         rows = conn.execute(base + ' WHERE a.username != ? ORDER BY a.last_login_at DESC', (exclude_username,)).fetchall()
     else:
         rows = conn.execute(base + ' ORDER BY a.last_login_at DESC').fetchall()
-    result = [dict(r) for r in rows]
-    if include_keys:
-        for c in result:
-            if not c.get('personal_key'):
-                c['personal_key'] = get_personal_key(c['username'])   # 惰性生成（与 get_personal_key 逻辑一致）
-    return result
+    return [dict(r) for r in rows]

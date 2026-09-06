@@ -3,6 +3,12 @@ import json
 
 from db import get_connection
 from auth import _is_authenticated
+from logs import log_user_event, username_by_session
+from maintenance import on_answer_inserted
+
+# EWMA 掌握度参数：学习率（越大越敏感）与中性先验（无历史时的起点）
+EWMA_LR = 0.3
+EWMA_PRIOR = 0.5
 
 def get_diagnostic_questions():
     """按知识图谱层级获取摸底测试题：level 0-1→easy, 2-3→medium, 4+→hard"""
@@ -242,27 +248,58 @@ def save_answer(session_id, question_id, user_answer, is_correct, duration=0, po
     conn = get_connection()
     cur = conn.execute('INSERT INTO user_progress (session_id,question_id,user_answer,is_correct,duration,pool) VALUES (?,?,?,?,?,?)',
                  (session_id, question_id, user_answer, 1 if is_correct else 0, duration, pool))
-    # update mastery for related nodes (BKT: Beta distribution)
+    # update mastery for related nodes (EWMA：指数加权移动平均，近期作答权重更高；
+    # 取代原贝叶斯 Beta 分布——Beta 无遗忘机制，早期错误永久拖累掌握度)
     nodes = conn.execute('SELECT node_id FROM question_knowledge WHERE question_id = ?', (question_id,)).fetchall()
     for n in nodes:
         nid = n['node_id']
         existing = conn.execute('SELECT * FROM user_mastery WHERE session_id=? AND node_id=?', (session_id,nid)).fetchone()
+        outcome = 1.0 if is_correct else 0.0
         if existing:
+            prev = existing['ewma'] if existing['ewma'] is not None else EWMA_PRIOR
+            new_ewma = prev + EWMA_LR * (outcome - prev)
             conn.execute('''UPDATE user_mastery SET correct_count=correct_count+?, total_count=total_count+1,
-                alpha=alpha+?, beta=beta+?, updated_at=CURRENT_TIMESTAMP WHERE session_id=? AND node_id=?''',
-                (1 if is_correct else 0, 1 if is_correct else 0, 0 if is_correct else 1, session_id, nid))
+                ewma=?, updated_at=CURRENT_TIMESTAMP WHERE session_id=? AND node_id=?''',
+                (1 if is_correct else 0, new_ewma, session_id, nid))
         else:
-            a = 1 + (1 if is_correct else 0)
-            b = 1 + (0 if is_correct else 1)
-            conn.execute('INSERT INTO user_mastery (session_id,node_id,correct_count,total_count,alpha,beta) VALUES (?,?,?,?,?,?)',
-                         (session_id, nid, 1 if is_correct else 0, 1, a, b))
+            new_ewma = EWMA_PRIOR + EWMA_LR * (outcome - EWMA_PRIOR)
+            conn.execute('INSERT INTO user_mastery (session_id,node_id,correct_count,total_count,ewma) VALUES (?,?,?,?,?)',
+                         (session_id, nid, 1 if is_correct else 0, 1, new_ewma))
     conn.commit()
+    # 数据治理保险丝：计数达标后动态检查 user_progress 是否需要压缩（静默失败）
+    try:
+        on_answer_inserted()
+    except Exception:
+        pass
+    # 用户动态：答题事件（管理后台实时排查用；名称/标题缺失时静默跳过）
+    try:
+        uname = username_by_session(session_id)
+        if uname:
+            tbl = 'exam_questions' if pool == 'exam' else 'questions'
+            trow = conn.execute(f'SELECT title FROM {tbl} WHERE id=?', (question_id,)).fetchone()
+            title = (trow['title'][:80] if trow and trow['title'] else f'题目#{question_id}')
+            log_user_event(uname, 'answer', target=title,
+                           detail='答对' if is_correct else '答错',
+                           extra={'question_id': question_id, 'pool': pool, 'is_correct': bool(is_correct)})
+    except Exception:
+        pass
     return cur.lastrowid
 
 def get_mastery(session_id):
+    """每知识点掌握度。score 统一为 EWMA（0-1，越高越熟练）；
+    历史行 ewma 为空时回退 Beta 均值（迁移工具回填后不再出现）"""
     conn = get_connection()
     rows = conn.execute('SELECT * FROM user_mastery WHERE session_id=?', (session_id,)).fetchall()
-    return {r['node_id']: dict(r) for r in rows}
+    out = {}
+    for r in rows:
+        d = dict(r)
+        if d.get('ewma') is not None:
+            d['score'] = round(d['ewma'], 4)
+        else:
+            a, b = d.get('alpha') or 1.0, d.get('beta') or 1.0
+            d['score'] = round(a / (a + b), 4)
+        out[r['node_id']] = d
+    return out
 
 def _account_kind(username):
     """判断账号类型：'user'（平台用户）/ 'admin'（管理员）/ None（不存在）"""

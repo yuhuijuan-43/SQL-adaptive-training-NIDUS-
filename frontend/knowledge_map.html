@@ -287,7 +287,15 @@ function buildOption(showAll) {
 function renderChart() {
   const dom = document.getElementById('chart')
   chart = echarts.init(dom)
-  window.addEventListener('resize', () => chart.resize())
+  // resize 事件用 rAF 节流：避免窗口连续变化时 ECharts 频繁重算布局
+  let resizeRaf = null
+  window.addEventListener('resize', () => {
+    if (resizeRaf) return
+    resizeRaf = requestAnimationFrame(() => {
+      resizeRaf = null
+      chart.resize()
+    })
+  })
 
   chart.setOption(buildOption(false))
   chart.on('click', (params) => {

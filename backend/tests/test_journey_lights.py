@@ -47,6 +47,13 @@ def _backdate_last(sid):
     conn.commit()
 
 
+def _add_question(conn, qid, node='dml_select'):
+    """向临时库追加一道指定叶节点的题（规则3 语义修正后只算不同题目，凑 distinct 计数用）"""
+    conn.execute("INSERT OR IGNORE INTO questions (id, source, category, difficulty, title, description, correct_answer, pool) "
+                 "VALUES (?, 'test', ?, 'easy', ?, 'desc', 'ans', 'practice')", (qid, node, f't{qid}'))
+    conn.execute("INSERT OR IGNORE INTO question_knowledge (question_id, node_id) VALUES (?, ?)", (qid, node))
+
+
 # 答案常量
 ANS_Q5 = 'B. SELECT * FROM employees'            # dml_select 基础选择
 ANS_Q6 = "SELECT name FROM employees WHERE dept = '技术部'"   # dml_select 填空
@@ -104,9 +111,10 @@ class TestRoundSequence:
         """规则3 已点亮的叶节点不进新一轮（直接跳过）"""
         sid = _register(client)
         conn = _conn()
-        for i in range(10):                           # 累计答对 10 道 dml_select（跨池直插）
+        for qid in range(201, 211):                   # 10 道不同 dml_select 题（distinct 计数）
+            _add_question(conn, qid)
             conn.execute("INSERT INTO user_progress (session_id,question_id,user_answer,is_correct) VALUES (?,?,?,1)",
-                         (sid, 5, ANS_Q5))
+                         (sid, qid, ANS_Q5))
         conn.commit()
         d = _start(client, sid)
         assert d['current_node'] == 'select_basic'    # dml_select 已点亮 → 跳过
@@ -208,12 +216,13 @@ class TestRule3:
     """规则3：累计答对 10 道该叶类型题（跨池）→ 点亮；correct 计数与 x/10 进度"""
 
     def test_correct_count_derived(self, client, test_db):
-        """未开始 journey 也有 lights；答对 3 道 → correct=3 未点亮（奇数道进度不变）"""
+        """未开始 journey 也有 lights；答对 3 道不同题 → correct=3 未点亮"""
         sid = _register(client)
         conn = _conn()
-        for i in range(3):
+        for qid in (5, 205, 206):                     # 3 道不同 dml_select 题（distinct 计数）
+            _add_question(conn, qid)
             conn.execute("INSERT INTO user_progress (session_id,question_id,user_answer,is_correct) VALUES (?,?,?,1)",
-                         (sid, 5, ANS_Q5))
+                         (sid, qid, ANS_Q5))
         conn.commit()
         d = _status(client, sid)
         assert d['state'] is None
@@ -222,12 +231,13 @@ class TestRule3:
         assert all(v['lit'] is False for v in d['lights'].values())
 
     def test_rule3_lights_at_10_cross_pool(self, client, test_db):
-        """直插 9 条 + /api/submit（自主练习路径）1 条 → 累计 10 点亮"""
+        """直插 9 道不同题 + /api/submit（自主练习路径）第 10 道 → 累计 10 点亮"""
         sid = _register(client)
         conn = _conn()
-        for i in range(9):
+        for qid in range(201, 210):                   # 9 道不同 dml_select 题
+            _add_question(conn, qid)
             conn.execute("INSERT INTO user_progress (session_id,question_id,user_answer,is_correct) VALUES (?,?,?,1)",
-                         (sid, 5, ANS_Q5))
+                         (sid, qid, ANS_Q5))
         conn.commit()
         r = client.post('/api/submit', json={'session_id': sid, 'question_id': 5, 'answer': ANS_Q5})
         assert r.status_code == 200

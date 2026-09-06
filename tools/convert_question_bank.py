@@ -284,7 +284,7 @@ def build_exam_entries(cards):
 # ---------------------------------------------------------------
 def main():
     # 现库静态题（保留 category/difficulty/q_level 映射）
-    with open(PROJECT_DIR + r'\questions.json', encoding='utf-8') as f:
+    with open(PROJECT_DIR + r'\data\questions.json', encoding='utf-8') as f:
         old_qs = json.load(f)
     basic_old = [q for q in old_qs if q['source'] == 'static_basic']
     advanced_old = [q for q in old_qs if q['source'] == 'static_advanced']
@@ -322,8 +322,8 @@ def main():
     print('  真题缺建表:', [q['title'] for q in exam_entries if not q['table_schema']])
     print('  真题缺预期输出:', len([q for q in exam_entries if not q['expected_output']]))
 
-    out_q = PROJECT_DIR + r'\questions.json'
-    out_exam = PROJECT_DIR + r'\exam_questions.json'
+    out_q = PROJECT_DIR + r'\data\questions.json'
+    out_exam = PROJECT_DIR + r'\data\exam_questions.json'
     with open(out_q, 'w', encoding='utf-8') as f:
         json.dump(mcq_entries, f, ensure_ascii=False, indent=1)
     with open(out_exam, 'w', encoding='utf-8') as f:

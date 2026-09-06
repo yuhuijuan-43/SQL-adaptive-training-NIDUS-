@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>管理员账号 · SQL 自适应训练</title>
+<title>管理后台 · SQL 自适应训练</title>
 <style>
 :root {
   --bg-0: #eef3fc; --bg-1: #e3ecf9;
@@ -188,8 +188,8 @@ body {
 <div class="auth-wrap">
   <div class="auth-card glass fade-up">
     <div class="auth-head">
-      <div class="auth-title" data-i18n-html="auth_title">管理员<span class="grad">账号</span></div>
-      <div class="auth-sub" data-i18n="auth_sub">凭内推码注册，凭账号密码登录，管理平台与你同在</div>
+      <div class="auth-title" data-i18n-html="auth_title">管理<span class="grad">后台</span></div>
+      <div class="auth-sub" data-i18n="auth_sub">登录或凭内推码注册 · 实时用户动态 · 系统日志 · 团队管理</div>
     </div>
 
     <div class="tabs">
@@ -219,7 +219,7 @@ body {
         </div>
         <button class="btn" type="submit" id="loginBtn" data-i18n="btn_login">登 录</button>
       </form>
-      <div class="auth-foot" data-i18n-html="foot_login">还没有账号？<a class="link" href="javascript:void(0)" onclick="switchTab('register')">凭内推码注册</a></div>
+      <div class="auth-foot" id="loginFoot" data-i18n-html="foot_login">还没有账号？<a class="link" href="javascript:void(0)" onclick="switchTab('register')">凭内推码注册</a></div>
     </div>
 
     <!-- 注册面板 -->
@@ -281,30 +281,20 @@ body {
 
 <div class="toast-wrap" id="toastWrap"></div>
 
-<!-- 注册成功：一次性展示个人密钥（一人一钥） -->
-<div id="keyGiveModal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(10,16,40,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px">
-  <div style="max-width:440px;width:100%;background:linear-gradient(160deg,#ffffff 0%,#f2f5ff 100%);border:1px solid rgba(88,110,170,0.25);border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(20,30,80,0.35)">
-    <div style="font-size:16px;font-weight:800;color:#1c2a52;margin-bottom:8px" data-i18n="key_give_title">🎉 注册成功，这是你的个人密钥</div>
-    <div style="font-size:12.5px;color:#5a6a95;margin-bottom:14px;line-height:1.7" data-i18n="key_give_tip">此密钥是你的专属登录凭证（管理后台双重验证），仅显示这一次，请妥善保存。主管理员也可在「我的同事」中查看/重置。</div>
-    <code id="keyGiveText" style="display:block;font-family:'SF Mono',Consolas,monospace;font-size:13.5px;font-weight:700;letter-spacing:.06em;word-break:break-all;padding:12px 14px;border-radius:10px;background:rgba(255,255,255,.9);border:1px solid rgba(74,125,255,.35);color:#2450c4;margin-bottom:14px;user-select:all"></code>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button onclick="copyGiveKey()" style="height:36px;padding:0 16px;border-radius:8px;border:1px solid rgba(14,166,120,.35);background:transparent;color:#0ea678;font-size:13px;font-weight:700;cursor:pointer" data-i18n="key_copy_btn">复制密钥</button>
-      <button onclick="enterPanel()" style="height:36px;padding:0 18px;border:none;border-radius:8px;background:linear-gradient(135deg,#4a7dff 0%,#6a5cff 100%);color:#fff;font-size:13px;font-weight:700;cursor:pointer" data-i18n="key_give_enter">保存并进入面板</button>
-    </div>
-  </div>
-</div>
-
 <script>
 const API_BASE = '/api';
 const $ = id => document.getElementById(id);
+// 已登录管理员直接进入主面板，避免每次从门户点「管理后台」都要重复登录
+if (sessionStorage.getItem('admin_token')) { window.location.replace('admin-panel'); }
 
 const I18N = {
-  page_title: { zh: '管理员账号 · SQL 自适应训练', en: 'Admin Account · SQL Adaptive Training','zh_tw':'管理員帳號 · SQL 自適應訓練','ja':'管理者アカウント · SQLアダプティブトレーニング','hi':'एडमिन खाता · SQL अनुकूली प्रशिक्षण','pt':'Conta de Administrador · Treinamento Adaptativo SQL' },
+  page_title: { zh: '管理后台 · SQL 自适应训练', en: 'Admin Console · SQL Adaptive Training','zh_tw':'管理後台 · SQL 自適應訓練','ja':'管理 · SQLアダプティブトレーニング','hi':'व्यवस्थापक · SQL अनुकूली प्रशिक्षण','pt':'Painel de Administração · Treinamento Adaptativo SQL' },
   nav_home: { zh: '首页', en: 'Home','zh_tw':'首頁','ja':'ホーム','hi':'होम','pt':'Início' },
   nav_about: { zh: '了解我们', en: 'About','zh_tw':'了解我們','ja':'私たちについて','hi':'हमारे बारे में','pt':'Sobre' },
   nav_enter: { zh: '进入平台', en: 'Enter','zh_tw':'進入平台','ja':'プラットフォームへ','hi':'प्रवेश करें','pt':'Entrar' },
-  auth_title: { zh: '管理员<span class="grad">账号</span>', en: 'Admin <span class="grad">Account</span>','zh_tw':'管理員<span class="grad">帳號</span>','ja':'管理者<span class="grad">アカウント</span>','hi':'एडमिन <span class="grad">खाता</span>','pt':'<span class="grad">Conta</span> do Administrador' },
-  auth_sub: { zh: '凭内推码注册，凭账号密码登录，管理平台与你同在', en: 'Register with a referral code, sign in with your account, and manage the platform together','zh_tw':'憑內推碼註冊，憑帳號密碼登入，管理平台與你同在','ja':'紹介コードで登録し、アカウントとパスワードでログイン。プラットフォーム管理を一緒に。','hi':'रेफ़रल कोड से पंजीकरण करें, खाते से लॉगिन करें, और मंच को एक साथ प्रबंधित करें','pt':'Registre-se com um código de indicação, entre com sua conta e gerencie a plataforma juntos' },
+  auth_title: { zh: '管理<span class="grad">后台</span>', en: 'Admin <span class="grad">Console</span>','zh_tw':'管理<span class="grad">後台</span>','ja':'管理<span class="grad">コンソール</span>','hi':'<span class="grad">व्यवस्थापक</span> कंसोल','pt':'<span class="grad">Painel</span> de Administração' },
+  auth_sub: { zh: '登录或凭内推码注册 · 实时用户动态 · 系统日志 · 团队管理',
+              en: 'Sign in or register with a referral code · Live user activity · System logs · Team management','zh_tw':'登入或憑內推碼註冊 · 即時使用者動態 · 系統日誌 · 團隊管理','ja':'ログインまたは紹介コードで登録 · リアルタイムのユーザー動向 · システムログ · チーム管理','hi':'लॉगिन करें या रेफ़रल कोड से पंजीकरण करें · लाइव उपयोगकर्ता गतिविधि · सिस्टम लॉग · टीम प्रबंधन','pt':'Entre ou registre-se com um código de indicação · Atividade de usuários ao vivo · Logs do sistema · Gerenciamento de equipe' },
   tab_login: { zh: '账号登录', en: 'Account Login','zh_tw':'帳號登入','ja':'アカウントでログイン','hi':'खाते से लॉगिन','pt':'Login de conta' },
   tab_register: { zh: '注册账号', en: 'Create Account','zh_tw':'註冊帳號','ja':'アカウント登録','hi':'खाता बनाएं','pt':'Criar conta' },
   label_ref: { zh: '内推码', en: 'Referral Code','zh_tw':'內推碼','ja':'紹介コード','hi':'रेफ़रल कोड','pt':'Código de indicação' },
@@ -357,14 +347,9 @@ const I18N = {
   rule_digit: { zh: '包含数字', en: 'Number','zh_tw':'包含數字','ja':'数字を含む','hi':'अंक शामिल','pt':'Inclui número' },
   pwd_policy: { zh: '密码需 8-64 位，且包含大小写字母和数字', en: 'Password needs 8-64 chars with upper, lower & digit','zh_tw':'密碼需 8-64 位，且包含大小寫字母和數字','ja':'パスワードは8〜64文字で、大文字・小文字・数字を含む必要があります','hi':'पासवर्ड 8-64 अक्षरों का होना चाहिए और उसमें बड़े, छोटे अक्षर और संख्या शामिल होनी चाहिए','pt':'A senha deve ter 8-64 caracteres, incluindo letras maiúsculas, minúsculas e números' },
   net_error: { zh: '无法连接服务器，请确认后端已启动', en: 'Cannot reach server — make sure the backend is running','zh_tw':'無法連接伺服器，請確認後端已啟動','ja':'サーバーに接続できません。バックエンドが起動しているか確認してください','hi':'सर्वर से कनेक्ट नहीं हो सका, कृपया सुनिश्चित करें कि बैकएंड चालू है','pt':'Não foi possível conectar ao servidor — verifique se o backend está em execução' },
-  login_ok_msg: { zh: '登录成功，正在进入管理员面板…', en: 'Signed in — entering the admin panel…','zh_tw':'登入成功，正在進入管理員面板…','ja':'ログイン成功、管理者パネルに入っています…','hi':'लॉगिन सफल, एडमिन पैनल में प्रवेश कर रहे हैं…','pt':'Login bem-sucedido — entrando no painel do administrador…' },
-  reg_ok_msg: { zh: '注册成功，正在进入管理员面板…', en: 'Registered — entering the admin panel…','zh_tw':'註冊成功，正在進入管理員面板…','ja':'登録完了、管理者パネルに入っています…','hi':'पंजीकरण सफल, एडमिन पैनल में प्रवेश कर रहे हैं…','pt':'Registro concluído — entrando no painel do administrador…' },
-  key_disabled: { zh: '密钥已被停用，请联系主管理员', en: 'Your key has been disabled — contact the primary admin','zh_tw':'密鑰已被停用，請聯絡主管理員','ja':'キーは無効化されています。プライマリ管理者に連絡してください','hi':'आपकी कुंजी अक्षम कर दी गई है — मुख्य एडमिन से संपर्क करें','pt':'Sua chave foi desativada — entre em contato com o administrador principal' },
-  key_give_title: { zh: '🎉 注册成功，这是你的个人密钥', en: '🎉 Registered! This is your personal key','zh_tw':'🎉 註冊成功，這是你的個人密鑰','ja':'🎉 登録完了！これがあなたの個人キーです','hi':'🎉 पंजीकरण सफल! यह आपकी निजी कुंजी है','pt':'🎉 Registro concluído! Esta é sua chave pessoal' },
-  key_give_tip: { zh: '此密钥是你的专属登录凭证（管理后台双重验证），仅显示这一次，请妥善保存。主管理员也可在「我的同事」中查看/重置。',
-                  en: 'This is your personal login credential (admin dashboard double verification) — shown only once, save it safely. The primary admin can also view/reset it in "My Colleagues".','zh_tw':'此密鑰是你的專屬登入憑證（管理後台雙重驗證），僅顯示這一次，請妥善保存。主管理員也可在「我的同事」中查看/重置。','ja':'これはあなた専用のログイン資格情報です（管理ダッシュボードの二重認証）。一度しか表示されないので、安全に保管してください。プライマリ管理者も「同僚」で確認・リセットできます。','hi':'यह आपका निजी लॉगिन प्रमाण है (एडमिन डैशबोर्ड दोहरा सत्यापन) — केवल एक बार दिखाया जाता है, इसे सुरक्षित रखें। मुख्य एडमिन "मेरे सहयोगी" में इसे देख/रीसेट कर सकता है।','pt':'Esta é sua credencial de login pessoal (verificação dupla do painel de administração) — mostrada apenas uma vez, guarde-a com segurança. O administrador principal também pode visualizá-la/redefini-la em "Meus Colegas".' },
-  key_copy_btn: { zh: '复制密钥', en: 'Copy Key','zh_tw':'複製密鑰','ja':'キーをコピー','hi':'कुंजी कॉपी करें','pt':'Copiar chave' },
-  key_give_enter: { zh: '保存并进入面板', en: 'Save & Enter Panel','zh_tw':'保存並進入面板','ja':'保存してパネルへ','hi':'सहेजें और पैनल में जाएं','pt':'Salvar e entrar no painel' },
+  login_ok_msg: { zh: '登录成功，正在进入管理后台…', en: 'Signed in — entering the admin console…','zh_tw':'登入成功，正在進入管理後台…','ja':'ログイン成功、管理コンソールに入っています…','hi':'लॉगिन सफल, एडमिन कंसोल में प्रवेश कर रहे हैं…','pt':'Login bem-sucedido — entrando no painel de administração…' },
+  reg_ok_msg: { zh: '注册成功，正在进入管理后台…', en: 'Registered — entering the admin console…','zh_tw':'註冊成功，正在進入管理後台…','ja':'登録完了、管理コンソールに入っています…','hi':'पंजीकरण सफल, एडमिन कंसोल में प्रवेश कर रहे हैं…','pt':'Registro concluído — entrando no painel de administração…' },
+  reg_closed: { zh: '管理员注册当前已关闭，请联系主管理员开通', en: 'Admin registration is currently closed — contact the primary admin to open it','zh_tw':'管理員註冊目前已關閉，請聯絡主管理員開通','ja':'管理者登録は現在停止中です。プライマリ管理者に問い合わせてください','hi':'एडमिन पंजीकरण वर्तमान में बंद है — मुख्य एडमिन से संपर्क करें','pt':'O registro de administradores está fechado no momento — contate o administrador principal' },
   copied: { zh: '已复制到剪贴板', en: 'Copied to clipboard','zh_tw':'已複製到剪貼簿','ja':'クリップボードにコピーしました','hi':'क्लिपबोर्ड पर कॉपी हो गया','pt':'Copiado para a área de transferência' },
   copy_fail: { zh: '复制失败，请手动选择复制', en: 'Copy failed — please select manually','zh_tw':'複製失敗，請手動選擇複製','ja':'コピーに失敗しました。手動で選択してコピーしてください','hi':'कॉपी विफल — कृपया मैन्युअल चुनें','pt':'Falha ao copiar — selecione manualmente' },
 };
@@ -540,7 +525,6 @@ async function doLogin(e) {
       loading('loginBtn', false);
       if (r.status === 404) { setHint('loginUserHint', t('admin_notfound'), 'err'); setInputState('inpUser', 'err'); }
       else if (r.status === 401) { setHint('loginPassHint', t('pwd_wrong'), 'err'); setInputState('inpPass', 'err'); }
-      else if (r.status === 403) { setHint('loginPassHint', t('key_disabled'), 'err'); setInputState('inpPass', 'err'); }
       else toast('bad', d.error || t('net_error'), 'bad');
       return;
     }
@@ -583,40 +567,28 @@ async function doRegister(e) {
     sessionStorage.setItem('admin_token', d.token);
     sessionStorage.setItem('admin_user', d.username);
     $('regBtn').textContent = '✓';
-    // 一人一钥：注册即签发个人密钥，仅本次展示一次（确认后进入面板）
-    showGiveKey(d.key);
+    toast('ok', t('reg_ok_msg'), 'ok');
+    setTimeout(() => { window.location.href = 'admin-panel'; }, 700);
   } catch (err) {
     loading('regBtn', false);
     toast('bad', t('net_error'), 'bad');
   }
 }
 
-/* ---- 注册成功：一次性展示个人密钥（一人一钥） ---- */
-var _giveKey = '';
-function showGiveKey(key) {
-  _giveKey = key || '';
-  $('keyGiveText').textContent = _giveKey;
-  $('keyGiveModal').style.display = 'flex';
-}
-function copyGiveKey() {
-  if (!_giveKey) return;
-  copyText(_giveKey).then(ok => toast(ok ? t('copied') : t('copy_fail'), ok ? 'ok' : 'bad'));
-}
-function enterPanel() {
-  window.location.href = 'admin-panel';
-}
-function copyText(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.select();
-  let ok = false;
-  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
-  document.body.removeChild(ta);
-  return Promise.resolve(ok);
-}
+/* 注册开关（安全收敛）：ADMIN_REGISTRATION_OPEN=0 且已有管理员时隐藏注册入口 */
+fetch(API_BASE + '/admin/registration-status')
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d && d.open === false) {
+      const tab = $('tabRegister');
+      const panel = $('panelRegister');
+      if (tab) tab.style.display = 'none';
+      if (panel) panel.style.display = 'none';
+      const foot = $('loginFoot');
+      if (foot) foot.innerHTML = '<span style="color:var(--text-3)">' + t('reg_closed') + '</span>';
+    }
+  })
+  .catch(function() { /* 状态接口不可用时不处理，保持默认展示 */ });
 </script>
 </body>
 </html>

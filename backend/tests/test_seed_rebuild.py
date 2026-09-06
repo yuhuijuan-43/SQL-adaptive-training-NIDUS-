@@ -11,13 +11,13 @@ import db
 
 
 def _json_count(name):
-    p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '..', name)
+    p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '..', 'data', name)
     with open(p, encoding='utf-8') as f:
         return len(json.load(f))
 
 
 def _json_qlevel(name='questions.json'):
-    p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '..', name)
+    p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '..', 'data', name)
     with open(p, encoding='utf-8') as f:
         return sum(1 for q in json.load(f) if q.get('q_level'))
 
