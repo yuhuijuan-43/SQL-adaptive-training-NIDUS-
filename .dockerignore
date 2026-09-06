@@ -1,0 +1,39 @@
+# Docker 构建缓存 / 镜像体积：源码 + 题库进镜像；运行时数据 / 密钥不进
+.git
+.gitignore
+.workbuddy/
+.clipboard-images/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# 运行时数据库与备份、敏感配置（用卷挂载或运行时注入）
+backend/questions.db
+backend/questions.db-wal
+backend/questions.db-shm
+backend/quiz_system.db
+backend/backups/
+backend/oauth_config.json
+.mcp.json
+
+# 测试夹具（不在镜像里运行 pytest）
+backend/tests/
+backend/.pytest_cache/
+
+# 本机文档与内部手册
+docs/新人接手指南.md
+docs/自适应算法指引.md
+docs/安全审计记录.md
+docs/汇报讲解稿.md
+docs/modification.md
+docs/SQL自适应训练平台-功能与操作指南.pdf
+
+# 网络爬虫子项目（不在 web 镜像里）
+网络爬虫/
+
+# ngrok 二进制与 ngrok 兼容文件
+ngrok/
+*~
+.DS_Store
+Thumbs.db

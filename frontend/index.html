@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang="zh-CN" data-page-node-id="Zbf5UzgLJ7o6OLETtToFAA">
+<head data-page-node-id="AjPTrs6JwxeSD4KYEX4Dcf">
+<meta charset="UTF-8" data-page-node-id="UKpdH2V6KkgoAbt934rv91">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="8lGiF9GbEOxc5v5AK0YEKY">
 <title>SQL 自适应练习</title>
-<link href="lib/font-awesome/css/all.min.css" rel="stylesheet">
-<link rel="preload" href="lib/font-awesome/webfonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
-<link href="lib/codemirror/codemirror.min.css" rel="stylesheet">
+<link href="lib/font-awesome/css/all.min.css" rel="stylesheet" data-page-node-id="N5r9PDDY1ShqGrYiTJm7Na">
+<link rel="preload" href="lib/font-awesome/webfonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin data-page-node-id="j1yZhZeyAEirSEK8SPWEiT">
+<link href="lib/codemirror/codemirror.min.css" rel="stylesheet" data-page-node-id="sqRhVtk8JzBR2MzpQGDDl8">
 <style>
   :root { --bg: #eef3fc; --card: rgba(255,255,255,0.72); --text: #1b2747; --text2: #48577c; --border: rgba(88,110,170,0.16); --accent: #4a7dff; --accent-hover: #6a90ff; --tag-bg: rgba(88,110,170,0.08); --code-bg: rgba(255,255,255,0.75); --success: #0ea678; --error: #e04a55; --accent-grad: linear-gradient(135deg, #4a7dff 0%, #8b5bff 100%); }
   * { box-sizing: border-box; }
@@ -265,136 +265,136 @@
   #cbToggle.cb-active { opacity: 1 !important; color: #0044CC !important; }
 </style>
 </head>
-<body class="p-4">
+<body class="p-4" data-page-node-id="eofHn7yQibfKxFgIPakgNE">
 
 <!-- 背景光球（玻璃拟态氛围） -->
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
-<div class="orb orb-3"></div>
+<div class="orb orb-1" data-page-node-id="0xhkmy5qgM0UnujxDGyqW8"></div>
+<div class="orb orb-2" data-page-node-id="SWDvKMw0oGmUSMabr4mZ9h"></div>
+<div class="orb orb-3" data-page-node-id="Lsk4MveCKhn6CKlrzI329H"></div>
 
-<div class="max-w-[960px] mx-auto main-wrap">
+<div class="max-w-[960px] mx-auto main-wrap" data-page-node-id="PmPQFdUyrtg3xMNvs4VILd">
 
   <!-- HEADER -->
-  <div class="card" style="padding:0.75rem 1rem;">
-    <div class="flex justify-between items-center">
-      <div style="white-space:nowrap;"><span style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;">SQL</span><span data-i18n="自适应训练" style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;color:var(--accent);"> 自适应训练</span><span style="font-size:0.6rem;color:var(--text2);margin-left:0.5rem;">ADAPTIVE PRACTICE</span></div>
-      <span style="display:flex;align-items:center;gap:8px;">
-        <span id="cbToggle" title="色觉辅助模式" style="cursor:pointer;font-size:1rem;color:var(--text2);opacity:0.5;transition:opacity 0.15s;display:none;" onclick="toggleColorblind()"><i class="fas fa-eye"></i></span>
-        <span style="font-size:0.65rem;color:var(--text2);" id="headerUserInfo">V1.0</span>
+  <div class="card" style="padding:0.75rem 1rem;" data-page-node-id="y002bNhp0wURarY67D4rlp">
+    <div class="flex justify-between items-center" data-page-node-id="XGvI3skGpHuU1DptRHhDHn">
+      <div style="white-space:nowrap;" data-page-node-id="xHEiSEzZsVLfdeUliZum7g"><span style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;" data-page-node-id="vHafcXx8pQr7mIKhuAVpos">SQL</span><span data-i18n="自适应训练" style="font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.5rem;letter-spacing:0.02em;color:var(--accent);" data-page-node-id="89UctUHr4dzBZIl2yw0NOC"> 自适应训练</span><span style="font-size:0.6rem;color:var(--text2);margin-left:0.5rem;" data-page-node-id="BE0PvaoGTY6TB7DQ2PTQ3U">ADAPTIVE PRACTICE</span></div>
+      <span style="display:flex;align-items:center;gap:8px;" data-page-node-id="AbHfSE1Iy4bnjD0ay6DsaB">
+        <span id="cbToggle" title="色觉辅助模式" style="cursor:pointer;font-size:1rem;color:var(--text2);opacity:0.5;transition:opacity 0.15s;display:none;" onclick="toggleColorblind()" data-page-node-id="DRtj50Flv0ZNGVvU9ioRVr"><i class="fas fa-eye" data-page-node-id="L7yfNOb5SrGQjjLDXBstI2"></i></span>
+        <span style="font-size:0.65rem;color:var(--text2);" id="headerUserInfo" data-page-node-id="5YIMiqTihPfWQOp42hZtbT">V1.0</span>
       </span>
     </div>
   </div>
 
   <!-- 登录入口 (居中) -->
-  <div id="loginCenterArea" style="display:none;text-align:center;margin:0.75rem 0 0.25rem;"></div>
+  <div id="loginCenterArea" style="display:none;text-align:center;margin:0.75rem 0 0.25rem;" data-page-node-id="vBUFZZFkGOSsWdqTS4mPAG"></div>
 
   <!-- NAV -->
-  <div class="flex gap-1 mt-4 mb-3">
-    <button class="nav-btn active" data-page="journey" data-i18n="自适应进阶" onclick="showPage('journey')"><i class="fas fa-route mr-1"></i> 自适应进阶</button>
-    <button class="nav-btn" data-page="practice" data-i18n="自主练习" onclick="currentPool='practice';showPage('practice')"><i class="fas fa-code mr-1"></i> 自主练习</button>
-    <button class="nav-btn" data-page="practice" data-i18n="面试真题" onclick="currentPool='exam';showPage('practice')"><i class="fas fa-file-alt mr-1"></i> 面试真题</button>
-    <button class="nav-btn" data-page="wrongset" data-i18n="错题集" onclick="showPage('wrongset')"><i class="fas fa-exclamation-triangle mr-1"></i> 错题集</button>
-    <button class="nav-btn" data-i18n="返回主页" onclick="window.location.href='index_glass.html'"><i class="fas fa-home mr-1"></i> 返回主页</button>
+  <div class="flex gap-1 mt-4 mb-3" data-page-node-id="RdHLoEQg5SEbeRuAes8g85">
+    <button class="nav-btn active" data-page="journey" data-i18n="自适应进阶" onclick="showPage('journey')" data-page-node-id="JCRRw63MfAN9CnsqTHtMEd"><i class="fas fa-route mr-1" data-page-node-id="rZniQJ4Y3M8ZCrkLudVnSB"></i> 自适应进阶</button>
+    <button class="nav-btn" data-page="practice" data-i18n="自主练习" onclick="currentPool='practice';showPage('practice')" data-page-node-id="zO28jbEJjzpBXk9FwBFrKe"><i class="fas fa-code mr-1" data-page-node-id="FrFa7iXPdYgJ7rc1LQRi4g"></i> 自主练习</button>
+    <button class="nav-btn" data-page="practice" data-i18n="面试真题" onclick="currentPool='exam';showPage('practice')" data-page-node-id="ehJ0niuJG9M27LOnZugQNF"><i class="fas fa-file-alt mr-1" data-page-node-id="yydDyhbQS3HFaowuiXYBZW"></i> 面试真题</button>
+    <button class="nav-btn" data-page="wrongset" data-i18n="错题集" onclick="showPage('wrongset')" data-page-node-id="vQ3v5xwdSJvM4kKBOy0F2z"><i class="fas fa-exclamation-triangle mr-1" data-page-node-id="qcufCYOUMDXWifXou3kQ30"></i> 错题集</button>
+    <button class="nav-btn" data-i18n="返回主页" onclick="window.location.href='index_glass.html'" data-page-node-id="NVgpv7bkQbEGMnBeVoEfy0"><i class="fas fa-home mr-1" data-page-node-id="ivdkM05kRYijwQoON33NFy"></i> 返回主页</button>
   </div>
 
   <!-- ============ 自适应进阶 Journey ============ -->
-  <div id="page-journey" class="page active">
+  <div id="page-journey" class="page active" data-page-node-id="RjUuu5j6OzVnLtA6yXIscb">
     <!-- 图谱入口视图：自适应图谱 + 点亮节点 + 开始适应 -->
-    <div id="journeyMapView" class="card p-4 md:p-5">
-      <div class="highlight-box">
-        <p class="text-sm leading-relaxed" data-i18n="<strong>自适应图谱</strong> 展示全部 36 个知识节点（7 大分类 + 29 个子标签）。开始适应后，解锁的知识点将逐一点亮。"><strong>自适应图谱</strong> 展示全部 36 个知识节点（7 大分类 + 29 个子标签）。开始适应后，解锁的知识点将逐一点亮。</p>
+    <div id="journeyMapView" class="card p-4 md:p-5" data-page-node-id="lk9J2Pjmbeaenjqj7FNsMk">
+      <div class="highlight-box" data-page-node-id="Drghje909fGZlnkNTBGmjf">
+        <p class="text-sm leading-relaxed" data-i18n="<strong data-page-node-id="UZZdnlEU0KfQsnZ6lAJuHA">自适应图谱</strong> 展示全部 36 个知识节点（7 大分类 + 29 个子标签）。开始适应后，解锁的知识点将逐一点亮。"><strong data-page-node-id="8w2VbfwgrgtesI2LxpoC8v">自适应图谱</strong> 展示全部 36 个知识节点（7 大分类 + 29 个子标签）。开始适应后，解锁的知识点将逐一点亮。</p>
       </div>
-      <div class="map-stats">
-        <span class="num-oswald" id="mapLitCount" style="font-size:1.3rem;color:var(--accent)">0</span><span style="opacity:0.55"> / <span id="mapTotalCount">36</span> <span data-i18n="节点已点亮">节点已点亮</span></span>
-        <button class="btn btn-accent" style="margin-left:1rem" onclick="startJourney()"><i class="fas fa-play mr-1"></i> 开始</button>
+      <div class="map-stats" data-page-node-id="peBYSaPpsGTr0kE9Famf6u">
+        <span class="num-oswald" id="mapLitCount" style="font-size:1.3rem;color:var(--accent)" data-page-node-id="MLKq0C9J6GELV36RTcCchx">0</span><span style="opacity:0.55" data-page-node-id="OpXQxm8zhZtSiGUN0CykKU"> / <span id="mapTotalCount" data-page-node-id="5y78OtapGFwYjrhOw1Vhja">36</span> <span data-i18n="节点已点亮" data-page-node-id="lmubiBYwIAqBjSQjTUfNhf">节点已点亮</span></span>
+        <button class="btn btn-accent" style="margin-left:1rem" onclick="startJourney()" data-page-node-id="xdRbp7IplzEFQ4uC1FP8B3"><i class="fas fa-play mr-1" data-page-node-id="K9CGVwcJ5QL4BRrPSX4Z7J"></i> 开始</button>
       </div>
-      <iframe id="journeyMapFrame" src="/knowledge-map" style="width:100%;height:560px;border:1px solid var(--border);border-radius:0.75rem;background:#fff;margin-top:0.5rem" title="SQL知识图谱"></iframe>
+      <iframe id="journeyMapFrame" src="/knowledge-map" style="width:100%;height:560px;border:1px solid var(--border);border-radius:0.75rem;background:#fff;margin-top:0.5rem" title="SQL知识图谱" data-page-node-id="4wdrxM7Z5oaw96qsZQBDdP"></iframe>
     </div>
 
-    <div id="journeyQuiz" style="display:none">
-      <div class="card p-4 md:p-5">
-        <div class="flex justify-between items-center mb-2">
-          <div>
-          <span class="num-oswald text-sm accent" id="journeyNodeLabel">SELECT 基础查询</span>
-          <span class="tag ml-2" id="journeyActionTag" style="display:none"></span>
-          <label class="text-xs ml-auto" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
-            <span class="opacity-60" data-i18n="深度掌握">深度掌握</span>
-            <input type="checkbox" id="deepModeToggle" checked onchange="toggleDeepMode()" style="accent-color:#c17c4a;width:14px;height:14px">
+    <div id="journeyQuiz" style="display:none" data-page-node-id="GdekLUbI6GsDR5JhyWcYoz">
+      <div class="card p-4 md:p-5" data-page-node-id="okc1PKI6Xxzn9LvOAIqNNb">
+        <div class="flex justify-between items-center mb-2" data-page-node-id="MayTP2CBcjFpRBqGilKdSY">
+          <div data-page-node-id="32R3C80ps21nEMg0J4D3Ud">
+          <span class="num-oswald text-sm accent" id="journeyNodeLabel" data-page-node-id="hfQLem2YnWYrFB3x42nUn8">SELECT 基础查询</span>
+          <span class="tag ml-2" id="journeyActionTag" style="display:none" data-page-node-id="gWpfugwVwAhK52uY9TTS8R"></span>
+          <label class="text-xs ml-auto" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;user-select:none" data-page-node-id="XulKxoV9FFIE7ar3yowtSJ">
+            <span class="opacity-60" data-i18n="深度掌握" data-page-node-id="qNOTI1rsAohlVlzLA2cRl6">深度掌握</span>
+            <input type="checkbox" id="deepModeToggle" checked onchange="toggleDeepMode()" style="accent-color:#c17c4a;width:14px;height:14px" data-page-node-id="VB2d3YcmDznPkPwRYLN4f4">
           </label>
           </div>
-          <span class="text-xs text-[#2c241b] opacity-50"><i class="fas fa-chart-simple mr-1"></i> <span id="journeyStats">0/0</span></span>
-          <button class="btn btn-accent ml-2" style="padding:0.25rem 0.7rem;font-size:0.8rem" onclick="backToJourneyMap()" title="回到自适应图谱（当前进度保留）"><i class="fas fa-map mr-1"></i> 返回图谱</button>
+          <span class="text-xs text-[#2c241b] opacity-50" data-page-node-id="N7ojo7mXvWsMHg0j2zFnYW"><i class="fas fa-chart-simple mr-1" data-page-node-id="75zguoYHheYOJsqQrneHEH"></i> <span id="journeyStats" data-page-node-id="fsB7DWojy8R1yDcv1kymlp">0/0</span></span>
+          <button class="btn btn-accent ml-2" style="padding:0.25rem 0.7rem;font-size:0.8rem" onclick="backToJourneyMap()" title="回到自适应图谱（当前进度保留）" data-page-node-id="rOSCJJV8YQGChY4CNCcQnt"><i class="fas fa-map mr-1" data-page-node-id="3lpyfNtLxQLzyrDDki0OHI"></i> 返回图谱</button>
         </div>
-        <div class="progress-track mb-1"><div class="fill" id="journeyProgress" style="width:0%"></div></div>
-        <div id="journeyQuestion" class="fade-in"></div>
-        <div class="text-center mt-3">
-          <button class="btn btn-accent" id="journeyNextBtn" data-i18n="继续进阶" onclick="nextJourney()" style="display:none"><i class="fas fa-arrow-right mr-1"></i> 继续进阶</button>
+        <div class="progress-track mb-1" data-page-node-id="cYmBduwy1BFhbWzsnctpR4"><div class="fill" id="journeyProgress" style="width:0%" data-page-node-id="KsIzArBZnvPfz6jjC0YKG8"></div></div>
+        <div id="journeyQuestion" class="fade-in" data-page-node-id="h3kcXpbBDpgHCariHf4MVJ"></div>
+        <div class="text-center mt-3" data-page-node-id="JQO0pYA8kiSy4ptTTGqloy">
+          <button class="btn btn-accent" id="journeyNextBtn" data-i18n="继续进阶" onclick="nextJourney()" style="display:none" data-page-node-id="2XrO1SYNgM9rAy0jTdPp3w"><i class="fas fa-arrow-right mr-1" data-page-node-id="vcQ2qXPQakX6AAvLetwmOq"></i> 继续进阶</button>
         </div>
       </div>
     </div>
 
-    <div id="journeyResult" class="card p-4 md:p-5" style="display:none"></div>
+    <div id="journeyResult" class="card p-4 md:p-5" style="display:none" data-page-node-id="4x1qIhrcLucopwYfkcl5sO"></div>
   </div>
 
   <!-- ============ 自主练习 / 真题测试 ============ -->
-  <div id="page-practice" class="page">
-    <div class="card p-4 md:p-5">
-      <div class="flex justify-between items-center mb-3">
-        <span class="tag" id="poolLabel" data-i18n="自主练习" style="font-size:0.7rem;font-weight:700;">自主练习</span>
-        <span class="text-xs opacity-50" id="poolCount"></span>
+  <div id="page-practice" class="page" data-page-node-id="Y2iBnx0uA8OSRdsEDlsNoS">
+    <div class="card p-4 md:p-5" data-page-node-id="1rhgYVlqXPDCjJdhm6iIF8">
+      <div class="flex justify-between items-center mb-3" data-page-node-id="aQhOKOWiFIuwcXBb56MoiP">
+        <span class="tag" id="poolLabel" data-i18n="自主练习" style="font-size:0.7rem;font-weight:700;" data-page-node-id="q6wB6tgtXkslU0TOx66z1s">自主练习</span>
+        <span class="text-xs opacity-50" id="poolCount" data-page-node-id="0XYBN8h0YHyQn2065SV0jt"></span>
       </div>
-      <div class="filter-bar flex gap-2 mb-3 flex-wrap" style="align-items:center">
-        <input type="text" id="filterSearch" placeholder="🔍 搜索题目..." oninput="onFilterChange()" style="flex:1;min-width:140px;padding:0.4rem 0.75rem;border:1px solid var(--border);border-radius:0.375rem;font-size:0.8rem;outline:none;background:var(--card);color:var(--text);">
-        <select id="filterType" onchange="onFilterChange()" style="height:34px;padding:0 0.65rem;border:1px solid var(--border);border-radius:0.375rem;font-size:0.75rem;background:var(--card);color:var(--text);min-width:90px;">
-          <option value="" data-i18n="全部题型">全部题型</option>
-          <option value="mcq" data-i18n="选择题">选择题</option>
-          <option value="fillin" data-i18n="填空题">填空题</option>
+      <div class="filter-bar flex gap-2 mb-3 flex-wrap" style="align-items:center" data-page-node-id="A6YZCSZ8f4PELPOJmR5MF5">
+        <input type="text" id="filterSearch" placeholder="🔍 搜索题目..." oninput="onFilterChange()" style="flex:1;min-width:140px;padding:0.4rem 0.75rem;border:1px solid var(--border);border-radius:0.375rem;font-size:0.8rem;outline:none;background:var(--card);color:var(--text);" data-page-node-id="9Lf7TYxYH4GZN2VHhyvKJa">
+        <select id="filterType" onchange="onFilterChange()" style="height:34px;padding:0 0.65rem;border:1px solid var(--border);border-radius:0.375rem;font-size:0.75rem;background:var(--card);color:var(--text);min-width:90px;" data-page-node-id="xuDmcnlEbcj6J6WPByBL8m">
+          <option value="" data-i18n="全部题型" data-page-node-id="O8DFpkWjLE9POH75atA0dj">全部题型</option>
+          <option value="mcq" data-i18n="选择题" data-page-node-id="5S34JeDptxr4Y5ZP7XXUzV">选择题</option>
+          <option value="fillin" data-i18n="填空题" data-page-node-id="eXEr7dVoSXAyq6KuJkEOlz">填空题</option>
         </select>
         <!-- 自定义级联分类筛选 -->
-        <div class="cat-cascade" id="catCascade" style="position:relative;display:inline-flex;align-items:center;gap:0;min-height:34px;max-width:100%;">
-          <span id="catLabel" data-i18n="分类" style="font-size:0.75rem;color:var(--text2);margin-right:4px;white-space:nowrap;">分类</span>
-          <div id="catParents" style="display:flex;flex-wrap:wrap;gap:0;align-items:center;"></div>
-          <div id="catSubPanel" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--card);border:1px solid var(--border);border-radius:0.375rem;padding:0.375rem 0;z-index:100;min-width:150px;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
+        <div class="cat-cascade" id="catCascade" style="position:relative;display:inline-flex;align-items:center;gap:0;min-height:34px;max-width:100%;" data-page-node-id="apOcCMMGMFPXlzmUuSArys">
+          <span id="catLabel" data-i18n="分类" style="font-size:0.75rem;color:var(--text2);margin-right:4px;white-space:nowrap;" data-page-node-id="tfWpqtAsglmR9mm5iZjaNf">分类</span>
+          <div id="catParents" style="display:flex;flex-wrap:wrap;gap:0;align-items:center;" data-page-node-id="rPJAhKi0YHDFUoal3AsvKR"></div>
+          <div id="catSubPanel" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--card);border:1px solid var(--border);border-radius:0.375rem;padding:0.375rem 0;z-index:100;min-width:150px;box-shadow:0 4px 12px rgba(0,0,0,0.1);" data-page-node-id="LDuAiIJIATJH6alYRgLsFs"></div>
         </div>
-        <select id="filterDifficulty" onchange="onFilterChange()" style="height:34px;padding:0 0.65rem;border:1px solid var(--border);border-radius:0.375rem;font-size:0.75rem;background:var(--card);color:var(--text);min-width:90px;">
-          <option value="" data-i18n="全部难度">全部难度</option>
-          <option value="easy" data-i18n="简单">简单</option>
-          <option value="medium" data-i18n="中等">中等</option>
-          <option value="hard" data-i18n="困难">困难</option>
+        <select id="filterDifficulty" onchange="onFilterChange()" style="height:34px;padding:0 0.65rem;border:1px solid var(--border);border-radius:0.375rem;font-size:0.75rem;background:var(--card);color:var(--text);min-width:90px;" data-page-node-id="M6FDD6PxSjcdxqpigEwRxF">
+          <option value="" data-i18n="全部难度" data-page-node-id="35c7G4JtwVl2dM7N90y8U4">全部难度</option>
+          <option value="easy" data-i18n="简单" data-page-node-id="U0Sa0577Lx7FcwaGQtzLUI">简单</option>
+          <option value="medium" data-i18n="中等" data-page-node-id="r5YGKHWDVtBNZ8G63x2Dyd">中等</option>
+          <option value="hard" data-i18n="困难" data-page-node-id="TPfIX2FMFi0h0NpYGqreZa">困难</option>
         </select>
-        <span id="catActiveTag" style="display:none;font-size:0.65rem;padding:2px 8px;background:var(--tag-bg);border-radius:0.25rem;color:var(--accent);cursor:pointer" onclick="clearCatFilter()" title="点击清除分类筛选"></span>
+        <span id="catActiveTag" style="display:none;font-size:0.65rem;padding:2px 8px;background:var(--tag-bg);border-radius:0.25rem;color:var(--accent);cursor:pointer" onclick="clearCatFilter()" title="点击清除分类筛选" data-page-node-id="ZgnElTJfQTCJnwZxMqkEPU"></span>
       </div>
 
-      <div id="practiceList" class="space-y-2"></div>
+      <div id="practiceList" class="space-y-2" data-page-node-id="fmVjKrjpLPYKIxaxp5mbMh"></div>
 
-      <div id="questionDetail" class="fade-in">
-        <a class="back-link" data-i18n="返回题目列表" onclick="backToPracticeList()"><i class="fas fa-arrow-left mr-1"></i> 返回题目列表</a>
-        <div id="practiceQuestion"></div>
+      <div id="questionDetail" class="fade-in" data-page-node-id="3geGTmcimht9trwwuEpuMd">
+        <a class="back-link" data-i18n="返回题目列表" onclick="backToPracticeList()" data-page-node-id="AaoDWUoToezQXCAchXoNMD"><i class="fas fa-arrow-left mr-1" data-page-node-id="gHTBjoaf5CCAGJqGezRCzw"></i> 返回题目列表</a>
+        <div id="practiceQuestion" data-page-node-id="kfvTD9y6jAaRGj9LhLBufQ"></div>
       </div>
 
-      <div id="deriveSection" style="display:none" class="fade-in">
-        <a class="back-link" data-i18n="返回题目列表" onclick="exitDerivedPractice()"><i class="fas fa-arrow-left mr-1"></i> 返回题目列表</a>
-        <div id="deriveArea"></div>
+      <div id="deriveSection" style="display:none" class="fade-in" data-page-node-id="SDrApi1owg7wFSqRpEseFl">
+        <a class="back-link" data-i18n="返回题目列表" onclick="exitDerivedPractice()" data-page-node-id="YYlEd91AmFoHB6YoC0ErDJ"><i class="fas fa-arrow-left mr-1" data-page-node-id="jYHARXrVQSPe4DrsY2z9Lh"></i> 返回题目列表</a>
+        <div id="deriveArea" data-page-node-id="eRmz4IIAVpOF5vMuk5w0g1"></div>
       </div>
     </div>
   </div>
 
   <!-- ============ 错题集 ============ -->
-  <div id="page-wrongset" class="page">
-    <div class="card p-4 md:p-5">
-      <div class="highlight-box">
-        <p class="text-sm leading-relaxed" data-i18n="记录你在自适应进阶和练习中答错的题目，方便集中复习巩固。">记录你在自适应进阶和练习中答错的题目，方便集中复习巩固。</p>
+  <div id="page-wrongset" class="page" data-page-node-id="EUPJAWJxCztBmEjW9hm95a">
+    <div class="card p-4 md:p-5" data-page-node-id="0ElIyBNmGnjUaWVMiQ3B8h">
+      <div class="highlight-box" data-page-node-id="Yp3y3W58h28kK3930d26T6">
+        <p class="text-sm leading-relaxed" data-i18n="记录你在自适应进阶和练习中答错的题目，方便集中复习巩固。" data-page-node-id="VVArAXX1kNVN5UhEtfc2Bb">记录你在自适应进阶和练习中答错的题目，方便集中复习巩固。</p>
       </div>
       <!-- 近期综合数据 (collapsible) -->
-      <div id="wrongSummary" class="mt-3" style="cursor:pointer;user-select:none" onclick="toggleSummary()">
-        <div class="flex justify-between items-center p-2 rounded" style="background:var(--tag-bg)">
-          <span class="num-oswald text-xs tracking-wider" data-i18n="近期综合数据">近期综合数据</span>
-          <span id="summaryToggle"><i class="fas fa-chevron-down"></i></span>
+      <div id="wrongSummary" class="mt-3" style="cursor:pointer;user-select:none" onclick="toggleSummary()" data-page-node-id="zqqAHmbI8GgdjkCavH8sQv">
+        <div class="flex justify-between items-center p-2 rounded" style="background:var(--tag-bg)" data-page-node-id="aMHhgZW2eOd8RJWTB7no3q">
+          <span class="num-oswald text-xs tracking-wider" data-i18n="近期综合数据" data-page-node-id="MEI9QDuEllSQRFCqEA4m7I">近期综合数据</span>
+          <span id="summaryToggle" data-page-node-id="xrYvCBoahSBG0DZlp7KSDl"><i class="fas fa-chevron-down" data-page-node-id="SHEWD6SrngAWEtB4sa6T7y"></i></span>
         </div>
-        <div id="summaryBody" class="mt-2 flex justify-center gap-6" style="display:none"></div>
+        <div id="summaryBody" class="mt-2 flex justify-center gap-6" style="display:none" data-page-node-id="uBCSvlnkcYU85MRmiyw2h8"></div>
       </div>
       <!-- 错题列表 -->
-      <div id="wrongList" class="mt-3 space-y-2"></div>
+      <div id="wrongList" class="mt-3 space-y-2" data-page-node-id="hYoWUvIKi7cbD90iYXOwAk"></div>
     </div>
   </div>
 
@@ -2434,6 +2434,14 @@ function buildCategorySelect() {
     btn.setAttribute('data-expand', grp.expand ? '1' : '0');
     if (grp.extraRoot) btn.setAttribute('data-extra', grp.extraRoot);
     btn.addEventListener('mouseenter', onCatParentHover);
+    // 点击父分类：立即按「全部XXX」筛选（不再依赖 hover 后点子面板），并展开子面板供细分
+    btn.addEventListener('click', function(e){
+      _catSelectedParent = this.getAttribute('data-root');
+      _catSelectedNode = null;
+      highlightCatSelection();
+      onFilterChange();
+      onCatParentHover.call(this, e);   // 展开子面板，可继续选具体叶节点
+    });
     parents.appendChild(btn);
   }
   // 分隔（仅当存在独立叶节点时才需要）
@@ -2535,6 +2543,24 @@ function highlightCatSelection() {
   var btns = document.querySelectorAll('#catParents .cat-parent-btn');
   for (var i = 0; i < btns.length; i++) {
     btns[i].classList.remove('active');
+  }
+  // 父按钮高亮：选中父分类时点亮；选中叶节点时点亮其归属的父分类按钮
+  var activeRoot = _catSelectedParent;
+  if (!activeRoot && _catSelectedNode) {
+    for (var key in KG_ROOT_EXPAND) {
+      if (KG_ROOT_EXPAND[key] && KG_ROOT_EXPAND[key].indexOf(_catSelectedNode) !== -1) {
+        activeRoot = key;
+        break;
+      }
+    }
+  }
+  if (activeRoot) {
+    for (var b = 0; b < btns.length; b++) {
+      if (btns[b].getAttribute('data-root') === activeRoot) {
+        btns[b].classList.add('active');
+        break;
+      }
+    }
   }
   var tag = document.getElementById('catActiveTag');
   if (_catSelectedNode) {

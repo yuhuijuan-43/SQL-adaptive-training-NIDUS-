@@ -1,0 +1,33 @@
+# SQL 自适应训练平台 — Docker Compose
+# 单 web 服务；数据卷持久化 questions.db 与 backups/；环境变量从 .env 注入
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sql-adaptive-training:latest
+    container_name: sql-web
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      # 持久化数据库与备份（绑定 ./backend，覆盖镜像里同路径，源码仍可用卷内最新版本）
+      - ./backend:/app/backend
+      # 题库源数据通常镜像内即可；如需独立演进可改为命名卷
+      # - data:/app/data
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Shanghai
+    # 健康检查由 Dockerfile 的 HEALTHCHECK 提供；此处声明以便 docker compose ps 显示
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/', timeout=5).read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
