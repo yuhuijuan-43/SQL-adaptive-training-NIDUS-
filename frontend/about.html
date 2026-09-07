@@ -426,6 +426,45 @@ const VISION = {
 
 const UPDATES = [
   {
+    date: '2026-09-07', tag: 'opt', tagText: '优化',
+    title: '管理后台体验优化：限流放宽 + 日志翻页直达',
+    desc: '实时监控面板频繁点击不再误触限流；用户动态、系统日志、管理员动态三张列表新增「页码跳转」，几百条日志也能一键直达。',
+    overview: '管理员反馈两处体验问题：一是实时监控频繁点击会触发限流（自动刷新与快速翻页叠加产生突发）；二是查看日志只有「上一页/下一页」，遇到几百条日志要点几十次。本次把三张实时面板（用户动态、系统日志、管理员动态）的接口限流从每分钟 120 次放宽到 300 次，给自动轮询和快速翻页留足余量；同时在三个分页器各加一组「跳转 + 页码输入 + Go」，支持回车直达任意页，越界页码自动纠正，同页不重复请求。',
+    points: [
+      '<b>限流放宽</b>：三张实时面板接口限流从 120 次/分钟放宽到 300 次/分钟，自动刷新 + 快速翻页不再误触。',
+      '<b>页码直达</b>：三张列表都新增「跳转」输入框，输入页码回车或点 Go 即可跳转，支持一键直达。',
+      '<b>输入容错</b>：越界页码自动纠正到有效范围，同页重复跳转不会多发请求。'
+    ],
+    thinking: '后台是管理员每天要用的工具，效率与流畅度同样重要。限流本是为了防滥用，但对自动刷新的监控面板来说 120 次/分钟过于紧张；翻页只有上下按钮，几十页日志就成了体力活。放宽限流 + 加页码直达，都是在「保护」和「好用」之间找回平衡。',
+    stats: [['300', '次/分钟', '三张实时面板的新限流（原 120）'], ['3', '张列表', '用户动态 · 系统日志 · 管理员动态 支持页码跳转'], ['回车 / Go', '两种跳转方式', '输入页码即可直达任意页']]
+  },
+  {
+    date: '2026-09-07', tag: 'bank', tagText: '题库扩充',
+    title: '自适应题库扩充：填空题与 AI 生成选择题纳入推送',
+    desc: '自适应进阶不再只有选择题——填空题（含经典真题）与 310 道 AI 生成选择题经质量审核后正式纳入推送池，每个知识点可练的题更多、题型更全。',
+    overview: '此前自适应进阶只推送选择题，填空题因题源未纳入白名单而被排除在外。本次先完成质量审核：310 道 AI 生成选择题全部 ≥2 选项、正确答案均在选项中、0 道必坏；57 道 AI 填空题与 42 道经典填空题题目/答案/建表/解析齐全。审核通过后，填空题与选择题分别纳入独立白名单，两类互不串源。每个知识点现在既有选择题打基础，又有填空题实战，题量从约 2 道扩展到 6～22 道。',
+    points: [
+      '<b>填空题纳入</b>：57 道 AI 填空题 + 42 道经典填空题经审核后进入自适应推送，实现「选择打基础、填空练实战」。',
+      '<b>310 道选择题扩充</b>：AI 生成的选择题全部通过质量审核（≥2 选项、答案必在选项中），纳入自适应题池。',
+      '<b>两类互不串源</b>：选择题与填空题分别走独立白名单，不会互相污染题型。'
+    ],
+    thinking: '题目的价值在于质量而非数量。扩题前我们先把 310 道选择题逐条审核：选项是否完整、正确答案是否真的在选项里。审核通过才敢放进推送池，因为一道坏题就会破坏用户对平台的信任。',
+    stats: [['310', 'AI 选择题通过审核', '全部 ≥2 选项、答案均在选项中'], ['99', '填空题纳入推送', '57 AI + 42 经典'], ['6~22', '每个知识点的题量', '约 2 道 → 6~22 道']]
+  },
+  {
+    date: '2026-09-07', tag: 'fix', tagText: '修复',
+    title: '自适应引擎不再重复出题',
+    desc: '修复了自适应训练里同一道题重复出现的体验问题——答对过的题不再跨轮反复推送，只有答错的题才会再次出现用于巩固。',
+    overview: '有学员反馈自适应训练中会遇到重复出题。排查发现：扩充题库后每个知识点有 6～22 道题，但大部分知识点不会在一轮内被全部答对，导致下一轮又把整组题重新推一遍，已经答对的题也被原封不动推回来。修复后，每一轮出题时会先剔除「本会话已经答对」的题，只保留答错或未做的题继续练习——答对过的题不再打扰，答错的题则保留间隔复习的机制，学得更专注。',
+    points: [
+      '<b>答对即掌握</b>：新一轮自动跳过本会话已答对的题，不再跨轮重复推送。',
+      '<b>答错仍复习</b>：答错的题保留在后续轮次，直到答对为止，间隔复习机制不变。',
+      '<b>更专注</b>：一轮的题目数随掌握进度自然缩减，越学越精简。'
+    ],
+    thinking: '重复出题最伤学习体验：明明做对了，下一轮又原样出现。根因是之前只解决了「单个知识点内部不重复」，没覆盖「跨轮」这一维度。这次在构建新一轮时把已答对的题过滤掉，既保住了答错题目的复习价值，又消除了「做对了还被追问」的烦躁感。',
+    stats: [['0', '答对过的题重复出现', '跨轮去重后不复现'], ['答错→再练→答对', '间隔复习保留', '只复习真正薄弱的知识点'], ['6~22', '每个知识点的题量', '题库扩充后的覆盖范围']]
+  },
+  {
     date: '2026-09-03', tag: 'new', tagText: '新功能',
     title: '后台动态支持锁定查看：按用户/管理员精准聚焦',
     desc: '用户动态与管理员动态新增锁定筛选——输入用户名一键锁定，或直接点击动态中的用户名，实时列表只保留该用户的操作，定位单个学员的问题或核对某位管理员的操作都更快。',
@@ -916,6 +955,45 @@ window.UPDATES_EXTRA = {
 
 
 const UPDATES_EN = [
+  {
+    date: '2026-09-07', tag: 'opt', tagText: 'Optimization',
+    title: 'Admin console polish: relaxed rate limits + direct page jump',
+    desc: 'Frequent clicking in the live monitoring panels no longer trips the rate limit; the user activity, system logs and admin activity lists each gain a page-jump control for one-click navigation through hundreds of logs.',
+    overview: 'Admins reported two experience issues: frequent clicking in the live panels tripped the rate limit (auto-refresh plus rapid paging created bursts), and log lists only had Previous/Next, so browsing hundreds of logs meant dozens of clicks. This round raised the three live panels\' (User Activity, System Logs, Admin Activity) rate limit from 120 to 300 requests per minute, leaving headroom for auto-polling and fast paging; and added a "jump + page input + Go" control to each of the three pagers, supporting Enter-to-jump to any page, auto-correcting out-of-range page numbers and skipping redundant requests for the same page.',
+    points: [
+      '<b>Relaxed limits</b>: the three live panels\' limit went from 120 to 300 requests per minute — auto-refresh plus fast paging no longer trips.',
+      '<b>Direct page jump</b>: all three lists add a jump input — type a page number and press Enter or click Go to land anywhere.',
+      '<b>Input tolerance</b>: out-of-range numbers auto-correct to the valid range; jumping to the same page doesn\'t send extra requests.'
+    ],
+    thinking: 'The admin console is a tool admins use every day, so efficiency and smoothness matter as much as safety. Rate limits exist to prevent abuse, but 120/minute was too tight for auto-refreshing panels; and paging with only two buttons turned dozens of pages into a chore. Relaxing the limit and adding direct page jump restores the balance between protection and usability.',
+    stats: [['300', 'requests/minute', 'new limit for the three live panels (was 120)'], ['3', 'lists', 'User Activity · System Logs · Admin Activity gain page jump'], ['Enter / Go', 'two ways to jump', 'type a page number to land anywhere']]
+  },
+  {
+    date: '2026-09-07', tag: 'bank', tagText: 'Question Bank',
+    title: 'Adaptive bank expanded: fill-ins and AI-generated MCQs',
+    desc: 'Adaptive practice is no longer MCQ-only — fill-in questions (including classic exam questions) and 310 AI-generated MCQs joined the push pool after quality review, giving each knowledge point more and fuller question types.',
+    overview: 'Adaptive practice previously pushed only multiple-choice questions, because fill-in sources weren\'t in the whitelist. This round ran a full quality audit first: all 310 AI-generated MCQs have ≥2 options with the correct answer present in every option set (0 broken); 57 AI fill-ins and 42 classic fill-ins all have complete text, answer, schema and explanation. After the audit, fill-ins and MCQs each went into their own whitelist with no cross-contamination. Every knowledge point now offers MCQs to build the foundation plus fill-ins for hands-on practice, growing from about 2 to 6–22 questions each.',
+    points: [
+      '<b>Fill-ins added</b>: 57 AI fill-ins + 42 classic fill-ins entered the adaptive push after review — MCQ to build, fill-in to verify.',
+      '<b>310 MCQs expanded</b>: AI-generated MCQs all passed the audit (≥2 options, correct answer always present) and joined the pool.',
+      '<b>No type mixing</b>: MCQs and fill-ins use separate whitelists, so neither pollutes the other.'
+    ],
+    thinking: 'A question\'s value is its quality, not its quantity. Before expanding, we audited all 310 MCQs one by one — options complete, correct answer genuinely present — and only then allowed them into the push pool, because one broken question destroys user trust.',
+    stats: [['310', 'AI MCQs passed audit', 'all ≥2 options, correct answer present'], ['99', 'fill-ins added', '57 AI + 42 classic'], ['6–22', 'questions per point', 'up from ~2']]
+  },
+  {
+    date: '2026-09-07', tag: 'fix', tagText: 'Fix',
+    title: 'Adaptive engine no longer repeats questions',
+    desc: 'Fixed repeated questions in adaptive training — questions you already answered correctly no longer come back in later rounds; only questions you got wrong reappear for review.',
+    overview: 'A learner reported seeing repeated questions in adaptive practice. The root cause: after the question bank grew, each knowledge point now has 6–22 questions, but most points aren\'t fully answered correctly within one round, so the next round re-served the whole set — including questions already answered correctly. The fix filters out questions already answered correctly in this session when building each new round, keeping only wrong or unanswered ones. Questions you\'ve mastered no longer bother you, while wrong ones keep the spaced-review mechanism, so you can focus better.',
+    points: [
+      '<b>Correct = mastered</b>: each new round automatically skips questions already answered correctly in this session.',
+      '<b>Wrong = still reviewed</b>: wrong answers stay in later rounds until you get them right — spaced review is unchanged.',
+      '<b>More focused</b>: the number of questions per round shrinks naturally as you master more.'
+    ],
+    thinking: 'Repetition is the worst part of the learning experience: you get it right, and the same question comes back verbatim. The previous fix only removed repeats within a single knowledge point, not across rounds. This change filters mastered questions when building each new round — keeping the review value of wrong answers while removing the annoyance of being re-asked what you already know.',
+    stats: [['0', 'correct questions repeated', 'no more re-serving across rounds'], ['wrong→right', 'spaced review kept', 'only genuinely weak points are re-drilled'], ['6–22', 'questions per point', 'coverage after the bank expanded']]
+  },
   {
     date: '2026-09-03', tag: 'new', tagText: 'New Feature',
     title: 'Lock onto any user in the live activity feeds',

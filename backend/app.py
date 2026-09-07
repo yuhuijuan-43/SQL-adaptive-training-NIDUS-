@@ -809,7 +809,7 @@ def admin_user_reset():
     return jsonify({"ok": True})
 
 @app.route('/api/admin/user-activity')
-@limiter.limit("120 per minute", key_func=_admin_rate_key)
+@limiter.limit("300 per minute", key_func=_admin_rate_key)  # 自动刷新约每 6s（10/min），点击翻页为突发；300/min 给翻页与自动轮询留足余量
 @require_admin
 def admin_user_activity():
     """用户动态（实时，分页）：注册/登录/登出/答题/摸底/开启练习；所有管理员可见；
@@ -832,7 +832,7 @@ def admin_user_activity():
     })
 
 @app.route('/api/admin/system-logs')
-@limiter.limit("120 per minute", key_func=_admin_rate_key)
+@limiter.limit("300 per minute", key_func=_admin_rate_key)  # 同上：自动刷新 + 翻页突发
 @require_admin
 def admin_system_logs():
     """系统日志（实时，分页）：异常/判题错误/失败登录/限流等；所有管理员可见"""
@@ -855,7 +855,7 @@ def admin_system_logs():
     })
 
 @app.route('/api/admin/admin-activity')
-@limiter.limit("120 per minute", key_func=_admin_rate_key)
+@limiter.limit("300 per minute", key_func=_admin_rate_key)  # 同上：自动刷新 + 翻页突发
 @require_admin
 def admin_admin_activity():
     """管理员动态（实时，分页）：登录/注册/改密/删除/内推码等；仅主管理员可见（定位与追责）；

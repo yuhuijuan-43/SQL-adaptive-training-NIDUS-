@@ -1,14 +1,15 @@
 """Journey 自适应引擎（2026-08 图谱点亮版）：双循环出题 + 叶/枝/根三级点亮
 
 核心规则（产品需求）：
-- 出题：枝节点不放回（固定图谱顺序）→ 叶节点不放回 → 每叶连续 5 题（3 选择 + 2 填空，选择先行）
-- 题池不足时循环复用（同题可重复出，user_progress 按记录条数计数）；填空池为空回退选择题池
+- 出题：枝节点不放回（固定图谱顺序）→ 叶节点不放回 → 每叶按“选择先行、填空随后”顺序推出该叶全部不重复题目
+- 题池不足时只出已有不重复题（不再循环复用，避免同一题重复出现）；某类题池为空则该叶仅推另一类
+- 跨轮去重：新一轮构建时剔除本会话已答对（掌握）的题，杜绝“答对过仍跨轮重复出现”
 - 点亮规则（叶节点，任一满足即点亮）：
   1. 本轮该叶出的题中连续答对 3 道（相邻两题提交间隔 ≤2min）→ 点亮并跳过剩余题目
   2. 本轮该叶全部题均答对（不计间隔）→ 点亮
   3. 累计答对 10 道该叶类型题（跨自适应/自主/真题）→ 点亮；每答对 2 道点亮 20%，节点内显示 x/10
 - 枝节点：x/y（点亮叶数/叶总数），全部叶点亮后枝点亮；根节点：x/7（点亮枝数/枝总数），全亮后点亮
-- 一轮 = 所有未点亮且有题叶节点刷完（至多 145 题）；完成后保留点亮状态，重新开始新一轮
+- 一轮 = 所有未点亮且有题叶节点刷完（题数 = 各叶去重题数之和）；完成后保留点亮状态，重新开始新一轮
 """
 import json
 import re
@@ -18,8 +19,7 @@ from repositories import get_question_by_id, get_mastery, get_graph
 from seeding import OFFICIAL_TAGS
 
 # 出题与点亮常量
-SEQ_TYPES = ['mcq', 'mcq', 'mcq', 'fillin', 'fillin']   # 每叶 5 题：3 选择 + 2 填空，选择先行
-LEAF_Q = 5            # 每叶节点题数
+LEAF_Q = 5            # 每叶节点题数（作为无计划时的兜底显示值）
 STREAK = 3            # 规则1 连续答对数
 GAP_MAX = 120         # 规则1 相邻两题提交间隔上限（秒，≤2min）
 CORRECT_LIT = 10      # 规则3 累计答对数
@@ -71,44 +71,51 @@ def _is_mcq(q):
 
 # ==================== 出题（双循环 + 循环复用） ====================
 
-# 自适应进阶题源白名单：仅使用静态基础/进阶选择题 + nowcoder 预览填空题
-# （2026-08-05 移出全部牛客/LeetCode/Kaggle 题目）
-JOURNEY_SOURCES = ('static_basic', 'static_advanced', 'nowcoder_preview')
+# 自适应进阶题源（2026-09-07 拆分为选择题/填空题白名单）
+# 选择题：原白名单 + ai_gen（2026-09-07 审核通过：310 道选择题，全部 ≥2 选项且正确答案均在选项中，
+#          options 为 A./B./C./D. 前缀的管道分隔串，与现有 seeded 格式一致，前端/后端解析兼容）
+ADAPTIVE_MCQ_SOURCES = ('static_basic', 'static_advanced', 'nowcoder_preview', 'ai_gen')
+# 填空题：质量确认后纳入（2026-09-07）
+#   - ai_gen：57 道填空，题面/答案/schema/解析齐全（约 22 道缺 initial_data，多为 INSERT 类不受影响，已评估可接受）
+#   - 蓝客 各预览源：填空题 100% 完整（title/答案/schema/init/解析 均有）
+ADAPTIVE_FILLIN_SOURCES = ('ai_gen',)
+ADAPTIVE_FILLIN_LIKE = ('蓝客%',)
 
 
 def _node_pools(leaf):
-    """该叶节点的选择题/填空题 id 列表（基础选择先行，其次按 id）"""
+    """该叶节点的选择题/填空题 id 列表（基础选择先行，其次按 id）
+    选择题仅取 ADAPTIVE_MCQ_SOURCES；填空题取 ADAPTIVE_FILLIN_SOURCES + 蓝客 前缀源，
+    两类互不串源（ai_gen 的选择题不会进填空池，反之亦然）。"""
     conn = get_connection()
-    placeholders = ','.join('?' for _ in JOURNEY_SOURCES)
-    rows = conn.execute(f'''SELECT q.id, q.q_level, q.options FROM questions q
+    mcq_rows = conn.execute('''SELECT q.id, q.q_level, q.options FROM questions q
         JOIN question_knowledge qk ON q.id = qk.question_id
-        WHERE qk.node_id=? AND q.source IN ({placeholders})''', (leaf,) + JOURNEY_SOURCES).fetchall()
+        WHERE qk.node_id=? AND q.source IN (%s)''' % ','.join('?' * len(ADAPTIVE_MCQ_SOURCES)),
+        (leaf,) + ADAPTIVE_MCQ_SOURCES).fetchall()
+    like_clauses = ' OR '.join('q.source LIKE ?' for _ in ADAPTIVE_FILLIN_LIKE)
+    fillin_rows = conn.execute('''SELECT q.id, q.q_level, q.options FROM questions q
+        JOIN question_knowledge qk ON q.id = qk.question_id
+        WHERE qk.node_id=? AND (q.source IN (%s) OR %s)''' % (
+            ','.join('?' * len(ADAPTIVE_FILLIN_SOURCES)), like_clauses),
+        (leaf,) + ADAPTIVE_FILLIN_SOURCES + ADAPTIVE_FILLIN_LIKE).fetchall()
     mcq, fillin = [], []
-    for r in rows:
+    for r in mcq_rows:
         if _is_mcq(dict(r)):
             mcq.append(dict(r))
-        else:
+    for r in fillin_rows:
+        if not _is_mcq(dict(r)):
             fillin.append(dict(r))
     mcq.sort(key=lambda x: (x.get('q_level') != 'basic', x['id']))
     return [q['id'] for q in mcq], [q['id'] for q in fillin]
 
 
 def _leaf_plan(mcq_ids, fillin_ids):
-    """按 [选择×3, 填空×2] 生成 5 题序列；池不足循环复用，填空池为空回退选择题池"""
-    plan = []
-    mcq_i = fill_i = 0
-    for t in SEQ_TYPES:
-        if t == 'mcq':
-            pool = mcq_ids or fillin_ids
-        else:
-            pool = fillin_ids or mcq_ids
-        if not pool:
-            break
-        plan.append(pool[mcq_i % len(pool)] if t == 'mcq' else pool[fill_i % len(pool)])
-        if t == 'mcq':
-            mcq_i += 1
-        else:
-            fill_i += 1
+    """按“选择先行、填空随后”输出该叶全部不重复题目，题池不足时不再循环复用（避免同一题重复出现）。
+    顺序：选择题（基础优先）→ 填空题；每个题目至多出现一次，故计划长度 = 该叶去重题数。"""
+    plan, seen = [], set()
+    for q in list(mcq_ids) + list(fillin_ids):
+        if q not in seen:
+            seen.add(q)
+            plan.append(q)
     return plan
 
 
@@ -131,6 +138,16 @@ def _lit_leaves(session_id, counts=None):
         'SELECT node_id FROM user_lights WHERE session_id=? AND lit=1', (session_id,)).fetchall()}
     counts = counts if counts is not None else _correct_counts(session_id)
     return stored | {nid for nid, c in counts.items() if c >= CORRECT_LIT}
+
+
+def _mastered_ids(session_id):
+    """本会话已答对（掌握）的练习题目 id 集合（pool='practice'）。
+    用于构建新一轮时剔除已掌握题，消除‘答对过仍跨轮重复出现’的问题（自适应重复出题的根因）。"""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT DISTINCT up.question_id FROM user_progress up "
+        "WHERE up.session_id=? AND up.pool='practice' AND up.is_correct=1", (session_id,)).fetchall()
+    return {r['question_id'] for r in rows}
 
 
 def _set_lit(session_id, node_id):
@@ -205,8 +222,10 @@ def compute_lights(session_id, counts=None):
 # ==================== 一轮构建 ====================
 
 def _build_round(session_id):
-    """新一轮：枝→叶固定顺序，跳过已点亮/无题叶节点，每叶生成 5 题序列"""
+    """新一轮：枝→叶固定顺序，跳过已点亮/无题叶节点；每叶输出该叶去重题（已掌握题不再跨轮重复）。
+    已掌握 = 本会话练习池中答对的题（_mastered_ids）；答错的题仍保留以复习。"""
     lit = _lit_leaves(session_id)
+    mastered = _mastered_ids(session_id)
     entries = []
     for top in TOP_ORDER:
         for leaf in LEAF_ORDER[top]:
@@ -215,7 +234,10 @@ def _build_round(session_id):
             mcq, fill = _node_pools(leaf)
             if not mcq and not fill:
                 continue
-            entries.append({'branch': top, 'leaf': leaf, 'plan': _leaf_plan(mcq, fill)})
+            plan = [q for q in _leaf_plan(mcq, fill) if q not in mastered]
+            if not plan:
+                continue
+            entries.append({'branch': top, 'leaf': leaf, 'plan': plan})
     return {'status': 'active', 'entries': entries, 'idx': 0, 'pos': 0,
             'answers': [], 'answered_total': 0, 'lit_round': []}
 

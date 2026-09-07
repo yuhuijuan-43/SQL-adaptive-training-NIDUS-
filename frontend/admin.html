@@ -231,9 +231,9 @@
 </div>
 
 <script>
-// 后台页支持 file:// 直接打开：必须用绝对地址（相对路径在 file:// 下会指向 file:///api）
-// 若服务部署在其他机器/端口，改这里即可，例如 'http://10.86.168.226:5000/api'
-const API_BASE = 'http://localhost:5000/api';
+// 后台页：默认同源相对路径，部署到任意机器/端口都自动适配（不再写死 localhost）
+// 仅当以 file:// 直接打开本地文件调试时，回退到 localhost:5000
+const API_BASE = (location.protocol === 'file:') ? 'http://localhost:5000/api' : location.origin + '/api';
 // 管理员 Token：登录后由管理后台（/admin-auth → /admin-panel）写入 sessionStorage，请求时带 Bearer 头
 var ADMIN_TOKEN = sessionStorage.getItem('admin_token');
 if (!ADMIN_TOKEN) {

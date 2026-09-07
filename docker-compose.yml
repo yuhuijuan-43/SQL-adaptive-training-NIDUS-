@@ -13,6 +13,8 @@ services:
     volumes:
       # 持久化数据库与备份（绑定 ./backend，覆盖镜像里同路径，源码仍可用卷内最新版本）
       - ./backend:/app/backend
+      # 前端静态资源也绑定，便于在线改 HTML/JS 即时生效（与 backend 一致）
+      - ./frontend:/app/frontend
       # 题库源数据通常镜像内即可；如需独立演进可改为命名卷
       # - data:/app/data
     env_file:
