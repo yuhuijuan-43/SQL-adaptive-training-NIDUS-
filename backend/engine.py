@@ -72,11 +72,17 @@ def _is_mcq(q):
 # ==================== 出题（双循环 + 循环复用） ====================
 
 # 自适应进阶题源（2026-09-07 拆分为选择题/填空题白名单）
-# 选择题：原白名单 + ai_gen（2026-09-07 审核通过：310 道选择题，全部 ≥2 选项且正确答案均在选项中，
-#          options 为 A./B./C./D. 前缀的管道分隔串，与现有 seeded 格式一致，前端/后端解析兼容）
-ADAPTIVE_MCQ_SOURCES = ('static_basic', 'static_advanced', 'nowcoder_preview', 'ai_gen')
+# 选择题白名单：
+#   - ai_gen（2026-09-07 审核通过：310 道选择题，全部 ≥2 选项且正确答案均在选项中，
+#     options 为 A./B./C./D. 前缀的管道分隔串，与现有 seeded 格式一致，前端/后端解析兼容；
+#     2026-09-08 扩题新增 45 道选择题，合计 355 道）
+#   - 三资学堂（2026-09-07 审核通过：16 道选择题，全部 4 选项、答案均在选项中、标题/描述/解析齐全；
+#     无 table_schema 属正常，选择题走文本比对判题不依赖建表）
+ADAPTIVE_MCQ_SOURCES = ('static_basic', 'static_advanced', 'nowcoder_preview', 'ai_gen', '三资学堂')
 # 填空题：质量确认后纳入（2026-09-07）
 #   - ai_gen：57 道填空，题面/答案/schema/解析齐全（约 22 道缺 initial_data，多为 INSERT 类不受影响，已评估可接受）
+#             2026-09-08 扩题新增 34 道填空（表连接/约束/DDL/子查询），合计 91 道；
+#             新增题均经 tools/import_questions.py 实判自校验 + 反向验证（破坏答案必须判错）
 #   - 蓝客 各预览源：填空题 100% 完整（title/答案/schema/init/解析 均有）
 ADAPTIVE_FILLIN_SOURCES = ('ai_gen',)
 ADAPTIVE_FILLIN_LIKE = ('蓝客%',)

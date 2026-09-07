@@ -426,6 +426,20 @@ const VISION = {
 
 const UPDATES = [
   {
+    date: '2026-09-08', tag: 'bank', tagText: '题库扩充',
+    title: '薄弱知识点专项扩题：新增 79 道，最短的板先补上',
+    desc: '针对表连接、约束、DDL、子查询四类原本只有 7~9 道题的薄弱节点，新增 79 道精编题（45 道选择 + 34 道填空），自适应题库总量 483 → 562，最薄弱节点从 7 道提升到 13 道。',
+    overview: '盘点自适应题库时发现分配很不均匀：字符串函数、类型转换等节点有 25 道以上，而表连接（内/外/自/交叉连接）、约束（主键/外键）、DDL（建表/改表/删表/清空/重命名/注释）、子查询（标量/列/表/IN）这四类只有 7~9 道，学员刚进入状态就没题了。本次针对这 16 个薄弱节点新增 79 道题：45 道选择题考察概念辨析（LEFT JOIN 与 INNER JOIN 的差异、NOT IN 的 NULL 陷阱、SQLite 不支持 COMMENT 子句等），34 道填空题要求真实写出 SQL（LEFT JOIN + IS NULL 反连接、自连接查上下级、派生表先聚合再过滤、CTAS 快速建表等）。所有填空题都先在真实 SQLite 环境中执行标准答案自校验，再做反向验证——把答案故意改错（表名写错、追加 LIMIT 0）必须被判错，避免「空结果集也能蒙混过关」的失效题目。',
+    points: [
+      '<b>覆盖 16 个薄弱节点</b>：表连接（内连接/外连接/自连接/交叉连接）、约束（主键/外键）、DDL（建表/改表/删表/清空/重命名/注释）、子查询（标量/列/表/IN）四类全部补齐。',
+      '<b>选择题讲「为什么」</b>：不只考语法，重点考易错辨析——ON 恒真会退化成笛卡尔积、NOT IN 遇到 NULL 会返回空集、SQLite 没有 TRUNCATE 与 COMMENT 子句、ALTER TABLE 不能直接改列类型。',
+      '<b>填空题真实执行</b>：34 道填空全部在 SQLite 中跑通标准答案并补上预期输出；DDL 类通过「执行后全库快照比对」判定，建表/改表/删表都能真实判分。',
+      '<b>反向验证防失效</b>：每道填空都做过「错误答案必须判错」测试，过程中发现并修正了一道因数据设计导致结果集为空的题目。'
+    ],
+    thinking: '题库不是「题越多越好」，而是「每个知识点都够练」。之前 7~9 道题的节点，学员刚摸到门道就被迫换知识点，等于没练透。这次我们没有平均分配，而是专门挑最薄弱的 16 个节点补到 13~14 道，把最短的那块板先补上。另外，出题最怕「看起来在考，其实判不出来」——所以每道填空题除了标准答案能跑通，还必须通过反向验证：故意写错的答案一定要被判错，否则这道题就是无效题。',
+    stats: [['79', '道新增题目', '45 道选择题 + 34 道填空题'], ['562', '自适应题库总量', '原 483 道'], ['13', '最薄弱节点题量', '原 7~8 道，共补齐 16 个薄弱节点']]
+  },
+  {
     date: '2026-09-07', tag: 'opt', tagText: '优化',
     title: '管理后台体验优化：限流放宽 + 日志翻页直达',
     desc: '实时监控面板频繁点击不再误触限流；用户动态、系统日志、管理员动态三张列表新增「页码跳转」，几百条日志也能一键直达。',
@@ -955,6 +969,20 @@ window.UPDATES_EXTRA = {
 
 
 const UPDATES_EN = [
+  {
+    date: '2026-09-08', tag: 'bank', tagText: 'Question Bank',
+    title: 'Targeted expansion: 79 new questions for the weakest knowledge points',
+    desc: 'The four weakest groups — joins, constraints, DDL and subqueries — had only 7–9 questions each. 79 new questions (45 multiple-choice + 34 fill-in) bring the adaptive bank from 483 to 562, lifting the weakest node from 7 to 13.',
+    overview: 'A distribution audit showed the bank was lopsided: nodes like string functions and CAST had 25+ questions, while joins (inner/outer/self/cross), constraints (primary/foreign key), DDL (create/alter/drop/truncate/rename/comment) and subqueries (scalar/column/table/IN) sat at only 7–9 each — learners ran dry just as they were getting into it. This round adds 79 questions across those 16 weak nodes: 45 MCQs on conceptual traps (LEFT JOIN vs INNER JOIN, the NOT IN NULL trap, SQLite having no COMMENT clause, etc.) and 34 fill-ins that require writing real SQL (LEFT JOIN + IS NULL anti-join, self-join for reporting lines, derived-table aggregate-then-filter, CTAS, and more). Every fill-in first runs its reference answer in a real SQLite environment for self-validation, then passes a reverse check: deliberately broken answers (wrong table name, appended LIMIT 0) must be judged wrong, so no question can be gamed with an empty result set.',
+    points: [
+      '<b>16 weak nodes covered</b>: joins (inner/outer/self/cross), constraints (primary/foreign key), DDL (create/alter/drop/truncate/rename/comment) and subqueries (scalar/column/table/IN) are all filled out.',
+      '<b>MCQs that test "why"</b>: not just syntax but classic traps — a always-true ON degrades to a Cartesian product, NOT IN with NULL returns an empty set, SQLite has neither TRUNCATE nor a COMMENT clause, and ALTER TABLE cannot change a column type in place.',
+      '<b>Fill-ins really execute</b>: all 34 fill-ins run their reference answer in SQLite and ship with expected output; DDL items are graded by full-database snapshot comparison, so CREATE / ALTER / DROP are scored for real.',
+      '<b>Reverse validation</b>: every fill-in is tested with "a wrong answer must be judged wrong", which caught and fixed one question whose data made the correct answer return an empty result set.'
+    ],
+    thinking: 'A question bank is not better because it is bigger — it is better when every knowledge point has enough to practise on. With only 7–9 questions, learners were pushed onward just as they were getting the hang of it. So instead of spreading questions evenly, we targeted the 16 weakest nodes and raised each to 13–14, fixing the shortest plank first. And the worst failure mode for a question is "looks like it tests something, but cannot actually tell right from wrong" — so beyond running the reference answer, every fill-in must survive a reverse check: a deliberately broken answer has to be rejected, or the question is worthless.',
+    stats: [['79', 'new questions', '45 multiple-choice + 34 fill-in'], ['562', 'adaptive bank total', 'was 483'], ['13', 'weakest node size', 'was 7–8, across 16 weak nodes']]
+  },
   {
     date: '2026-09-07', tag: 'opt', tagText: 'Optimization',
     title: 'Admin console polish: relaxed rate limits + direct page jump',
