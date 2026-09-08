@@ -426,6 +426,35 @@ const VISION = {
 
 const UPDATES = [
   {
+    date: '2026-09-08', tag: 'new', tagText: '新功能',
+    title: '自适应进阶支持「上一题」回看',
+    desc: '做题过程中随时点「上一题」回看本轮已答过的题目：原题、你的答案、判题结果与解析都会原样恢复，看完点「返回当前题」即可继续。',
+    overview: '自适应进阶此前只能一路往前：提交答案后就跳到下一题，想回头看看刚才那题是怎么答的、解析里说了什么，只能靠记忆或重新做一遍。本次在答题区底部新增「上一题」按钮，与原有的「继续进阶」组成完整的前进 / 后退导航。系统会把本轮每道已作答的题目存成快照（题面 + 你提交的答案 + 判题结果 + 解析），点「上一题」即可逐题往回翻；回看状态下输入框与选项均为只读，任何点击都不会改变判题结果或知识点点亮进度。翻到更早的题目后，前进按钮会依次显示「下一题」，直到最后一题显示「返回当前题」，一键回到正在作答的那道题。',
+    points: [
+      '<b>逐题回看</b>：「上一题」按作答顺序逐条往回翻，题面、你的答案、正确/错误判定与解析全部原样恢复。',
+      '<b>只读安全</b>：回看态下 SQL 输入框与选项都锁定为只读，不会误改判题结果，也不会影响点亮进度。',
+      '<b>前进也顺</b>：回看中前进按钮依次变「下一题」，最后一题变「返回当前题」，来去自如。',
+      '<b>状态提示</b>：回看时顶部显示「回看第 N / M 题（已作答，仅供查看）」，不会把旧题误当成新题。'
+    ],
+    thinking: '做题是连续的过程，但理解往往是回头看的——答完一道题，常常要过两题才真正消化。只能前进的界面把这种自然的复习动作堵死了。我们没有去改后端出题逻辑（那样会打乱自适应节奏与判题语义），而是在前端为本轮已答题建立一条快照链：题目、答案、判定、解析一并留档，只读回放。这样既保留了自适应的推进节奏，又把「回头看一眼」的成本降到一个点击。',
+    stats: [['1', '次点击', '回看上一道已作答的题目'], ['只读', '回看态', '不会改动判题结果与点亮进度'], ['3', '种前进按钮状态', '继续进阶 · 下一题 · 返回当前题']]
+  },
+  {
+    date: '2026-09-08', tag: 'opt', tagText: '优化',
+    title: '题目解析升级：考点 / 解析 / 要点 / 易错点 四段式',
+    desc: '每道题的解析改为结构化展示：考点、解析、要点、易错点分栏呈现，SQL 片段用等宽代码高亮；选择题无论答对答错都展示逐项解析。',
+    overview: '此前解析是一段纯文本，答对时甚至看不到选项解析，信息量偏薄。本次做了三件事：一是解析改为四段式卡片——【考点】标明本题所属知识点，【解析】讲清为什么是这个答案，【要点】自动提炼本题用到的关键语法（内连接 / 左外连接 / 分组聚合 / 子查询 / 窗口函数 / 各类约束等），【易错点】给出该知识点最高频的踩坑提醒（覆盖全部 29 个知识点）；二是把标准答案自动「翻译」成要点，即使某道题的解析文字较短，也能学到它考的是什么；三是选择题不再只在答错时展示逐项解析，答对同样展示，让每个选项为什么对、为什么错一目了然。此外补齐了 58 道此前完全没有解析的基础题与进阶题。',
+    points: [
+      '<b>四段式结构</b>：考点 → 解析 → 要点 → 易错点，分栏呈现、图标区分，扫一眼就能抓住重点。',
+      '<b>要点自动提炼</b>：从标准答案里识别连接类型、聚合与分组、子查询、窗口函数、DDL/DML 与约束等构造，逐条说明作用。',
+      '<b>易错点覆盖 29 个知识点</b>：每个知识点配一条高频踩坑提醒，如「NOT IN 遇 NULL 返回空集」「WHERE 里不能写聚合条件」。',
+      '<b>逐项解析常驻</b>：选择题答对也展示 A/B/C/D 逐项说明，不再只有答错才给。',
+      '<b>补齐空白</b>：为 58 道此前完全没有解析的基础题 / 进阶题补写了完整解析，全库无空白解析。'
+    ],
+    thinking: '解析的价值不在于「有没有」，而在于「能不能让人下次不再错」。一行正确但干瘪的结论，读完只知道答案；把「考什么 → 为什么 → 用到什么 → 容易错在哪」拆开讲，读者才能把结论迁移到新题目上。我们没有为 562 道题重写长篇大论，而是把可以确定的部分（考点、语法要点、该知识点的通用陷阱）结构化地补出来，让人工写的那句解析专注讲「为什么」。这样既保证了每道题都有足够信息量，也避免了机器生成长文本带来的空话。',
+    stats: [['4', '段结构化解析', '考点 · 解析 · 要点 · 易错点'], ['29', '个知识点易错点', '覆盖全部知识节点'], ['58', '道空白解析补齐', '全库已无空白解析']]
+  },
+  {
     date: '2026-09-08', tag: 'bank', tagText: '题库扩充',
     title: '薄弱知识点专项扩题：新增 79 道，最短的板先补上',
     desc: '针对表连接、约束、DDL、子查询四类原本只有 7~9 道题的薄弱节点，新增 79 道精编题（45 道选择 + 34 道填空），自适应题库总量 483 → 562，最薄弱节点从 7 道提升到 13 道。',
@@ -969,6 +998,35 @@ window.UPDATES_EXTRA = {
 
 
 const UPDATES_EN = [
+  {
+    date: '2026-09-08', tag: 'new', tagText: 'New',
+    title: 'Adaptive journey gains a Previous question button',
+    desc: 'Tap "Previous" any time to revisit questions you already answered this round: the question, your answer, the verdict and the explanation are all restored, then "Back to current" resumes where you left off.',
+    overview: 'The adaptive journey used to be one-way: submitting an answer jumped straight to the next question, so reviewing what you just answered — or what its explanation said — meant relying on memory. This round adds a "Previous" button below the question area, forming a complete back/forward pair with the existing "Continue". Every answered question in the current round is stored as a snapshot (question text + your submitted answer + verdict + explanation), so "Previous" steps back one at a time; in review mode the SQL input and option buttons are read-only, so nothing you click can alter judging results or node progress. After stepping further back, the forward button cycles through "Next" and finally becomes "Back to current", returning you to the question you were actually on.',
+    points: [
+      '<b>Step back one at a time</b>: "Previous" walks backwards through the round, restoring the question, your answer, the correct/wrong verdict and the explanation.',
+      '<b>Read-only and safe</b>: in review mode the SQL editor and options are locked, so verdicts and node progress stay untouched.',
+      '<b>Forward works too</b>: the forward button becomes "Next" while reviewing and "Back to current" on the last entry.',
+      '<b>Clear state</b>: a banner shows "Reviewing question N / M (answered, view only)" so an old question is never mistaken for a new one.'
+    ],
+    thinking: 'Practising is linear, but understanding is often retrospective — you frequently digest a question two questions later. A forward-only interface blocks that natural review. Rather than changing the backend (which would disturb adaptive pacing and judging semantics), we keep a snapshot chain on the client: question, answer, verdict and explanation are archived and replayed read-only. Adaptive pacing stays intact, and "let me look back" now costs one click.',
+    stats: [['1', 'click', 'to revisit any answered question'], ['Read-only', 'review mode', 'judging and node progress stay intact'], ['3', 'forward button states', 'Continue · Next · Back to current']]
+  },
+  {
+    date: '2026-09-08', tag: 'opt', tagText: 'Optimization',
+    title: 'Explanations rebuilt: Key point / Why / Highlights / Pitfalls',
+    desc: 'Every explanation is now structured into four labelled sections with SQL snippets in monospace; multiple-choice per-option explanations now show whether you were right or wrong.',
+    overview: 'Explanations used to be a single block of plain text, and MCQ option explanations appeared only when you answered wrong — thin on information. Three changes: (1) explanations became a four-section card — Key point (which knowledge node this tests), Why (why this answer), Highlights (key syntax auto-extracted from the reference answer: join types, aggregation and grouping, subqueries, window functions, DDL/DML, constraints, etc.), and Pitfalls (the most common trap for that knowledge point, curated for all 29 nodes); (2) even a short hand-written explanation now teaches something, because the reference answer is automatically translated into Highlights; (3) MCQ per-option explanations now always display, so every option is explained whether you got it right or wrong. In addition, 58 basic/advanced questions that had no explanation at all were filled in.',
+    points: [
+      '<b>Four-section layout</b>: Key point → Why → Highlights → Pitfalls, each with its own icon so the essentials are scannable.',
+      '<b>Highlights auto-extracted</b>: detects join types, aggregation and grouping, subqueries, window functions, DDL/DML and constraints in the reference answer and explains each.',
+      '<b>Pitfalls for all 29 nodes</b>: one high-frequency trap per knowledge point, e.g. "NOT IN with NULL returns an empty set", "aggregate conditions cannot go in WHERE".',
+      '<b>Per-option explanations always on</b>: MCQs explain A/B/C/D even when you answered correctly.',
+      '<b>No more blanks</b>: 58 questions that had no explanation at all were written up — the bank now has zero empty explanations.'
+    ],
+    thinking: 'An explanation earns its keep not by existing but by stopping the same mistake from recurring. A correct but terse conclusion only tells you the answer; splitting it into "what it tests → why → what it uses → where people slip" lets readers carry the conclusion to new questions. Instead of generating long-winded essays for all 562 questions, we structured the parts that can be determined reliably (key point, syntax highlights, the node\'s universal trap) and left the hand-written sentence to do what it does best: explain why. Every question now carries enough information, without the fluff that machine-generated prose tends to produce.',
+    stats: [['4', 'structured sections', 'Key point · Why · Highlights · Pitfalls'], ['29', 'node pitfalls', 'covering every knowledge node'], ['58', 'blank explanations filled', 'zero empty explanations left']]
+  },
   {
     date: '2026-09-08', tag: 'bank', tagText: 'Question Bank',
     title: 'Targeted expansion: 79 new questions for the weakest knowledge points',

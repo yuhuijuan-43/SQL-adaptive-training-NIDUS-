@@ -68,6 +68,12 @@
   .result-box.correct { background: #EBF2FA; border: 1px solid #C4D8F0; color: #1E5BA8; }
   .result-box.wrong { background: #f5ebeb; border: 1px solid #e4c8c8; color: #8a4040; }
   .result-box .explanation { margin-top: 0.4rem; color: var(--text2); font-size: 0.75rem; }
+  /* 结构化解析：【考点】【解析】【易错点】…分段卡片 */
+  .expl-structured { margin-top: 0.5rem; padding: 0.5rem 0.6rem; background: var(--tag-bg, #f3f4f6); border: 1px solid var(--border); border-left: 3px solid var(--accent, #5a64ff); border-radius: 0.375rem; color: var(--text); font-size: 0.75rem; }
+  .expl-sec + .expl-sec { margin-top: 0.45rem; }
+  .expl-sec-h { display: flex; align-items: center; gap: 0.35rem; font-weight: 700; font-size: 0.72rem; color: var(--accent, #5a64ff); letter-spacing: 0.02em; margin-bottom: 0.15rem; }
+  .expl-sec-b { line-height: 1.7; color: var(--text2); }
+  .expl-code { display: inline; padding: 0.05rem 0.3rem; border-radius: 0.25rem; background: rgba(90,100,255,0.10); font-family: Oswald, Consolas, monospace; font-size: 0.72rem; color: var(--text); }
   .progress-track { height: 3px; background: var(--border); margin: 0.75rem 0; overflow: hidden; border-radius: 2px; }
   .progress-track .fill { height: 100%; background: var(--accent); transition: width 0.4s; }
   .filter-bar select { height: 34px; padding: 0 0.5rem; font-family: inherit; font-size: 0.75rem; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 0.375rem; outline: none; }
@@ -327,8 +333,12 @@
         </div>
         <div class="progress-track mb-1" data-page-node-id="cYmBduwy1BFhbWzsnctpR4"><div class="fill" id="journeyProgress" style="width:0%" data-page-node-id="KsIzArBZnvPfz6jjC0YKG8"></div></div>
         <div id="journeyQuestion" class="fade-in" data-page-node-id="h3kcXpbBDpgHCariHf4MVJ"></div>
-        <div class="text-center mt-3" data-page-node-id="JQO0pYA8kiSy4ptTTGqloy">
-          <button class="btn btn-accent" id="journeyNextBtn" data-i18n="继续进阶" onclick="nextJourney()" style="display:none" data-page-node-id="2XrO1SYNgM9rAy0jTdPp3w"><i class="fas fa-arrow-right mr-1" data-page-node-id="vcQ2qXPQakX6AAvLetwmOq"></i> 继续进阶</button>
+        <div class="mt-3" data-page-node-id="JQO0pYA8kiSy4ptTTGqloy">
+          <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;align-items:center">
+            <button class="btn btn-secondary" id="journeyPrevBtn" onclick="prevJourney()" style="display:none" title="回看上一道已作答的题目"><i class="fas fa-arrow-left mr-1"></i><span id="journeyPrevLabel">上一题</span></button>
+            <button class="btn btn-accent" id="journeyNextBtn" onclick="nextJourney()" style="display:none" data-page-node-id="2XrO1SYNgM9rAy0jTdPp3w"><span id="journeyNextLabel">继续进阶</span><i class="fas fa-arrow-right ml-1"></i></button>
+          </div>
+          <div id="journeyReviewTip" class="text-center text-xs mt-2" style="display:none;color:#a8683e"></div>
         </div>
       </div>
     </div>
@@ -454,6 +464,10 @@ const I18N = {
   '这是正确答案': { en: 'This is the correct answer','zh_tw':'這是正確答案','ja':'これが正解です','hi':'यह सही उत्तर है','pt':'Esta é a resposta correta' },
   '举一反三 →': { en: 'One more: fill-in →','zh_tw':'舉一反三 →','ja':'発展問題 →','hi':'एक और: फिल-इन →','pt':'Aprofundar →' },
   '下一题': { en: 'Next question','zh_tw':'下一題','ja':'次の問題','hi':'अगला प्रश्न','pt':'Próxima pergunta' },
+  '上一题': { en: 'Previous question','zh_tw':'上一題','ja':'前の問題','hi':'पिछला प्रश्न','pt':'Questão anterior' },
+  '返回当前题': { en: 'Back to current','zh_tw':'返回當前題','ja':'現在の問題に戻る','hi':'वर्तमान प्रश्न पर लौटें','pt':'Voltar à atual' },
+  '回看第 {0} / {1} 题（已作答，仅供查看）': { en: 'Reviewing question {0} / {1} (answered, view only)','zh_tw':'回看第 {0} / {1} 題（已作答，僅供查看）','ja':'{0} / {1} 問目を振り返り中（回答済み・閲覧のみ）','hi':'प्रश्न {0} / {1} देख रहे हैं (उत्तर दिया, केवल देखने के लिए)','pt':'Revendo a questão {0} / {1} (respondida, somente leitura)' },
+  '该题已不可用': { en: 'This question is no longer available','zh_tw':'該題已不可用','ja':'この問題は利用できません','hi':'यह प्रश्न अब उपलब्ध नहीं है','pt':'Esta questão não está mais disponível' },
   '已掌握该选择题，进入举一反三': { en: 'MCQ mastered — go deeper with a fill-in','zh_tw':'已掌握該選擇題，進入舉一反三','ja':'この選択問題を習得、発展問題へ','hi':'MCQ में महारत — फिल-इन से गहराई बढ़ाएं','pt':'MCQ dominado — aprofunde com um preenchimento' },
   '预期输出': { en: 'Expected output','zh_tw':'預期輸出','ja':'期待される出力','hi':'अपेक्षित आउटपुट','pt':'Saída esperada' },
   '题': { en: ' Qs','zh_tw':'題','ja':'問','hi':' प्रश्न','pt':' questões' },
@@ -535,6 +549,8 @@ function applyI18n() {
   document.querySelectorAll('[data-i18n-title]').forEach(function(el) { el.title = t(el.getAttribute('data-i18n-title')); });
   document.title = t('SQL 自适应练习');
   document.documentElement.lang = LANG === 'zh-TW' ? 'zh-TW' : (LANG === 'zh' ? 'zh-CN' : 'en');
+  // 自适应导航按钮（上一题/继续进阶）文案由 JS 维护，需跟随语言刷新
+  if (typeof refreshJourneyNav === 'function') { try { refreshJourneyNav(); } catch (e) {} }
 }
 function toggleLang() { /* 语言切换入口仅保留在主界面 */ }
 
@@ -2943,6 +2959,144 @@ function renderQuestion(q, prefix) {
 // ==================== Journey 自适应进阶 ====================
 var journeyData = null;
 var currentJourneyQid = null;
+// 「上一题」回看：本轮已作答题目快照栈 + 回看游标
+//   journeyViewIdx = null 表示正在看当前（未作答）题目；为数字时表示正在回看 history[idx]
+var journeyHistory = [];
+var journeyViewIdx = null;
+var journeyNextVisible = false;   // 「继续进阶 / 下一题 / 返回当前题」按钮可见性
+
+/* ---- 解析渲染：支持【考点】【解析】【易错点】等分段标记，SQL 片段用等宽代码样式 ---- */
+var _EXPL_SECTION_ICON = {
+  '考点': 'fa-bullseye', '考察点': 'fa-bullseye', '解析': 'fa-lightbulb', '思路': 'fa-compass',
+  '步骤': 'fa-list-ol', '要点': 'fa-key', '易错点': 'fa-triangle-exclamation', '陷阱': 'fa-triangle-exclamation',
+  '拓展': 'fa-seedling', '延伸': 'fa-seedling', '说明': 'fa-circle-info', '注意': 'fa-circle-exclamation',
+  '语法': 'fa-code', '示例': 'fa-terminal'
+};
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function _explInline(s) {
+  return escapeHtml(s || '')
+    .replace(/`([^`\n]+)`/g, '<code class="expl-code">$1</code>')
+    .replace(/\n/g, '<br>');
+}
+
+/* 各知识点的「高频易错点」：逐条精炼，答题后随解析一起给出（题库为中文，此处保持中文） */
+var CATEGORY_TRAPS = {
+  'dml_select': 'SELECT 后用 * 会返回全部列；实际开发应只列出需要的列，列顺序由 SELECT 决定。',
+  'select_basic': 'SELECT 的列顺序就是输出顺序；别名只影响显示，不改变原表结构。',
+  'where_basic': 'WHERE 里不能用聚合函数（COUNT/SUM 等），也不能用 SELECT 里定义的别名做条件。',
+  'dml_insert': 'INSERT 省略列名时必须按建表顺序给全所有列的值；字符串与日期要用单引号。',
+  'dml_update': 'UPDATE 忘了写 WHERE 会更新整张表，执行前先用 SELECT 验证条件命中范围。',
+  'dml_delete': 'DELETE 只删数据、保留表结构；同样别漏 WHERE，否则清空整表。',
+  'group_by': '有 GROUP BY 时，SELECT 里只能出现分组列或被聚合函数包裹的列。',
+  'having': 'HAVING 才能对聚合结果过滤；WHERE 先行过滤行，HAVING 后过滤组，两者不能互换。',
+  'aggregate_func': 'COUNT(*) 统计行数（含 NULL），COUNT(列) 会跳过 NULL，AVG/SUM 同样忽略 NULL。',
+  'string_func': 'SQL 字符串下标多数从 1 开始；拼接用 CONCAT 或 ||，不同数据库方言不同。',
+  'numeric_func': '整数除法会截断小数，需要保留小数要先乘 1.0 或用 CAST 转成浮点。',
+  'cast_func': 'CAST(列 AS 类型) 只改变值的类型表示，不会修改原表列定义。',
+  'window_func': '窗口函数用 OVER() 定义分区与排序，不会像 GROUP BY 那样把多行合并成一行。',
+  'subquery_scalar': '标量子查询必须只返回一行一列，返回多行会直接报错；要比较多值请改用 IN 或聚合。',
+  'subquery_column': '列子查询返回一列多行，要配合 IN / ANY / ALL 使用，不能直接用 = 比较。',
+  'subquery_table': 'FROM 里的派生表必须起别名；聚合之后再过滤时，把聚合结果包成派生表更好读。',
+  'subquery_in': 'NOT IN 遇到子查询结果含 NULL 会返回空集，这是经典陷阱，可用 NOT EXISTS 规避。',
+  'join_inner': '内连接只保留两侧都匹配的行；想保留左表全部行要用 LEFT JOIN。',
+  'join_outer': '外连接补出来的列是 NULL，判断未匹配要用 IS NULL，不能用 = NULL。',
+  'join_self': '自连接必须给同一张表起两个不同别名，否则列名无法区分。',
+  'join_cross': '交叉连接是笛卡尔积，行数等于两表行数之积；不小心漏写 ON 条件就会得到它。',
+  'constraint_primary_key': '主键 = 唯一 + 非空，一张表只能有一个主键（可由多列组合成复合主键）。',
+  'constraint_foreign_key': '外键列引用父表的主键或唯一列；值为 NULL 时不参与校验，删除父行要注意级联策略。',
+  'ddl_create': 'CREATE TABLE 的列定义顺序就是物理顺序；建表时想清楚类型、非空与默认值。',
+  'ddl_alter': 'SQLite 的 ALTER TABLE 不能原地修改列类型，只能加列 / 改列名 / 改表名，改类型需重建表。',
+  'ddl_drop': 'DROP 会连表结构一起删除且通常不可回滚；删前确认备份，可加 IF EXISTS 让脚本幂等。',
+  'ddl_truncate': 'SQLite 没有 TRUNCATE，清空数据用不带 WHERE 的 DELETE（保留结构），或 DROP 后重建。',
+  'ddl_rename': '重命名只改名字，数据与约束都保留；依赖旧名字的视图、存储过程需同步修改。',
+  'ddl_comment': 'SQLite 不支持 COMMENT 子句，注释只能用 -- 或 /* */ 写在 SQL 文本里。'
+};
+
+/* 从标准答案里自动提炼「本题用到的关键语法点」 */
+function deriveSqlPoints(sql, options) {
+  var s = ' ' + String(sql || '').toUpperCase() + ' ';
+  if (!s.trim()) return [];
+  var pts = [];
+  function has(kw) { return new RegExp('\\b' + kw + '\\b').test(s); }
+  // 连接
+  if (has('CROSS JOIN')) pts.push('交叉连接：返回两表笛卡尔积，行数 = 两表行数之积');
+  else if (has('LEFT JOIN') || has('LEFT OUTER JOIN')) pts.push('左外连接：保留左表全部行，右表匹配不上补 NULL');
+  else if (has('RIGHT JOIN') || has('RIGHT OUTER JOIN')) pts.push('右外连接：保留右表全部行，左表匹配不上补 NULL');
+  else if (has('FULL JOIN') || has('FULL OUTER JOIN')) pts.push('全外连接：两侧未匹配行都保留');
+  else if (has('JOIN')) pts.push('内连接：只保留连接条件成立的行');
+  // 子查询 / 集合
+  if (/\(\s*SELECT\b/.test(s)) pts.push('子查询：先执行内层，再把结果交给外层使用');
+  if (has('EXISTS')) pts.push('EXISTS：只判断子查询是否返回行，命中即停');
+  if (/\bNOT\s+IN\b/.test(s)) pts.push('NOT IN：取集合补集，注意子查询结果含 NULL 会返回空集');
+  else if (has('IN')) pts.push('IN：判断值是否落在子查询或给定集合中');
+  if (has('UNION ALL')) pts.push('UNION ALL：合并结果集且保留重复行');
+  else if (has('UNION')) pts.push('UNION：合并结果集并去重');
+  // 聚合 / 分组 / 排序
+  if (has('GROUP BY')) pts.push('GROUP BY：按列分组，SELECT 中只能出现分组列或聚合结果');
+  if (has('HAVING')) pts.push('HAVING：对分组聚合后的结果过滤（WHERE 里不能写聚合条件）');
+  var aggs = ['COUNT', 'SUM', 'AVG', 'MAX', 'MIN'].filter(has);
+  if (aggs.length) pts.push('聚合函数 ' + aggs.join(' / ') + '：把多行算成一个值');
+  if (has('DISTINCT')) pts.push('DISTINCT：去除结果中的重复行');
+  if (has('ORDER BY')) pts.push('ORDER BY：排序输出，默认升序，DESC 为降序');
+  if (has('LIMIT')) pts.push('LIMIT：限制返回的行数');
+  if (/\bOVER\s*\(/.test(s)) {
+    var wf = ['ROW_NUMBER', 'RANK', 'DENSE_RANK', 'NTILE', 'LAG', 'LEAD', 'FIRST_VALUE', 'LAST_VALUE'].filter(has);
+    pts.push(wf.length
+      ? '窗口函数 ' + wf.join(' / ') + ' + OVER()：在分区内计算，不会把多行合并成一行'
+      : '窗口函数 OVER()：在分区内计算，不会把多行合并成一行');
+  }
+  if (has('CASE')) pts.push('CASE WHEN：按条件分支返回不同值');
+  if (has('COALESCE') || has('IFNULL') || has('NVL')) pts.push('空值处理：为 NULL 提供兜底默认值');
+  if (has('CAST') || has('CONVERT')) pts.push('类型转换：改变值的类型表示');
+  // DDL / DML
+  if (has('CREATE TABLE')) pts.push('DDL 建表：定义列名、类型与约束');
+  if (has('ALTER TABLE')) pts.push('DDL 改表：新增列 / 改名 / 改表名');
+  if (has('DROP TABLE')) pts.push('DDL 删表：结构与数据一并移除');
+  if (has('TRUNCATE')) pts.push('清空表：只清数据、保留结构');
+  if (has('INSERT')) pts.push('DML 插入：新增数据行');
+  if (has('UPDATE')) pts.push('DML 更新：修改已有数据（务必带 WHERE）');
+  if (has('DELETE')) pts.push('DML 删除：移除数据行（务必带 WHERE）');
+  if (has('PRIMARY KEY')) pts.push('主键约束：唯一且非空');
+  if (has('FOREIGN KEY') || has('REFERENCES')) pts.push('外键约束：保证引用完整性');
+  if (has('NOT NULL')) pts.push('非空约束：该列不允许为 NULL');
+  if (has('DEFAULT')) pts.push('默认值：插入时未指定该列则取默认值');
+  if (has('UNIQUE')) pts.push('唯一约束：该列取值不允许重复');
+  if (has('CHECK')) pts.push('检查约束：取值必须满足给定条件');
+  // 选择题里出现的是选项文本，去掉字母前缀噪声已经在别处处理；最多给 4 条避免过长
+  return pts.slice(0, 4);
+}
+
+function renderExplanation(text, q) {
+  var secs = [];
+  var raw = String(text || '');
+  raw.split(/(?=【[^】]{1,6}】)/).forEach(function(p) {
+    if (!p || !p.trim()) return;
+    var m = p.match(/^【([^】]{1,6})】/);
+    if (m) secs.push({ key: m[1], body: p.slice(m[0].length).trim() });
+    else secs.push({ key: '解析', body: p.trim() });
+  });
+  // 依据题目自动补充：考点 / 要点 / 易错点（已有同名分段时不覆盖，保留人工内容）
+  if (q) {
+    var keys = secs.map(function(x) { return x.key; });
+    if (q.category && keys.indexOf('考点') < 0) secs.unshift({ key: '考点', body: catLabel(q.category) });
+    var pts = deriveSqlPoints(q.correct_answer, q.options);
+    if (pts.length && keys.indexOf('要点') < 0) secs.push({ key: '要点', body: pts.join('；') });
+    var trap = q.category ? CATEGORY_TRAPS[q.category] : '';
+    if (trap && keys.indexOf('易错点') < 0) secs.push({ key: '易错点', body: trap });
+  }
+  if (!secs.length) return '';
+  var out = '<div class="explanation expl-structured">';
+  secs.forEach(function(sec) {
+    var icon = _EXPL_SECTION_ICON[sec.key] || 'fa-circle-dot';
+    out += '<div class="expl-sec"><div class="expl-sec-h"><i class="fas ' + icon + '"></i>' + escapeHtml(sec.key) +
+           '</div><div class="expl-sec-b">' + _explInline(sec.body) + '</div></div>';
+  });
+  return out + '</div>';
+}
 
 /* ---- 图谱入口视图：知识图谱树（iframe 点亮小灯）+ 点亮统计 + 开始适应 ---- */
 var MAP_TOTAL_NODES = 36;   // 29 子标签 + 7 大分类
@@ -2975,14 +3129,15 @@ async function startJourney() {
   try {
     var resp = await apiPost('/journey/start', { session_id: sessionId });
     journeyData = resp;
+    journeyHistory = [];          // 新一轮开始，清空回看栈
+    journeyViewIdx = null;
     showJourneyQuestion(resp);
   } catch (e) {
     document.getElementById('journeyQuestion').innerHTML = '<p style="color:#b04a4a">' + t('加载失败，请确保后端已启动') + '</p>';
   }
 }
 
-function showJourneyQuestion(data) {
-  journeyQuestionStart = Date.now();
+function updateJourneyHeader(data) {
   var actionMap = { advance: t('进阶'), consolidate: t('巩固'), easier: t('降难度'), start: t('开始'), fallback: t('练习'), skip: t('跳级'), review: t('复习'), fillin: t('填空题') };
   // 当前叶节点轮进度（已出题数/每叶题数）
   var posText = (data.round && data.round.leaf && data.round.leaf_total) ? ' ' + data.round.pos + '/' + data.round.leaf_total : '';
@@ -2998,6 +3153,12 @@ function showJourneyQuestion(data) {
   } else { tag.style.display = 'none'; }
   // sync deep mode toggle
   if (data.deep_mode !== undefined) document.getElementById('deepModeToggle').checked = data.deep_mode;
+}
+
+function showJourneyQuestion(data) {
+  journeyQuestionStart = Date.now();
+  journeyNextVisible = false;
+  updateJourneyHeader(data);
   // question
   currentJourneyQid = null;
   document.getElementById('journeyNextBtn').style.display = 'none';
@@ -3023,6 +3184,113 @@ function showJourneyQuestion(data) {
       '<div class="text-center mt-2"><button class="btn btn-accent" onclick="backToJourneyMap()"><i class="fas fa-map mr-1"></i> ' + t('返回图谱') + '</button></div>';
     document.getElementById('journeyNextBtn').style.display = 'none';
   }
+  refreshJourneyNav();
+}
+
+/* ---- 答题结果渲染（提交后与回看历史题共用） ---- */
+function renderJourneyResult(q, qid, correct, userAnswer, explanation, litNow, graph) {
+  var resultBox = document.getElementById('journey_res_' + qid);
+  if (!resultBox) return;
+  resultBox.style.display = 'block';
+  resultBox.className = 'result-box ' + (correct ? 'correct' : 'wrong');
+  if (correct === true) {
+    resultBox.innerHTML = '<strong><i class="fas fa-check-circle mr-1"></i> ' + t('回答正确') + '</strong>';
+  } else if (correct === false) {
+    resultBox.innerHTML = '<strong><i class="fas fa-times-circle mr-1"></i> ' + t('回答错误') + '</strong>';
+    if (q) resultBox.innerHTML += '<br>' + t('正确答案：') + '<strong>' + escapeHtml(q.correct_answer) + '</strong>';
+  }
+  if (userAnswer && q && !q.options) {
+    resultBox.innerHTML += '<div class="mt-1" style="font-size:0.75rem;opacity:0.75">' + t('你的答案：') +
+      '<code class="expl-code">' + escapeHtml(userAnswer) + '</code></div>';
+  }
+  // 选择题：逐项解析始终展示（答对也展示），便于理解每个选项为什么对/错
+  if (q && q.options && q.option_explanations) {
+    showOptionExplanations('journey', qid, q.options, q.option_explanations, q.correct_answer);
+  }
+  if (explanation || q) resultBox.innerHTML += renderExplanation(explanation, q);
+  if (litNow) resultBox.innerHTML += '<div class="mt-1" style="color:#1a8a5c;font-weight:600;">✨ ' + t('已点亮「') + getNodeName(litNow, graph) + t('」') + '</div>';
+}
+
+/* ---- 回看历史题目（只读） ---- */
+function renderJourneyReview(snap) {
+  var data = snap.data;
+  if (!data) return;
+  updateJourneyHeader(data);
+  journeyNextVisible = true;
+  var el = document.getElementById('journeyQuestion');
+  var q = data.question;
+  if (!q) {
+    el.innerHTML = '<p class="text-sm opacity-60 text-center py-4">' + t('该题已不可用') + '</p>';
+    refreshJourneyNav();
+    return;
+  }
+  var qid = q.id;
+  currentJourneyQid = qid;
+  q.fillin_mode = data.fillin_mode || false;
+  if (!q.hint) q.hint = data.hint || '';
+  el.innerHTML = renderQuestion(q, 'journey');
+  // 回填用户答案并置为只读
+  var inp = document.getElementById('journey_inp_' + qid);
+  if (inp) { inp.value = snap.answer || ''; }
+  setTimeout(function () {
+    initAllCodeMirrors();
+    var ta = document.getElementById('journey_inp_' + qid);
+    if (ta) {
+      if (ta._cm && ta._cm.setOption) {
+        try {
+          if (snap.answer && !ta._cm.getValue()) ta._cm.setValue(snap.answer);
+          ta._cm.setOption('readOnly', 'nocursor');
+        } catch (e) {}
+      } else { ta.disabled = true; }
+    }
+  }, 60);
+  var optsBox = document.getElementById('journey_opts_' + qid);
+  if (optsBox) {
+    var btns = optsBox.querySelectorAll('.option-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].disabled = true;
+      btns[i].style.cursor = 'default';
+      if (btns[i].dataset.opt === snap.answer) btns[i].classList.add('selected');
+    }
+    optsBox.dataset.selected = snap.answer || '';
+  }
+  var submitBtn = document.querySelector('#journeyQuestion .btn-primary');
+  if (submitBtn) { submitBtn.style.display = 'none'; }
+  renderJourneyResult(q, qid, snap.correct, snap.answer, snap.explanation, snap.lit_now, snap.graph);
+  refreshJourneyNav();
+}
+
+/* ---- 导航按钮状态 ---- */
+function refreshJourneyNav() {
+  var prevBtn = document.getElementById('journeyPrevBtn');
+  var nextBtn = document.getElementById('journeyNextBtn');
+  if (!prevBtn || !nextBtn) return;
+  var n = journeyHistory.length;
+  var reviewing = journeyViewIdx !== null;
+  // 上一题：有历史即可用；回看中已在最早一题时禁用
+  var canPrev = reviewing ? (journeyViewIdx > 0) : (n > 0);
+  prevBtn.style.display = n > 0 ? 'inline-flex' : 'none';
+  prevBtn.disabled = !canPrev;
+  document.getElementById('journeyPrevLabel').textContent = t('上一题');
+  // 前进按钮：回看中依次显示「下一题」→「返回当前题」，否则「继续进阶」
+  var nextLabel = reviewing ? (journeyViewIdx < n - 1 ? t('下一题') : t('返回当前题')) : t('继续进阶');
+  document.getElementById('journeyNextLabel').textContent = nextLabel;
+  nextBtn.style.display = journeyNextVisible ? 'inline-flex' : 'none';
+  var tip = document.getElementById('journeyReviewTip');
+  if (tip) {
+    if (reviewing) {
+      tip.style.display = 'block';
+      tip.innerHTML = '<i class="fas fa-book-open mr-1"></i> ' +
+        tf('回看第 {0} / {1} 题（已作答，仅供查看）', journeyViewIdx + 1, n);
+    } else { tip.style.display = 'none'; tip.innerHTML = ''; }
+  }
+}
+
+function prevJourney() {
+  if (!journeyHistory.length) return;
+  saveAllCM();
+  journeyViewIdx = (journeyViewIdx === null) ? journeyHistory.length - 1 : Math.max(0, journeyViewIdx - 1);
+  renderJourneyReview(journeyHistory[journeyViewIdx]);
 }
 
 async function toggleDeepMode() {
@@ -3050,29 +3318,32 @@ async function submitJourneyAnswer(qid) { saveAllCM();
   var elapsed = Math.round((Date.now() - journeyQuestionStart) / 1000);
   try {
     var resp = await apiPost('/journey/next', { session_id: sessionId, question_id: qid, answer: input, duration: elapsed });
-    var resultBox = document.getElementById('journey_res_' + qid);
-    resultBox.style.display = 'block';
-    resultBox.className = 'result-box ' + (resp.last_answer_correct ? 'correct' : 'wrong');
-    if (resp.last_answer_correct === true) {
-      resultBox.innerHTML = '<strong><i class="fas fa-check-circle mr-1"></i> ' + t('回答正确') + '</strong>';
-    } else if (resp.last_answer_correct === false) {
-      resultBox.innerHTML = '<strong><i class="fas fa-times-circle mr-1"></i> ' + t('回答错误') + '</strong>';
-      if (q) resultBox.innerHTML += '<br>' + t('正确答案：') + '<strong>' + q.correct_answer + '</strong>';
-      if (q && q.options && q.option_explanations) {
-        showOptionExplanations('journey', qid, q.options, q.option_explanations, q.correct_answer);
-      }
-    }
-    if (resp.explanation) resultBox.innerHTML += '<div class="explanation"><i class="fas fa-lightbulb mr-1"></i> ' + resp.explanation + '</div>';
-    if (resp.lit_now) resultBox.innerHTML += '<div class="mt-1" style="color:#1a8a5c;font-weight:600;">✨ ' + t('已点亮「') + getNodeName(resp.lit_now, resp.graph) + t('」') + '</div>';
+    // 记住本题快照（题面 + 我的答案 + 判题结果），供「上一题」回看
+    journeyHistory.push({
+      data: JSON.parse(JSON.stringify(journeyData)),
+      qid: qid, answer: input, correct: resp.last_answer_correct,
+      explanation: resp.explanation, lit_now: resp.lit_now, graph: resp.graph
+    });
+    renderJourneyResult(q, qid, resp.last_answer_correct, input, resp.explanation, resp.lit_now, resp.graph);
     var submitBtn = document.querySelector('#journeyQuestion .btn-primary');
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('已提交'); }
     journeyData = resp;
-    document.getElementById('journeyNextBtn').style.display = 'inline-flex';
+    journeyViewIdx = null;
+    journeyNextVisible = true;
+    refreshJourneyNav();
   } catch (e) { alert(errMsg(e, t('提交失败'))); }
 }
 
 
 function nextJourney() {
+  saveAllCM();
+  // 正在回看历史：先依次前进到更新的历史题，最后才回到当前（未作答）题目
+  if (journeyViewIdx !== null && journeyViewIdx < journeyHistory.length - 1) {
+    journeyViewIdx++;
+    renderJourneyReview(journeyHistory[journeyViewIdx]);
+    return;
+  }
+  journeyViewIdx = null;
   showJourneyQuestion(journeyData);
 }
 
@@ -3310,8 +3581,11 @@ function checkStaticAnswer(key, btn) {
   res.innerHTML = isCorrect
     ? '<strong><i class="fas fa-check-circle mr-1"></i> ' + t('回答正确！') + '</strong>'
     : '<strong><i class="fas fa-times-circle mr-1"></i> ' + t('回答错误') + '，' + t('正确答案：') + correct + '</strong>';
-  if (q.explanation) {
-    res.innerHTML += '<div class="explanation"><i class="fas fa-lightbulb mr-1"></i> ' + q.explanation + '</div>';
+  if (q && q.options && q.option_explanations) {
+    showOptionExplanations('prac', qid, q.options, q.option_explanations, q.correct_answer);
+  }
+  if (q.explanation || q) {
+    res.innerHTML += renderExplanation(q.explanation, q);
   }
 }
 
@@ -3335,8 +3609,9 @@ async function submitPracticeAnswer(qid) { saveAllCM();
   resultBox.innerHTML = result.is_correct
     ? '<strong><i class="fas fa-check-circle mr-1"></i> ' + t('回答正确') + '</strong>'
     : '<strong><i class="fas fa-times-circle mr-1"></i> ' + t('回答错误') + '</strong><br>' + t('正确答案：') + '<strong>' + result.correct_answer + '</strong>';
-  resultBox.innerHTML += '<div class="explanation"><i class="fas fa-lightbulb mr-1"></i> ' + (result.explanation || '') + '</div>';
-  if (!result.is_correct && q && q.options && q.option_explanations) {
+  resultBox.innerHTML += renderExplanation(result.explanation, q);
+  // 选择题：逐项解析始终展示（答对也展示），便于理解每个选项为什么对/错
+  if (q && q.options && q.option_explanations) {
     showOptionExplanations('prac', qid, q.options, q.option_explanations, q.correct_answer);
   }
   var btn = document.getElementById('prac_btn_' + qid);
@@ -3443,7 +3718,7 @@ async function submitDerivedAnswer() { saveAllCM();
   resultBox.innerHTML = result.is_correct
     ? '<strong><i class="fas fa-check-circle mr-1"></i> ' + t('回答正确') + '</strong>'
     : '<strong><i class="fas fa-times-circle mr-1"></i> ' + t('回答错误') + '</strong><br>' + t('正确答案：') + '<strong>' + result.correct_answer + '</strong>';
-  resultBox.innerHTML += '<div class="explanation"><i class="fas fa-lightbulb mr-1"></i> ' + (result.explanation || '') + '</div>';
+  resultBox.innerHTML += renderExplanation(result.explanation, currentDerivedQ);
   var btn = document.getElementById('derived_btn');
   if (btn) { btn.disabled = true; btn.textContent = t('已提交'); }
   // Get next recommendation
