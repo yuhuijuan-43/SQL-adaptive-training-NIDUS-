@@ -333,7 +333,7 @@
         </div>
         <div class="progress-track mb-1" data-page-node-id="cYmBduwy1BFhbWzsnctpR4"><div class="fill" id="journeyProgress" style="width:0%" data-page-node-id="KsIzArBZnvPfz6jjC0YKG8"></div></div>
         <div id="journeyQuestion" class="fade-in" data-page-node-id="h3kcXpbBDpgHCariHf4MVJ"></div>
-        <div class="mt-3" data-page-node-id="JQO0pYA8kiSy4ptTTGqloy">
+        <div class="mt-3 text-center" data-page-node-id="JQO0pYA8kiSy4ptTTGqloy">
           <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;align-items:center">
             <button class="btn btn-secondary" id="journeyPrevBtn" onclick="prevJourney()" style="display:none" title="回看上一道已作答的题目"><i class="fas fa-arrow-left mr-1"></i><span id="journeyPrevLabel">上一题</span></button>
             <button class="btn btn-accent" id="journeyNextBtn" onclick="nextJourney()" style="display:none" data-page-node-id="2XrO1SYNgM9rAy0jTdPp3w"><span id="journeyNextLabel">继续进阶</span><i class="fas fa-arrow-right ml-1"></i></button>
@@ -2944,7 +2944,7 @@ function renderQuestion(q, prefix) {
     html += '<textarea class="code-input" id="' + prefix + '_inp_' + q.id + '" placeholder="' + t('手动输入你的 SQL 语句...') + '" oninput="clearOpt(\'' + prefix + '\',' + q.id + ')"></textarea>';
   }
   html += '<div id="' + prefix + '_res_' + q.id + '" class="result-box" style="display:none"></div>';
-  html += '<div class="mt-2"><button class="btn btn-primary" onclick="' + (prefix === 'journey' ? 'submitJourneyAnswer' : 'submitPracticeAnswer') + '(' + q.id + ')"><i class="fas fa-paper-plane mr-1"></i> ' + t('提交答案') + '</button></div>';
+  html += '<div class="mt-2 text-center"><button class="btn btn-primary" onclick="' + (prefix === 'journey' ? 'submitJourneyAnswer' : 'submitPracticeAnswer') + '(' + q.id + ')"><i class="fas fa-paper-plane mr-1"></i> ' + t('提交答案') + '</button></div>';
   return html;
 }
 
@@ -3701,7 +3701,7 @@ function renderDerivedQuestion(dq) {
   // Input
   html += '<textarea class="code-input" id="derived_inp" placeholder="' + t('手动输入你的 SQL 语句...') + '"></textarea>';
   html += '<div id="derived_res" class="result-box" style="display:none"></div>';
-  html += '<div class="mt-2"><button class="btn btn-primary" id="derived_btn" onclick="submitDerivedAnswer()"><i class="fas fa-paper-plane mr-1"></i> ' + t('提交答案') + '</button></div>';
+  html += '<div class="mt-2 text-center"><button class="btn btn-primary" id="derived_btn" onclick="submitDerivedAnswer()"><i class="fas fa-paper-plane mr-1"></i> ' + t('提交答案') + '</button></div>';
   area.innerHTML = html;
   setTimeout(initAllCodeMirrors, 100);
   setTimeout(function() { var ta = document.getElementById('derived_inp'); if (ta && ta._cm) ta._cm.focus(); else if (ta) ta.focus(); }, 150);
