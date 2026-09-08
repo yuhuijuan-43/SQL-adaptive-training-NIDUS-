@@ -483,6 +483,48 @@ const UPDATES = [
     stats: [['79', '道新增题目', '45 道选择题 + 34 道填空题'], ['562', '自适应题库总量', '原 483 道'], ['13', '最薄弱节点题量', '原 7~8 道，共补齐 16 个薄弱节点']]
   },
   {
+    date: '2026-09-08', tag: 'bank', tagText: '题库扩充',
+    title: '薄弱节点第二轮扩题：再补 70 道，把短板补到 18 道以上',
+    desc: '针对上午扩题后仍偏低的 12 个节点，再补 70 道精编题（60 道选择 + 10 道填空），自适应题库总量 562 → 632，最薄弱节点从 13 道提升到 18 道。',
+    overview: '上午扩题后做了一次全节点盘点：12 个节点仍然处于 13~15 道题的低水位，4 个 subquery 节点处于 18~20 道的边缘。再补一轮，让全 29 个节点的题量都达到 18 道以上。本次覆盖 ddl_comment/drop/rename/truncate/alter/create、constraint_primary/foreign_key、join_inner/outer/self/cross 共 12 个节点：60 道选择题覆盖「外键 ON DELETE CASCADE / SET NULL 的取舍、PRIMARY KEY 列级 vs 表级（复合主键）、CROSS JOIN 笛卡尔积（m × n）、LEFT JOIN + WHERE 会破坏保留特性、LEFT JOIN + IS NULL 反连接找「无匹配」、自连接去重用 a.id < b.id」等高频考点；10 道填空题包括内连接 + WHERE 过滤、左外连接 + COUNT（含 0 员工部门）、自连接查上下级、CROSS JOIN 生成报表模板、外键 ON DELETE CASCADE、复合主键等。所有填空题先在真实 SQLite 环境自校验 + 反向验证（破坏答案必须判错）。',
+    points: [
+      '<b>覆盖 12 个节点</b>：DDL 全部 6 个子节点（comment/drop/rename/truncate/alter/create）、约束 2 个（primary/foreign key）、JOIN 全部 4 个（inner/outer/self/cross）。',
+      '<b>选择题讲细节</b>：考 ON 与 WHERE 的过滤时机差异、LEFT JOIN vs FULL OUTER JOIN 保留范围、反连接必须用 LEFT JOIN + IS NULL（NOT IN 遇 NULL 会失效）。',
+      '<b>填空题真实可执行</b>：10 道填空包括派生表聚合 + 过滤、外键级联动作、复合主键等，全部跑通标准答案并补 expected_output。',
+      '<b>反向验证</b>：每一道填空都做了 3~5 种「破坏版」（换表名 / 加 LIMIT 0 / LEFT JOIN → INNER JOIN / 删 GROUP BY 等），必须全部判错，否则该题失效。'
+    ],
+    thinking: '补题不是「哪里缺就补哪里」就够，还要看是否够用。13 道题对一个知识点只是「刚刚摸到门道」，学员还没来得及形成肌肉记忆就被迫切换；18 道以上才够练习曲线稳步爬升。这次专门挑最低的 12 个节点，每个补到 18+ 道，与上游 24 道题的强节点拉近距离。出题策略上不堆「同质题」，而是把一个知识点下的高频陷阱拆成独立题目：比如外键只考 ON DELETE CASCADE 是浅尝辄止，再考 ON DELETE SET NULL 与「列必须允许 NULL」、再考复合主键与「PRIMARY KEY 表级约束」就形成了梯度。',
+    stats: [['70', '道新增题目', '60 道选择题 + 10 道填空题'], ['632', '自适应题库总量', '原 562 道'], ['18', '最薄弱节点题量', '原 13 道，29 个节点全数 ≥18']]
+  },
+  {
+    date: '2026-09-08', tag: 'new', tagText: '新功能',
+    title: '错题本导出 + 学习时长统计可视化',
+    desc: '错题集页面新增「导出错题」按钮（CSV / JSON），可直接下载到本地用 Excel 复习；同页面新增「学习时长统计」卡片，按日 / 按知识点双维度呈现，配 7/30/90 天切换。',
+    overview: '学员反馈两个高频需求：一是需要把错题本导出到本地用 Excel 或 Notion 复习（而不是只能在站内看）；二是想知道自己的学习时长分布。本次在错题集页面同时上线两个功能。错题导出：右上角「导出错题」下拉选 CSV（Excel 友好，UTF-8 BOM 解决中文乱码）或 JSON（含 explanation 选项等完整字段）；服务端 `/api/mistakes/export` 支持 `format=csv|json` 与 `scope=wrongset|all`；前端通过 Blob + a 标签触发下载，服务端 Content-Disposition 给出文件名 `mistakes_<sid 前 8 位>.csv/.json`。学习时长统计：错题集顶部新增可折叠卡片，提供 7/30/90 天切换，后端 `/api/stats/durations` 按 date() 分组聚合 user_progress.duration，连续 0 日也填 0 让图表连贯；前端用纯内联 SVG 渲染柱状图（蓝紫渐变 + Y 轴刻度 + hover tooltip 显示当日秒数与题数），下方再按总时长 Top 5 节点用横向进度条展示分布。',
+    points: [
+      '<b>CSV / JSON 双格式导出</b>：CSV 走 BOM 编码（Excel 直开不乱码），含 ID/类别/难度/题目/描述/你的答案/正确答案/耗时/答题时间；JSON 含完整字段（含 explanation / options）便于二次处理。',
+      '<b>学习时长双维度</b>：按日柱状图（7/30/90 天切换）+ Top 5 知识点横向进度条，连续 0 天也填 0 让曲线连贯不跳跃。',
+      '<b>纯前端 SVG 图表</b>：不依赖 ECharts/Chart.js，避免 ~600KB 资源加载；hover 显示「当日秒数 + 题数 + 正确数」三段信息。',
+      '<b>submit 端点支持 duration</b>：服务端补上 duration 字段持久化，前端 submit 时携带秒数，让历史数据也能逐步积累时长。'
+    ],
+    thinking: '导出与统计看似是「顺便做的」功能，其实是数据闭环的关键一步：学员答完题不回顾就等于没答，导出到本地能进入自己的复习循环；同样，学习时长是最容易被忽视的「过程指标」——比起「答对了几道」，「这周花了多久、集中在哪些知识点」更能指导下一步学习方向。设计时坚持两个原则：一是零外部依赖（SVG 取代图表库），避免给前端加 600KB 资源；二是数据真实（duration 必须真的记录和聚合，不能用随机数糊弄），否则可视化就成了装饰。',
+    stats: [['2', '种导出格式', 'CSV (Excel 友好) / JSON (完整字段)'], ['3', '个时间窗口', '7 天 / 30 天 / 90 天一键切换'], ['Top 5', '知识点时长排行', '横向进度条展示分布'], ['0', '外部图表库', '纯内联 SVG 渲染']]
+  },
+  {
+    date: '2026-09-08', tag: 'opt', tagText: '优化',
+    title: '移动端适配：手机竖屏 / 横屏均可用',
+    desc: '主交互页 index.html 增加 900px / 640px 两档响应式断点，手机端 nav 横向滚动、按钮纵向堆叠、卡片紧凑化、彩球缩放，不再因屏幕小挤压变形。',
+    overview: '学员反馈手机上答题体验差：顶部导航 5 个按钮被挤压换行、CodeMirror 编辑器被压成扁条、按钮组在窄屏溢出、knowledge map iframe 高度过大、彩球动画在手机上掉帧。本次按 900px（小平板 / 大屏横屏）与 640px（手机竖屏）两个断点重写 CSS：900px 及以下减小卡片内边距、缩小字号、顶部 nav 改横向滚动（保留 5 个按钮）+ touch 惯性滚动、按钮组允许换行；640px 及以下把 HEADER logo 缩小、自适应头部 flex wrap、CodeMirror 字号 / 最小高度收紧、按钮纵向堆叠（width 100%）、表格单元格紧凑、错题列表单列、knowledge map iframe 高度收到 380px、彩球缩放 0.7 + blur 减小降低移动 GPU 压力。',
+    points: [
+      '<b>两档断点</b>：900px（平板 / 横屏）/ 640px（手机竖屏），分别针对「按钮溢出」与「内容挤压」两个最常见的手机端问题。',
+      '<b>顶部 nav 横向滚动</b>：5 个按钮不放折叠菜单（避免藏功能），改成 touch 滚动的横向胶囊栏，scrollbar-gutter 防止滚动条闪现抖动。',
+      '<b>按钮纵向堆叠</b>：自适应答题区的「上一题 / 下一题 / 跳过 / 提交答案」在 640px 及以下改为 width 100% 纵向排列，避免按钮被切成两行且上下间距失衡。',
+      '<b>彩球性能降级</b>：移动端彩球缩放 0.7、blur 从 100px 减到 70px，降低 GPU 合成开销，避免低端机掉帧。'
+    ],
+    thinking: '「响应式适配」最常见的错误是只在桌面端验证，到了手机上才发现被压扁。设计时坚持三个原则：一是断点要少（多断点 = 多调试负担），两个足够覆盖 90% 场景；二是手机端首要是「能用」不是「好看」，按钮先要够大能点、字号先要能看清，再考虑美化；三是性能优先级：彩球动画在桌面是氛围，在手机上就是开销，必要时降级。',
+    stats: [['2', '档断点', '900px (平板) / 640px (手机竖屏)'], ['5', '个 nav 按钮', '改为横向滚动而非折叠'], ['100%', '移动端按钮宽度', '纵向堆叠避免误触']]
+  },
+  {
     date: '2026-09-07', tag: 'opt', tagText: '优化',
     title: '管理后台体验优化：限流放宽 + 日志翻页直达',
     desc: '实时监控面板频繁点击不再误触限流；用户动态、系统日志、管理员动态三张列表新增「页码跳转」，几百条日志也能一键直达。',
@@ -1068,6 +1110,47 @@ const UPDATES_EN = [
     ],
     thinking: 'A question bank is not better because it is bigger — it is better when every knowledge point has enough to practise on. With only 7–9 questions, learners were pushed onward just as they were getting the hang of it. So instead of spreading questions evenly, we targeted the 16 weakest nodes and raised each to 13–14, fixing the shortest plank first. And the worst failure mode for a question is "looks like it tests something, but cannot actually tell right from wrong" — so beyond running the reference answer, every fill-in must survive a reverse check: a deliberately broken answer has to be rejected, or the question is worthless.',
     stats: [['79', 'new questions', '45 multiple-choice + 34 fill-in'], ['562', 'adaptive bank total', 'was 483'], ['13', 'weakest node size', 'was 7–8, across 16 weak nodes']]
+  },
+  {
+    date: '2026-09-08', tag: 'bank', tagText: 'Question Bank',
+    title: 'Round-2 weak-node expansion: 70 more questions, lifting the floor to 18',
+    desc: 'After the morning round the lowest 12 nodes still had only 13–15 questions each. This round adds 70 more (60 MCQ + 10 fill-in), bringing the adaptive bank from 562 to 632 and the weakest node from 13 to 18.',
+    overview: 'A post-morning audit showed 12 nodes still sitting at 13–15 questions and 4 subquery nodes hovering around 18–20. Another round pushes every one of the 29 nodes to 18+. Coverage spans ddl_comment/drop/rename/truncate/alter/create, constraint_primary/foreign_key, join_inner/outer/self/cross — the 12 lowest: 60 MCQs on high-frequency traps (ON DELETE CASCADE vs SET NULL trade-offs, column-level vs table-level PRIMARY KEY, CROSS JOIN cartesian m × n, LEFT JOIN + WHERE breaking the keep-all guarantee, LEFT JOIN + IS NULL anti-join for "no match", self-join deduplication via a.id < b.id); 10 fill-ins including inner-join with WHERE filter, left-join + COUNT for zero-staff departments, self-join for reporting lines, CROSS JOIN report template, foreign-key ON DELETE CASCADE, composite primary key. Every fill-in first runs its reference answer in a real SQLite environment for self-validation, then passes a reverse check (broken answers must be judged wrong).',
+    points: [
+      '<b>12 nodes covered</b>: all six DDL children (comment/drop/rename/truncate/alter/create), both constraint nodes (primary/foreign key), and all four JOINs (inner/outer/self/cross).',
+      '<b>MCQs that test the details</b>: ON vs WHERE filter timing, LEFT JOIN vs FULL OUTER JOIN preservation scope, anti-join must use LEFT JOIN + IS NULL (NOT IN fails on NULL).',
+      '<b>Fill-ins that really execute</b>: 10 fill-ins cover derived-table aggregate + filter, foreign-key cascade actions, composite primary key — all run their reference answer in SQLite with expected_output.'
+    ],
+    thinking: 'Adding questions is not just about plugging holes; it is about whether each node has enough to practise on. 13 questions only lets a learner scratch the surface — by the time they form a habit they are pushed onward. 18+ gives the practice curve room to climb. We targeted the 12 lowest nodes and lifted each to 18+, narrowing the gap with the strongest 24+. The strategy is not "more of the same" — it splits one knowledge point into a gradient of independent questions: foreign-key ON DELETE CASCADE alone is shallow; add ON DELETE SET NULL plus "the column must allow NULL", then composite primary key plus "PRIMARY KEY at table level" and you have a progression.',
+    stats: [['70', 'new questions', '60 multiple-choice + 10 fill-in'], ['632', 'adaptive bank total', 'was 562'], ['18', 'weakest node size', 'was 13, every one of the 29 nodes ≥ 18']]
+  },
+  {
+    date: '2026-09-08', tag: 'new', tagText: 'New',
+    title: 'Mistake export + learning-duration visualization',
+    desc: 'The mistakes page gains an "Export" button (CSV / JSON) for downloading to local Excel; the same page adds a "Learning Duration" card with daily + per-node breakdowns and 7/30/90-day toggles.',
+    overview: 'Two top learner requests: export the mistake book to a local Excel/Notion instead of viewing it only in-app, and see where study time actually goes. Both land on the mistakes page in this round. Export: top-right "Export" dropdown picks CSV (Excel-friendly, UTF-8 BOM fixes Chinese mojibake) or JSON (full fields including explanation / options). Server `/api/mistakes/export` supports `format=csv|json` and `scope=wrongset|all`; the front-end uses Blob + an anchor tag to trigger the download with the server-supplied filename `mistakes_<first 8 chars of sid>.csv/.json`. Duration: a collapsible card at the top of the mistakes page with 7/30/90-day toggles. Server `/api/stats/durations` aggregates `user_progress.duration` by `date()`, padding zero-days so the chart is continuous; the front-end renders a pure inline SVG bar chart (blue-purple gradient + Y-axis ticks + hover tooltip with that day\'s seconds, question count, correct count), then a horizontal bar list for the Top-5 nodes by total time.',
+    points: [
+      '<b>Dual-format mistake export</b>: CSV is BOM-encoded (opens cleanly in Excel) with ID / category / difficulty / title / description / your answer / correct answer / duration / answered-at; JSON carries full fields (explanation, options) for downstream tooling.',
+      '<b>Duration in two dimensions</b>: daily bar chart (7 / 30 / 90-day toggle) + Top-5 node horizontal bars; zero-days are padded to 0 so the line never jumps.',
+      '<b>Zero external chart libs</b>: pure inline SVG instead of ECharts / Chart.js, avoiding ~600 KB of front-end weight.',
+      '<b>Submit carries duration</b>: the back-end now persists `duration`; the front-end passes elapsed seconds on submit, so historical data accumulates naturally.'
+    ],
+    thinking: 'Export and stats look like "nice to have" but are actually how the data loop closes: answering without reviewing is wasted effort, and exporting to a personal loop is what makes review stick; likewise duration is the most easily missed "process metric" — instead of "how many did I get right", "where did my time go this week" tells you what to study next. Two design rules held: zero external dependencies (SVG instead of a chart library, no 600 KB payload), and data must be real (duration actually persisted and aggregated, no random fakes for the visualization).',
+    stats: [['2', 'export formats', 'CSV (Excel-friendly) / JSON (full fields)'], ['3', 'time windows', '7 / 30 / 90 days one-click switch'], ['Top 5', 'node time list', 'horizontal bars'], ['0', 'external chart libs', 'pure inline SVG']]
+  },
+  {
+    date: '2026-09-08', tag: 'opt', tagText: 'Optimization',
+    title: 'Mobile adaptation: usable in both portrait and landscape',
+    desc: 'index.html gains two responsive breakpoints (900px / 640px). On phones the nav scrolls horizontally, buttons stack vertically, cards compress, and the orbs scale down — nothing overflows or gets squashed.',
+    overview: 'Learners reported poor mobile UX: 5 top-nav buttons squashed into multiple lines, CodeMirror squeezed flat, button rows overflowing narrow screens, knowledge-map iframe too tall, orb animations dropped frames on phones. This round rewrites the CSS around 900px (small tablet / large landscape) and 640px (portrait phone). At ≤ 900px: card padding shrinks, font sizes step down, top nav scrolls horizontally (kept as 5 buttons rather than a hamburger menu), and button rows are allowed to wrap. At ≤ 640px: HEADER logo shrinks, the journey header row wraps, CodeMirror font size and min-height tighten, buttons stack vertically at 100% width, table cells compact, mistake list becomes single-column, the knowledge-map iframe drops to 380 px, and orbs drop to scale 0.7 with reduced blur to ease the mobile GPU.',
+    points: [
+      '<b>Two breakpoints</b>: 900px (tablet / landscape) and 640px (portrait phone) — covering button overflow and content squeeze respectively.',
+      '<b>Horizontal-scrolling nav</b>: 5 buttons stay visible (no hamburger menu that hides features) and scroll horizontally with touch inertia; scrollbar-gutter avoids jump-shift when the scrollbar appears.',
+      '<b>Vertically stacked buttons</b>: the "prev / next / skip / submit" row goes to width-100% stacked on phones, avoiding two-line splits and uneven gaps.',
+      '<b>Orb performance fallback</b>: orbs scale to 0.7 and blur drops from 100px to 70px on phones, cutting GPU compositing cost so low-end devices don\'t drop frames.'
+    ],
+    thinking: 'The common failure mode of "responsive adaptation" is verifying only on desktop, then discovering everything is crushed on phones. Three principles held: few breakpoints (multiple breakpoints = multiple times the debugging; two cover 90% of cases), "usable first, pretty second" on mobile (buttons big enough to tap, text big enough to read, polish later), and performance priority (orbs are atmosphere on desktop, but cost on phones — degrade when needed).',
+    stats: [['2', 'breakpoints', '900 px (tablet) / 640 px (portrait)'], ['5', 'nav buttons', 'horizontal scroll, not folded'], ['100%', 'mobile button width', 'vertical stack avoids mis-tap']]
   },
   {
     date: '2026-09-07', tag: 'opt', tagText: 'Optimization',

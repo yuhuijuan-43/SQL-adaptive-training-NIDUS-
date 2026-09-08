@@ -144,6 +144,69 @@
   .tables-row .table-col { flex:1; min-width:0; overflow-x:auto; }
   .tables-row .table-col:only-child { flex:none; width:100%; }
   @media (max-width:640px) { .tables-row { flex-direction:column; } }
+
+  /* ============================================================
+     移动端响应式（2026-09-08 体验打磨）
+     断点：900px（小平板/大屏手机横屏）/ 640px（手机竖屏）
+     ============================================================ */
+  @media (max-width:900px) {
+    /* 主容器：减小最大宽度限制 */
+    .max-w-\[960px\] { max-width: 100% !important; padding: 0 0.5rem; }
+    /* 卡片减小内边距 */
+    .card { padding: 0.75rem !important; border-radius: 0.7rem; }
+    .card.p-4, .card.p-5 { padding: 0.75rem !important; }
+    /* 字体略小 */
+    body { font-size: 14px; }
+    .text-lg { font-size: 0.9rem !important; }
+    .text-xl { font-size: 1.05rem !important; }
+    .text-2xl { font-size: 1.2rem !important; }
+    /* 顶部导航：横向滚动，避免换行挤压 */
+    .flex.gap-1.mt-4.mb-3 {
+      flex-wrap: nowrap !important;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      padding-bottom: 0.25rem;
+    }
+    .nav-btn { white-space: nowrap; flex-shrink: 0; padding: 0.45rem 0.85rem; font-size: 0.7rem; }
+    /* 自适应顶部布局（节点名 + 深度掌握切换 + 跳过按钮）改为可换行 */
+    #journeyQuiz .flex.justify-between.items-center.mb-2 { flex-wrap: wrap; gap: 0.5rem; }
+    #journeyQuiz label.ml-auto { margin-left: 0 !important; }
+    /* 主按钮区：手机端可换行 */
+    .text-center .flex { flex-wrap: wrap; }
+  }
+  @media (max-width:640px) {
+    /* HEADER 字号缩小 */
+    .card[style*="padding:0.75rem 1rem"] { padding: 0.5rem 0.75rem !important; }
+    /* logo 字号缩小 */
+    .card span[style*="font-size:1.5rem"] { font-size: 1.1rem !important; }
+    .card span[style*="font-size:0.6rem"] { font-size: 0.5rem !important; }
+    /* 自适应顶部更紧凑 */
+    #journeyNodeLabel { font-size: 0.7rem !important; }
+    /* CodeMirror 不挤压 */
+    .CodeMirror { font-size: 0.7rem !important; min-height: 60px; }
+    /* 按钮组纵向堆叠 */
+    #journeyQuestion .text-center .flex,
+    .text-center.mt-2 .flex { flex-direction: column; align-items: stretch !important; }
+    #journeyQuestion .btn, .text-center.mt-2 .btn { width: 100%; }
+    /* 近期综合数据卡片纵向堆叠 */
+    #summaryBody.flex { flex-direction: column; gap: 0.5rem !important; }
+    /* 表格单元紧凑 */
+    table { font-size: 0.7rem; }
+    th, td { padding: 0.25rem 0.4rem !important; }
+    /* 错题列表单列紧凑 */
+    #wrongList .card, #wrongList > div { padding: 0.5rem !important; }
+    /* knowledge map iframe 缩小 */
+    iframe#journeyMapFrame { height: 380px !important; }
+    /* schema-box 字号缩小 */
+    .schema-box { font-size: 0.65rem; padding: 0.5rem 0.6rem; }
+    /* 解析结构卡片紧凑 */
+    .expl-sec-b { padding: 0.5rem 0.6rem !important; font-size: 0.7rem !important; }
+    /* 顶部彩球缩小（避免移动端性能开销） */
+    .orb { transform: scale(0.7); filter: blur(70px); }
+    /* 自适应历史回看提示更紧凑 */
+    .review-tip { font-size: 0.65rem; padding: 0.4rem 0.6rem !important; }
+  }
   .highlight-box { border-left: 3px solid var(--accent); background: var(--tag-bg); padding: 0.75rem 1rem; border-radius: 0 0.375rem 0.375rem 0; font-size:0.8rem; }
   .highlight-box strong { color: var(--accent); }
   .dark-bg { background: var(--text); color: #eef1f5; padding: 0.75rem 1rem; border-radius: 0.375rem; font-size:0.7rem; }
@@ -396,6 +459,26 @@
       <div class="highlight-box" data-page-node-id="Yp3y3W58h28kK3930d26T6">
         <p class="text-sm leading-relaxed" data-i18n="记录你在自适应进阶和练习中答错的题目，方便集中复习巩固。" data-page-node-id="VVArAXX1kNVN5UhEtfc2Bb">记录你在自适应进阶和练习中答错的题目，方便集中复习巩固。</p>
       </div>
+
+      <!-- 学习时长统计卡片（2026-09-08 体验打磨） -->
+      <div class="mt-3" data-page-node-id="statsDurationCard">
+        <div class="flex justify-between items-center p-2 rounded" style="background:var(--tag-bg);cursor:pointer;user-select:none" onclick="toggleStats()" data-page-node-id="statsDurationHead">
+          <span class="num-oswald text-xs tracking-wider" data-i18n="学习时长统计" data-page-node-id="statsDurationTitle">学习时长统计</span>
+          <span id="statsToggle" data-page-node-id="statsToggleIcon"><i class="fas fa-chevron-down" data-page-node-id="statsChevron"></i></span>
+        </div>
+        <div id="statsBody" class="mt-2" style="display:none" data-page-node-id="statsBody">
+          <div class="flex gap-2 mb-2 flex-wrap items-center" data-page-node-id="statsFilterBar">
+            <span class="text-xs opacity-60" data-i18n="近" data-page-node-id="statsFilterLabel1">近</span>
+            <button class="btn btn-secondary stats-range-btn" data-days="7" onclick="loadStats(7)" style="padding:0.2rem 0.6rem;font-size:0.7rem;height:auto" data-page-node-id="statsRange7">7 天</button>
+            <button class="btn btn-secondary stats-range-btn" data-days="30" onclick="loadStats(30)" style="padding:0.2rem 0.6rem;font-size:0.7rem;height:auto" data-page-node-id="statsRange30">30 天</button>
+            <button class="btn btn-secondary stats-range-btn" data-days="90" onclick="loadStats(90)" style="padding:0.2rem 0.6rem;font-size:0.7rem;height:auto" data-page-node-id="statsRange90">90 天</button>
+            <span id="statsSummaryInline" class="text-xs opacity-70 ml-auto" data-page-node-id="statsSummaryInline"></span>
+          </div>
+          <div id="statsChart" style="background:var(--code-bg);border:1px solid var(--border);border-radius:0.375rem;padding:0.75rem;min-height:140px" data-page-node-id="statsChart"></div>
+          <div id="statsByCategory" class="mt-2" data-page-node-id="statsByCategory"></div>
+        </div>
+      </div>
+
       <!-- 近期综合数据 (collapsible) -->
       <div id="wrongSummary" class="mt-3" style="cursor:pointer;user-select:none" onclick="toggleSummary()" data-page-node-id="zqqAHmbI8GgdjkCavH8sQv">
         <div class="flex justify-between items-center p-2 rounded" style="background:var(--tag-bg)" data-page-node-id="aMHhgZW2eOd8RJWTB7no3q">
@@ -404,8 +487,25 @@
         </div>
         <div id="summaryBody" class="mt-2 flex justify-center gap-6" style="display:none" data-page-node-id="uBCSvlnkcYU85MRmiyw2h8"></div>
       </div>
+
       <!-- 错题列表 -->
-      <div id="wrongList" class="mt-3 space-y-2" data-page-node-id="hYoWUvIKi7cbD90iYXOwAk"></div>
+      <div class="flex justify-between items-center mt-3 mb-2" data-page-node-id="wrongListHead">
+        <span class="text-sm opacity-70" data-i18n="错题列表" data-page-node-id="wrongListTitle">错题列表</span>
+        <div style="position:relative" data-page-node-id="wrongExportWrap">
+          <button class="btn btn-secondary" style="padding:0.3rem 0.8rem;font-size:0.75rem" onclick="toggleExportMenu(event)" data-page-node-id="wrongExportBtn">
+            <i class="fas fa-download mr-1"></i><span data-i18n="导出错题" data-page-node-id="wrongExportLabel">导出错题</span><i class="fas fa-caret-down ml-1" style="font-size:0.65rem"></i>
+          </button>
+          <div id="exportMenu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:var(--card);border:1px solid var(--border);border-radius:0.375rem;box-shadow:0 4px 18px rgba(58,82,148,0.18);min-width:140px;z-index:10" data-page-node-id="exportMenu">
+            <div style="padding:0.5rem 0.75rem;cursor:pointer;font-size:0.75rem" onmouseover="this.style.background='var(--tag-bg)'" onmouseout="this.style.background=''" onclick="exportMistakes('csv')" data-page-node-id="exportCsvOpt">
+              <i class="fas fa-file-csv mr-1" style="color:#2c8a4a"></i><span data-i18n="下载 CSV（Excel）" data-page-node-id="exportCsvLabel">下载 CSV（Excel）</span>
+            </div>
+            <div style="padding:0.5rem 0.75rem;cursor:pointer;font-size:0.75rem" onmouseover="this.style.background='var(--tag-bg)'" onmouseout="this.style.background=''" onclick="exportMistakes('json')" data-page-node-id="exportJsonOpt">
+              <i class="fas fa-file-code mr-1" style="color:#7a5dca"></i><span data-i18n="下载 JSON" data-page-node-id="exportJsonLabel">下载 JSON</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="wrongList" class="mt-2 space-y-2" data-page-node-id="hYoWUvIKi7cbD90iYXOwAk"></div>
     </div>
   </div>
 
@@ -492,6 +592,24 @@ const I18N = {
   '第 {0} / {1} 页': { en: 'Page {0} / {1}','zh_tw':'第 {0} / {1} 頁','ja':'{0} / {1} ページ','hi':'पृष्ठ {0} / {1}','pt':'Página {0} / {1}' },
   '错题集为空': { en: 'No wrong answers yet','zh_tw':'錯題集為空','ja':'間違い問題はありません','hi':'अभी कोई गलत उत्तर नहीं','pt':'Sem erros ainda' },
   '近期综合数据': { en: 'Recent overview','zh_tw':'近期綜合數據','ja':'最近のデータ概要','hi':'हालिया सारांश','pt':'Visão geral recente' },
+  '学习时长统计': { en: 'Learning duration','zh_tw':'學習時長統計','ja':'学習時間統計','hi':'सीखने की अवधि','pt':'Tempo de estudo' },
+  '导出错题': { en: 'Export mistakes','zh_tw':'導出錯題','ja':'間違いをエクスポート','hi':'गलत उत्तर निर्यात','pt':'Exportar erros' },
+  '下载 CSV（Excel）': { en: 'Download CSV (Excel)','zh_tw':'下載 CSV（Excel）','ja':'CSV をダウンロード','hi':'CSV डाउनलोड','pt':'Baixar CSV (Excel)' },
+  '下载 JSON': { en: 'Download JSON','zh_tw':'下載 JSON','ja':'JSON をダウンロード','hi':'JSON डाउनलोड','pt':'Baixar JSON' },
+  '错题列表': { en: 'Wrong answers','zh_tw':'錯題列表','ja':'間違いリスト','hi':'गलत उत्तर सूची','pt':'Lista de erros' },
+  '近': { en: 'Range','zh_tw':'近','ja':'範囲','hi':'सीमा','pt':'Intervalo' },
+  '7 天': { en: '7 d','zh_tw':'7 天','ja':'7 日','hi':'7 दिन','pt':'7 d' },
+  '30 天': { en: '30 d','zh_tw':'30 天','ja':'30 日','hi':'30 दिन','pt':'30 d' },
+  '90 天': { en: '90 d','zh_tw':'90 天','ja':'90 日','hi':'90 दिन','pt':'90 d' },
+  '加载统计中...': { en: 'Loading stats...','zh_tw':'載入統計中...','ja':'統計を読み込み中...','hi':'सांख्यिकी लोड हो रही है...','pt':'Carregando estatísticas...' },
+  '暂无学习记录': { en: 'No study record yet','zh_tw':'暫無學習記錄','ja':'学習記録はまだありません','hi':'अभी कोई अध्ययन रिकॉर्ड नहीं','pt':'Sem registo de estudo' },
+  '总时长': { en: 'Total','zh_tw':'總時長','ja':'合計','hi':'कुल','pt':'Total' },
+  '分钟': { en: 'min','zh_tw':'分鐘','ja':'分','hi':'मिनट','pt':'min' },
+  '秒': { en: 'sec','zh_tw':'秒','ja':'秒','hi':'सेकंड','pt':'s' },
+  '平均': { en: 'Avg','zh_tw':'平均','ja':'平均','hi':'औसत','pt':'Média' },
+  '每题': { en: '/q','zh_tw':'/題','ja':'/問','hi':'/प्र','pt':'/q' },
+  'Top 节点': { en: 'Top nodes','zh_tw':'Top 節點','ja':'Top ノード','hi':'शीर्ष नोड','pt':'Top nós' },
+  '导出失败': { en: 'Export failed','zh_tw':'導出失敗','ja':'エクスポート失敗','hi':'निर्यात विफल','pt':'Falha ao exportar' },
   '总答题数': { en: 'Total answered','zh_tw':'總答題數','ja':'総回答数','hi':'कुल उत्तर','pt':'Total respondido' },
   '正确数': { en: 'Correct','zh_tw':'正確數','ja':'正解数','hi':'सही','pt':'Corretas' },
   '答错数': { en: 'Wrong','zh_tw':'答錯數','ja':'不正解数','hi':'गलत','pt':'Erradas' },
@@ -3649,7 +3767,10 @@ async function submitPracticeAnswer(qid) { saveAllCM();
     if (optsContainer) input = (optsContainer.dataset.selected || '').trim();
   }
   if (!input) return alert(t('请先输入或选择答案'));
-  var result = await apiPost('/submit', { session_id: sessionId, question_id: qid, answer: input, pool: currentPool });
+  var elapsed = (typeof _practiceStart !== 'undefined' && _practiceStart)
+    ? Math.round((Date.now() - _practiceStart) / 1000) : 0;
+  _practiceStart = Date.now();
+  var result = await apiPost('/submit', { session_id: sessionId, question_id: qid, answer: input, pool: currentPool, duration: elapsed });
   // 更新答题状态（列表着色：返回列表立即生效）
   if (typeof qid === 'number') _progressMap[qid] = result.is_correct ? 1 : 0;
   var resultBox = document.getElementById('prac_res_' + qid);
@@ -3760,7 +3881,10 @@ async function submitDerivedAnswer() { saveAllCM();
   if (!currentDerivedQ) return;
   var input = document.getElementById('derived_inp').value.trim();
   if (!input) return alert(t('请先输入 SQL 语句'));
-  var result = await apiPost('/submit', { session_id: sessionId, question_id: currentDerivedQ.id, answer: input });
+  var derivedElapsed = (typeof _derivedStart !== 'undefined' && _derivedStart)
+    ? Math.round((Date.now() - _derivedStart) / 1000) : 0;
+  _derivedStart = Date.now();
+  var result = await apiPost('/submit', { session_id: sessionId, question_id: currentDerivedQ.id, answer: input, duration: derivedElapsed });
   var resultBox = document.getElementById('derived_res');
   resultBox.style.display = 'block';
   resultBox.className = 'result-box ' + (result.is_correct ? 'correct' : 'wrong');
@@ -3835,6 +3959,164 @@ function toggleSummary() {
   document.getElementById('summaryToggle').innerHTML = summaryExpanded ? '<i class="fas fa-chevron-up"></i>' : '<i class="fas fa-chevron-down"></i>';
 }
 
+// ============================================================
+// 错题本导出（2026-09-08 体验打磨）
+// ============================================================
+function toggleExportMenu(ev) {
+  ev.stopPropagation();
+  var menu = document.getElementById('exportMenu');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+// 点击页面其它地方关闭下拉
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('exportMenu');
+  if (menu && menu.style.display !== 'none' && !document.getElementById('wrongExportWrap').contains(e.target)) {
+    menu.style.display = 'none';
+  }
+});
+
+async function exportMistakes(fmt) {
+  document.getElementById('exportMenu').style.display = 'none';
+  try {
+    // 用 fetch 直接拿到 blob，触发浏览器下载（保留服务端 Content-Disposition 文件名）
+    var resp = await fetch(API_BASE + '/mistakes/export?session_id=' + encodeURIComponent(sessionId) + '&format=' + fmt);
+    if (!resp.ok) {
+      var j = await resp.json().catch(function() { return {}; });
+      alert(t('导出失败') + (j.error ? '：' + j.error : ''));
+      return;
+    }
+    var blob = await resp.blob();
+    var dispo = resp.headers.get('Content-Disposition') || '';
+    var match = dispo.match(/filename="([^"]+)"/);
+    var filename = match ? match[1] : ('mistakes.' + fmt);
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() { URL.revokeObjectURL(url); a.remove(); }, 100);
+  } catch (e) {
+    alert(t('导出失败') + '：' + (e.message || e));
+  }
+}
+
+// ============================================================
+// 学习时长统计（2026-09-08 体验打磨）
+// ============================================================
+var statsLoadedDays = 0;        // 已加载的天数（避免重复拉取）
+var statsCurrentDays = 7;
+function toggleStats() {
+  var body = document.getElementById('statsBody');
+  var icon = document.getElementById('statsToggle');
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    icon.innerHTML = '<i class="fas fa-chevron-up"></i>';
+    if (!statsLoadedDays) loadStats(statsCurrentDays);
+  } else {
+    body.style.display = 'none';
+    icon.innerHTML = '<i class="fas fa-chevron-down"></i>';
+  }
+}
+
+async function loadStats(days) {
+  statsCurrentDays = days;
+  // 高亮选中的范围按钮
+  document.querySelectorAll('.stats-range-btn').forEach(function(b) {
+    if (parseInt(b.dataset.days, 10) === days) {
+      b.classList.add('btn-accent');
+      b.classList.remove('btn-secondary');
+    } else {
+      b.classList.remove('btn-accent');
+      b.classList.add('btn-secondary');
+    }
+  });
+  var chartEl = document.getElementById('statsChart');
+  chartEl.innerHTML = '<div class="text-center text-sm py-4 opacity-50"><i class="fas fa-spinner fa-spin mr-1"></i> ' + t('加载统计中...') + '</div>';
+  try {
+    var data = await apiGet('/stats/durations?session_id=' + encodeURIComponent(sessionId) + '&days=' + days);
+    renderStatsChart(data);
+    renderStatsByCategory(data);
+    statsLoadedDays = days;
+  } catch (e) {
+    chartEl.innerHTML = '<div class="text-center text-sm py-4" style="color:#b04a4a">' + t('导出失败').replace('导出','加载') + '</div>';
+  }
+}
+
+function renderStatsChart(data) {
+  var chartEl = document.getElementById('statsChart');
+  var sumEl = document.getElementById('statsSummaryInline');
+  // 顶部摘要
+  var mins = Math.round(data.total_sec / 60);
+  var avgStr = data.avg_duration_sec > 0 ? (data.avg_duration_sec + ' ' + t('秒') + t('每题')) : '—';
+  sumEl.innerHTML = '<i class="fas fa-clock mr-1"></i>' + t('总时长') + ' <strong>' + (mins >= 1 ? mins + ' ' + t('分钟') : data.total_sec + ' ' + t('秒')) + '</strong>'
+                  + ' · ' + t('平均') + ' ' + avgStr
+                  + ' · ' + data.total_questions + ' ' + t('总答题数');
+
+  if (!data.by_day.length || data.total_sec === 0) {
+    chartEl.innerHTML = '<div class="text-center text-sm py-4 opacity-50"><i class="fas fa-chart-bar mr-1"></i> ' + t('暂无学习记录') + '</div>';
+    return;
+  }
+
+  // 内联 SVG 柱状图（无依赖）
+  var W = Math.max(chartEl.clientWidth || 600, 280);
+  var H = 140;
+  var padL = 36, padR = 8, padT = 14, padB = 24;
+  var innerW = W - padL - padR;
+  var innerH = H - padT - padB;
+  var days = data.by_day;
+  var maxSec = Math.max.apply(null, days.map(function(d){ return d.total_sec; }).concat([1]));
+  // 把秒数向上取整为「合理刻度」
+  var niceMax = Math.ceil(maxSec / 60) * 60; if (niceMax < 60) niceMax = 60;
+  var barW = Math.max(2, Math.min(18, innerW / days.length - 2));
+  var gap = (innerW - barW * days.length) / (days.length + 1);
+
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:' + H + 'px;font-family:inherit">';
+  // Y 轴刻度（3 条）
+  for (var i = 0; i <= 3; i++) {
+    var y = padT + innerH * i / 3;
+    var val = Math.round(niceMax * (3 - i) / 3);
+    svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '" stroke="rgba(88,110,170,0.18)" stroke-width="1"/>';
+    svg += '<text x="' + (padL - 4) + '" y="' + (y + 3) + '" text-anchor="end" font-size="9" fill="rgba(72,87,124,0.6)">' + (val >= 60 ? Math.round(val/60) + 'm' : val + 's') + '</text>';
+  }
+  // 柱
+  for (var k = 0; k < days.length; k++) {
+    var d = days[k];
+    var h = niceMax > 0 ? (d.total_sec / niceMax) * innerH : 0;
+    var x = padL + gap + k * (barW + gap);
+    var y = padT + innerH - h;
+    var fill = d.total_sec > 0 ? 'url(#barGrad)' : 'rgba(88,110,170,0.15)';
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(h, 1).toFixed(1) + '" rx="2" fill="' + fill + '"><title>' + d.date + ' · ' + d.total_sec + ' ' + t('秒') + ' · ' + d.qcount + ' ' + t('总答题数') + '</title></rect>';
+    // X 轴标签：每天日期；超过 14 天只显示每 5 天
+    if (days.length <= 14 || k % 5 === 0 || k === days.length - 1) {
+      var dateLbl = d.date.substring(5);  // MM-DD
+      svg += '<text x="' + (x + barW/2).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="9" fill="rgba(72,87,124,0.6)">' + dateLbl + '</text>';
+    }
+  }
+  // 渐变
+  svg += '<defs><linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8b5bff"/><stop offset="100%" stop-color="#4a7dff"/></linearGradient></defs>';
+  svg += '</svg>';
+  chartEl.innerHTML = svg;
+}
+
+function renderStatsByCategory(data) {
+  var el = document.getElementById('statsByCategory');
+  if (!data.by_category || !data.by_category.length) { el.innerHTML = ''; return; }
+  var html = '<div class="text-xs opacity-60 mt-2 mb-1"><i class="fas fa-layer-group mr-1"></i>' + t('Top 节点') + '</div>';
+  for (var i = 0; i < data.by_category.length; i++) {
+    var c = data.by_category[i];
+    var mins = Math.round(c.total_sec / 60);
+    html += '<div class="flex items-center gap-2 mb-1" style="font-size:0.7rem">'
+          + '<span class="tag" style="min-width:120px;display:inline-block">' + catLabel(c.category) + '</span>'
+          + '<div style="flex:1;height:6px;background:var(--tag-bg);border-radius:3px;overflow:hidden">'
+          + '<div style="height:100%;background:var(--accent-grad);width:' + Math.min(100, c.total_sec / Math.max(1, data.by_category[0].total_sec) * 100).toFixed(0) + '%"></div>'
+          + '</div>'
+          + '<span style="min-width:60px;text-align:right;opacity:0.7">' + (mins >= 1 ? mins + ' ' + t('分钟') : c.total_sec + ' ' + t('秒')) + '</span>'
+          + '</div>';
+  }
+  el.innerHTML = html;
+}
+
 async function loadWrongSet() {
   var el = document.getElementById('wrongList');
   el.innerHTML = '<div class="text-center text-sm py-4 opacity-50"><i class="fas fa-spinner fa-spin mr-1"></i> ' + t('加载中...') + '</div>';
@@ -3844,6 +4126,10 @@ async function loadWrongSet() {
     wrongPage = 1;              // 重新进入错题集从第 1 页开始
     renderWrongSummary(data);
     renderWrongList();
+    // 学习时长：进入错题集时自动加载（7 天），仅首次展开时拉取
+    if (typeof statsLoadedDays === 'undefined' || !statsLoadedDays) {
+      loadStats(7);
+    }
   } catch (e) {
     el.innerHTML = '<p style="color:#b04a4a;text-align:center">' + t('加载失败') + (errMsg(e, '') ? '：' + errMsg(e, '') : '') + '</p>';
   }

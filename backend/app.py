@@ -384,7 +384,13 @@ def submit_answer():
         # 真实执行判题：内存 SQLite 构建题目环境，比较用户 SQL 与标准答案的结果集
         is_correct, _rows, judge_error = judge_sql(
             user_answer, correct, q.get('table_schema'), q.get('initial_data'))
-    save_answer(session_id, save_qid, user_answer, is_correct, pool=pool)
+    # 答题耗时（秒；前端可在错题 / 时长统计中用到，2026-09-08 体验打磨）
+    try:
+        duration = float(data.get('duration', 0) or 0)
+    except (TypeError, ValueError):
+        duration = 0.0
+    duration = max(0.0, duration)
+    save_answer(session_id, save_qid, user_answer, is_correct, duration=duration, pool=pool)
     resp = {
         "is_correct": is_correct,
         "correct_answer": correct,
@@ -670,7 +676,157 @@ def get_user_progress(session_id):
         "accuracy": round(correct / total * 100, 1) if total > 0 else 0,
         "progress": progress
 })
-    
+
+# ============================================================
+# 错题本导出（2026-09-08 体验打磨）
+# 支持 csv / json 两种格式；csv 默认 UTF-8 BOM 便于 Excel 打开中文
+# ============================================================
+@app.route('/api/mistakes/export', methods=['GET'])
+@limiter.limit("10 per minute", key_func=_user_rate_key)
+def export_mistakes():
+    """导出当前会话的全部错题。
+    Query: ?format=csv|json（默认 csv）, &scope=wrongset|all（默认 wrongset）"""
+    sid = request.args.get('session_id') or _request_session_id()
+    if not sid:
+        return jsonify({"error": "缺少 session_id"}), 400
+    fmt = (request.args.get('format') or 'csv').lower()
+    scope = (request.args.get('scope') or 'wrongset').lower()
+
+    pool = request.args.get('pool', 'practice')
+    conn = get_connection()
+    # 只取错题（is_correct=0），LEFT JOIN 出题面与正确答案
+    where = "up.is_correct=0"
+    if scope == 'wrongset':
+        where += " AND up.pool IN ('practice','exam')"
+    rows = conn.execute(f'''
+        SELECT up.id AS up_id, up.session_id, up.pool, up.user_answer, up.duration, up.answered_at,
+               q.id AS qid, q.category, q.difficulty, q.title, q.description,
+               q.correct_answer, q.explanation, q.options
+        FROM user_progress up
+        JOIN questions q ON q.id = up.question_id
+        WHERE up.session_id=? AND {where}
+        ORDER BY up.answered_at DESC
+    ''', (sid,)).fetchall()
+
+    # 转换为 dict
+    mistakes = [dict(r) for r in rows]
+
+    if fmt == 'json':
+        from flask import Response
+        body = json.dumps({"session_id": sid, "count": len(mistakes), "mistakes": mistakes},
+                          ensure_ascii=False, indent=2)
+        return Response(body, mimetype='application/json; charset=utf-8',
+                        headers={"Content-Disposition": f'attachment; filename="mistakes_{sid[:8]}.json"'})
+
+    # CSV：用 UTF-8 BOM 让 Excel 正确显示中文
+    import csv, io
+    buf = io.StringIO()
+    buf.write('\ufeff')
+    writer = csv.writer(buf)
+    writer.writerow(['ID', '类别', '难度', '题目', '描述', '你的答案', '正确答案', '耗时(秒)', '答题时间'])
+    diff_map = {'easy': '简单', 'medium': '中等', 'hard': '困难'}
+    for m in mistakes:
+        writer.writerow([
+            m['qid'], m['category'] or '', diff_map.get(m['difficulty'], m['difficulty'] or ''),
+            (m['title'] or '').replace('\n', ' '), (m['description'] or '').replace('\n', ' '),
+            (m['user_answer'] or '').replace('\n', ' '), (m['correct_answer'] or '').replace('\n', ' '),
+            int(m['duration'] or 0), m['answered_at'] or '',
+        ])
+    from flask import Response
+    body = buf.getvalue()
+    return Response(body, mimetype='text/csv',
+                    headers={"Content-Disposition": f'attachment; filename="mistakes_{sid[:8]}.csv"'})
+
+
+# ============================================================
+# 学习时长统计（2026-09-08 体验打磨）
+# 返回每日总时长 + 答题数 + 按知识点分类的每日时长
+# ============================================================
+@app.route('/api/stats/durations', methods=['GET'])
+@limiter.limit("30 per minute", key_func=_user_rate_key)
+def stats_durations():
+    """按天聚合 user_progress.duration。
+    Query: ?days=N (默认 7, 上限 90), &session_id=xxx"""
+    sid = request.args.get('session_id') or _request_session_id()
+    if not sid:
+        return jsonify({"error": "缺少 session_id"}), 400
+    try:
+        days = int(request.args.get('days', 7))
+    except (TypeError, ValueError):
+        days = 7
+    days = max(1, min(days, 90))
+
+    conn = get_connection()
+    # 每日总时长 + 答题数（按本地时间分组：SQLite CURRENT_TIMESTAMP 是 UTC；
+    # 前端展示时统一显示「日期」即可，不强制时区）
+    rows = conn.execute('''
+        SELECT date(answered_at) AS d,
+               SUM(duration) AS total_sec,
+               COUNT(*) AS qcount,
+               SUM(CASE WHEN is_correct=1 THEN 1 ELSE 0 END) AS correct_count
+        FROM user_progress
+        WHERE session_id=? AND answered_at >= date('now', ?)
+        GROUP BY d
+        ORDER BY d ASC
+    ''', (sid, f'-{days} days')).fetchall()
+
+    by_day = []
+    # 把缺失的日也填 0，保证前端图表连续
+    from datetime import date, timedelta
+    today = date.today()
+    day_map = {r['d']: dict(r) for r in rows}
+    for i in range(days - 1, -1, -1):
+        d = (today - timedelta(days=i)).isoformat()
+        rec = day_map.get(d, {'d': d, 'total_sec': 0, 'qcount': 0, 'correct_count': 0})
+        by_day.append({
+            'date': d,
+            'total_sec': int(rec['total_sec'] or 0),
+            'qcount': int(rec['qcount'] or 0),
+            'correct_count': int(rec['correct_count'] or 0),
+        })
+
+    # 按知识点分类（Top N）的每日时长
+    cat_rows = conn.execute('''
+        SELECT qk.node_id AS category,
+               date(up.answered_at) AS d,
+               SUM(up.duration) AS total_sec
+        FROM user_progress up
+        JOIN questions q ON q.id = up.question_id
+        JOIN question_knowledge qk ON qk.question_id = q.id
+        WHERE up.session_id=? AND up.answered_at >= date('now', ?)
+        GROUP BY qk.node_id, d
+        ORDER BY total_sec DESC
+    ''', (sid, f'-{days} days')).fetchall()
+
+    # 取时长 Top 5 节点
+    from collections import defaultdict
+    cat_total = defaultdict(int)
+    cat_by_day = defaultdict(dict)
+    for r in cat_rows:
+        cat_total[r['category']] += int(r['total_sec'] or 0)
+        cat_by_day[r['category']][r['d']] = int(r['total_sec'] or 0)
+    top5 = sorted(cat_total.items(), key=lambda x: -x[1])[:5]
+    by_category = []
+    for cat, total in top5:
+        by_category.append({
+            'category': cat,
+            'total_sec': total,
+            'by_day': [cat_by_day[cat].get(d['date'], 0) for d in by_day],
+        })
+
+    total_sec = sum(d['total_sec'] for d in by_day)
+    total_q = sum(d['qcount'] for d in by_day)
+    return jsonify({
+        'session_id': sid,
+        'days': days,
+        'total_sec': total_sec,
+        'total_questions': total_q,
+        'avg_duration_sec': round(total_sec / total_q, 1) if total_q > 0 else 0,
+        'by_day': by_day,
+        'by_category': by_category,
+    })
+
+
 @app.route('/admin')
 def admin_page():
     return send_from_directory(FRONTEND_DIR, 'admin.html')
