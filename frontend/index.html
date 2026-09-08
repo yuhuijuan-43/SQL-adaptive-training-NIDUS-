@@ -67,6 +67,7 @@
   .result-box { margin-top: 0.75rem; padding: 0.75rem; border-radius: 0.375rem; font-size: 0.8rem; }
   .result-box.correct { background: #EBF2FA; border: 1px solid #C4D8F0; color: #1E5BA8; }
   .result-box.wrong { background: #f5ebeb; border: 1px solid #e4c8c8; color: #8a4040; }
+  .result-box.skipped { background: #F2EFEA; border: 1px solid #DDD5C7; color: #6c5b3a; }
   .result-box .explanation { margin-top: 0.4rem; color: var(--text2); font-size: 0.75rem; }
   /* 结构化解析：【考点】【解析】【易错点】…分段卡片 */
   .expl-structured { margin-top: 0.5rem; padding: 0.5rem 0.6rem; background: var(--tag-bg, #f3f4f6); border: 1px solid var(--border); border-left: 3px solid var(--accent, #5a64ff); border-radius: 0.375rem; color: var(--text); font-size: 0.75rem; }
@@ -465,6 +466,12 @@ const I18N = {
   '举一反三 →': { en: 'One more: fill-in →','zh_tw':'舉一反三 →','ja':'発展問題 →','hi':'एक और: फिल-इन →','pt':'Aprofundar →' },
   '下一题': { en: 'Next question','zh_tw':'下一題','ja':'次の問題','hi':'अगला प्रश्न','pt':'Próxima pergunta' },
   '上一题': { en: 'Previous question','zh_tw':'上一題','ja':'前の問題','hi':'पिछला प्रश्न','pt':'Questão anterior' },
+  '跳过': { en: 'Skip','zh_tw':'跳過','ja':'スキップ','hi':'छोड़ें','pt':'Pular' },
+  '已跳过本题（不计入答题）': { en: 'Skipped (not counted)','zh_tw':'已跳過本題（不計入答題）','ja':'スキップしました（カウントされません）','hi':'छोड़ा गया (गिनती नहीं)','pt':'Pulada (não conta)' },
+  '已跳过': { en: 'Skipped','zh_tw':'已跳過','ja':'スキップ済','hi':'छोड़ा','pt':'Pulada' },
+  '参考答案：': { en: 'Reference answer: ','zh_tw':'參考答案：','ja':'参考回答：','hi':'संदर्भ उत्तर: ','pt':'Resposta de referência: ' },
+  '确定跳过本题？本轮不再出现，且不计入答题。': { en: 'Skip this question? It won\'t reappear this round and won\'t be counted.','zh_tw':'確定跳過本題？本輪不再出現，且不計入答題。','ja':'この問題をスキップしますか？今ラウンドでは再表示されず、回答数にもカウントされません。','hi':'इस प्रश्न को छोड़ें? यह इस दौर में दोबारा नहीं आएगा और गिनती में नहीं आएगा।','pt':'Pular esta questão? Ela não reaparecerá nesta rodada e não contará.' },
+  '跳过失败': { en: 'Skip failed','zh_tw':'跳過失敗','ja':'スキップ失敗','hi':'छोड़ने में विफल','pt':'Falha ao pular' },
   '返回当前题': { en: 'Back to current','zh_tw':'返回當前題','ja':'現在の問題に戻る','hi':'वर्तमान प्रश्न पर लौटें','pt':'Voltar à atual' },
   '回看第 {0} / {1} 题（已作答，仅供查看）': { en: 'Reviewing question {0} / {1} (answered, view only)','zh_tw':'回看第 {0} / {1} 題（已作答，僅供查看）','ja':'{0} / {1} 問目を振り返り中（回答済み・閲覧のみ）','hi':'प्रश्न {0} / {1} देख रहे हैं (उत्तर दिया, केवल देखने के लिए)','pt':'Revendo a questão {0} / {1} (respondida, somente leitura)' },
   '该题已不可用': { en: 'This question is no longer available','zh_tw':'該題已不可用','ja':'この問題は利用できません','hi':'यह प्रश्न अब उपलब्ध नहीं है','pt':'Esta questão não está mais disponível' },
@@ -2944,7 +2951,14 @@ function renderQuestion(q, prefix) {
     html += '<textarea class="code-input" id="' + prefix + '_inp_' + q.id + '" placeholder="' + t('手动输入你的 SQL 语句...') + '" oninput="clearOpt(\'' + prefix + '\',' + q.id + ')"></textarea>';
   }
   html += '<div id="' + prefix + '_res_' + q.id + '" class="result-box" style="display:none"></div>';
-  html += '<div class="mt-2 text-center"><button class="btn btn-primary" onclick="' + (prefix === 'journey' ? 'submitJourneyAnswer' : 'submitPracticeAnswer') + '(' + q.id + ')"><i class="fas fa-paper-plane mr-1"></i> ' + t('提交答案') + '</button></div>';
+  if (prefix === 'journey') {
+    html += '<div class="mt-2 text-center" style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap">'
+         +  '<button class="btn btn-primary" onclick="submitJourneyAnswer(' + q.id + ')"><i class="fas fa-paper-plane mr-1"></i> ' + t('提交答案') + '</button>'
+         +  '<button class="btn btn-secondary" onclick="skipJourneyQuestion(' + q.id + ')" title="跳过本题，不计入答题，下次轮可能再出现"><i class="fas fa-forward mr-1"></i> ' + t('跳过') + '</button>'
+         +  '</div>';
+  } else {
+    html += '<div class="mt-2 text-center"><button class="btn btn-primary" onclick="submitPracticeAnswer(' + q.id + ')"><i class="fas fa-paper-plane mr-1"></i> ' + t('提交答案') + '</button></div>';
+  }
   return html;
 }
 
@@ -3187,17 +3201,23 @@ function showJourneyQuestion(data) {
   refreshJourneyNav();
 }
 
-/* ---- 答题结果渲染（提交后与回看历史题共用） ---- */
+/* ---- 答题结果渲染（提交后 / 跳过 / 回看历史题共用） ---- */
 function renderJourneyResult(q, qid, correct, userAnswer, explanation, litNow, graph) {
   var resultBox = document.getElementById('journey_res_' + qid);
   if (!resultBox) return;
   resultBox.style.display = 'block';
-  resultBox.className = 'result-box ' + (correct ? 'correct' : 'wrong');
+  // correct: true=答对 / false=答错 / null=跳过 / 'skipped'=跳过（兼容字符串）
+  var status = (correct === true) ? 'correct' : (correct === false) ? 'wrong' : 'skipped';
+  resultBox.className = 'result-box ' + status;
   if (correct === true) {
     resultBox.innerHTML = '<strong><i class="fas fa-check-circle mr-1"></i> ' + t('回答正确') + '</strong>';
   } else if (correct === false) {
     resultBox.innerHTML = '<strong><i class="fas fa-times-circle mr-1"></i> ' + t('回答错误') + '</strong>';
     if (q) resultBox.innerHTML += '<br>' + t('正确答案：') + '<strong>' + escapeHtml(q.correct_answer) + '</strong>';
+  } else {
+    // 跳过：展示正确答案与解析，但不显示"对/错"
+    resultBox.innerHTML = '<strong><i class="fas fa-forward mr-1"></i> ' + t('已跳过本题（不计入答题）') + '</strong>';
+    if (q) resultBox.innerHTML += '<br>' + t('参考答案：') + '<strong>' + escapeHtml(q.correct_answer) + '</strong>';
   }
   if (userAnswer && q && !q.options) {
     resultBox.innerHTML += '<div class="mt-1" style="font-size:0.75rem;opacity:0.75">' + t('你的答案：') +
@@ -3256,6 +3276,8 @@ function renderJourneyReview(snap) {
   }
   var submitBtn = document.querySelector('#journeyQuestion .btn-primary');
   if (submitBtn) { submitBtn.style.display = 'none'; }
+  var skipBtnR = document.querySelector('#journeyQuestion .btn-secondary');
+  if (skipBtnR) { skipBtnR.style.display = 'none'; }
   renderJourneyResult(q, qid, snap.correct, snap.answer, snap.explanation, snap.lit_now, snap.graph);
   refreshJourneyNav();
 }
@@ -3284,6 +3306,31 @@ function refreshJourneyNav() {
         tf('回看第 {0} / {1} 题（已作答，仅供查看）', journeyViewIdx + 1, n);
     } else { tip.style.display = 'none'; tip.innerHTML = ''; }
   }
+}
+
+async function skipJourneyQuestion(qid) {
+  if (!qid) return;
+  if (!confirm(t('确定跳过本题？本轮不再出现，且不计入答题。'))) return;
+  saveAllCM();
+  try {
+    var resp = await apiPost('/journey/skip', { session_id: sessionId, question_id: qid });
+    // 记录快照：未作答，仅供回看解析
+    journeyHistory.push({
+      data: JSON.parse(JSON.stringify(journeyData)),
+      qid: qid, answer: '', correct: null,
+      explanation: resp.explanation, lit_now: resp.lit_now, graph: resp.graph
+    });
+    var q = journeyData && journeyData.question && journeyData.question.id === qid ? journeyData.question : null;
+    renderJourneyResult(q, qid, null, '', resp.explanation, resp.lit_now, resp.graph);
+    var submitBtn = document.querySelector('#journeyQuestion .btn-primary');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('已跳过'); }
+    var skipBtn = document.querySelector('#journeyQuestion .btn-secondary');
+    if (skipBtn) { skipBtn.disabled = true; }
+    journeyData = resp;
+    journeyViewIdx = null;
+    journeyNextVisible = true;
+    refreshJourneyNav();
+  } catch (e) { alert(errMsg(e, t('跳过失败'))); }
 }
 
 function prevJourney() {
@@ -3327,6 +3374,8 @@ async function submitJourneyAnswer(qid) { saveAllCM();
     renderJourneyResult(q, qid, resp.last_answer_correct, input, resp.explanation, resp.lit_now, resp.graph);
     var submitBtn = document.querySelector('#journeyQuestion .btn-primary');
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('已提交'); }
+    var skipBtn2 = document.querySelector('#journeyQuestion .btn-secondary');
+    if (skipBtn2) { skipBtn2.disabled = true; }
     journeyData = resp;
     journeyViewIdx = null;
     journeyNextVisible = true;

@@ -427,6 +427,20 @@ const VISION = {
 const UPDATES = [
   {
     date: '2026-09-08', tag: 'new', tagText: '新功能',
+    title: '自适应进阶支持「跳过」本题',
+    desc: '遇到暂时不想答的题，可点「跳过」直接进入下一题；本轮不再回访、不计入正确/错误，不影响点亮进度。',
+    overview: '做自适应时偶尔会卡在一道暂时没思路的题上——继续耗着浪费学习节奏，强行猜又会被记为错误、拖低掌握度。本轮在「提交答案」旁新增「跳过」按钮：点击后后端会把本轮计划里的位置前进一格，同时不写入答题记录、不计入正确/错误、不影响该知识点的点亮进度。跳过的题会进入"已跳过"快照，本轮不再回访，但可以在「上一题」里照常回看题面与解析；下一轮如果仍答错，仍可能再次出现——系统并没有"免死金牌"，只是把节奏还给你。',
+    points: [
+      '<b>不计入答题</b>：跳过题的 total_answered 保持不变，正确/错误统计、连续答对、规则 3 累计均不受影响。',
+      '<b>不点亮</b>：跳过不会触发该知识点的点亮，也不会触发任何豁免；下一轮仍按原算法继续推送。',
+      '<b>可回看</b>：跳过的题会进历史快照，「上一题」里能看到"已跳过本题（不计入答题）"与参考答案和解析。',
+      '<b>二次确认</b>：跳过操作有确认弹窗，避免误点；按钮在提交后/回看时自动禁用。'
+    ],
+    thinking: '跳过的"代价"必须为 0 才不会鼓励逃避：不被记错、不被点亮、不豁免。否则玩家会把"跳过"当成"安全弃权"，整套自适应节奏就崩了。我们让跳过只做一件事——把本轮计划的指针往后挪一格——其它规则原封不动。',
+    stats: [['1', '次点击', '把本轮计划的指针往后挪一格'], ['0', '副作用', '不计入答题 · 不点亮 · 不豁免'], ['1', '次确认', '避免误点，可回看']]
+  },
+  {
+    date: '2026-09-08', tag: 'new', tagText: '新功能',
     title: '自适应进阶支持「上一题」回看',
     desc: '做题过程中随时点「上一题」回看本轮已答过的题目：原题、你的答案、判题结果与解析都会原样恢复，看完点「返回当前题」即可继续。',
     overview: '自适应进阶此前只能一路往前：提交答案后就跳到下一题，想回头看看刚才那题是怎么答的、解析里说了什么，只能靠记忆或重新做一遍。本次在答题区底部新增「上一题」按钮，与原有的「继续进阶」组成完整的前进 / 后退导航。系统会把本轮每道已作答的题目存成快照（题面 + 你提交的答案 + 判题结果 + 解析），点「上一题」即可逐题往回翻；回看状态下输入框与选项均为只读，任何点击都不会改变判题结果或知识点点亮进度。翻到更早的题目后，前进按钮会依次显示「下一题」，直到最后一题显示「返回当前题」，一键回到正在作答的那道题。',
@@ -998,6 +1012,20 @@ window.UPDATES_EXTRA = {
 
 
 const UPDATES_EN = [
+  {
+    date: '2026-09-08', tag: 'new', tagText: 'New',
+    title: 'Adaptive journey gains a Skip button',
+    desc: 'If a question derails you, tap Skip to jump to the next one. Skipped questions do not return this round, are not counted as correct or wrong, and do not affect node progress.',
+    overview: 'The adaptive journey sometimes drops you on a question you cannot tackle right now. Stalling wastes rhythm; guessing at random counts as wrong and drags your mastery down. This round adds a Skip button next to Submit. The server advances the round plan by one position but writes no progress record, so the question does not count toward correct/wrong, rule 1 streaks or rule 3 accumulation, and the node is not lit. The skipped question is still captured in the history snapshot, so Previous can show the question and the explanation; if you keep getting it wrong, it can reappear in a later round — there is no "free pass".',
+    points: [
+      '<b>Not counted</b>: total_answered stays unchanged, and the question is excluded from correct/wrong stats, streak detection and rule 3 accumulation.',
+      '<b>Not lit</b>: skipping does not light the node and grants no exception — the engine keeps its rules.',
+      '<b>Still reviewable</b>: skipped questions land in the history snapshot; Previous can show "Skipped (not counted)" along with the reference answer and explanation.',
+      '<b>One-step confirmation</b>: Skip asks you to confirm, and the button auto-disables after submit or in review mode.'
+    ],
+    thinking: 'A skip button has to cost zero or it becomes a loophole. We let it do exactly one thing — advance the round pointer — and leave every other rule untouched, so the adaptive engine stays honest while the learner gets their rhythm back.',
+    stats: [['1', 'click', 'advance the round pointer'], ['0', 'side effects', 'no count · no light · no free pass'], ['1', 'confirm', 'to prevent fat-finger, with full review']]
+  },
   {
     date: '2026-09-08', tag: 'new', tagText: 'New',
     title: 'Adaptive journey gains a Previous question button',

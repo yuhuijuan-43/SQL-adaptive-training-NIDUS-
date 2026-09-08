@@ -487,6 +487,32 @@ def journey_next_route():
     result['last_answer_correct'] = is_correct
     return jsonify(result)
 
+
+@app.route('/api/journey/skip', methods=['POST'])
+@limiter.limit("30 per minute", key_func=_user_rate_key)
+def journey_skip_route():
+    """跳过当前题：不写入答题记录（不计入正确/错误/不点亮），但本轮 plan 位置前进一格。
+    跳过题在下一轮若仍答错仍可能再次出现；本轮不再回访。"""
+    data = request.get_json()
+    session_id = data.get('session_id')
+    question_id = data.get('question_id')
+    if question_id is not None:
+        try:
+            question_id = int(question_id)
+        except (TypeError, ValueError):
+            question_id = None
+    if not session_id:
+        return jsonify({"error": "缺少 session_id"}), 400
+    # 仅校验当前题存在；不调用 save_answer，也不计入 stats/answers
+    if question_id and not get_question_by_id(question_id):
+        return jsonify({"error": "题目不存在"}), 404
+    # was_correct=None → 不更新 total_correct/total_answered；just_answered_id=None → 不入 rs['answers']
+    result = journey_next(session_id, just_answered_qid=question_id, was_correct=None,
+                          duration=None, just_answered_id=None)
+    result['last_answer_correct'] = None
+    result['skipped'] = True
+    return jsonify(result)
+
 @app.route('/api/journey/status', methods=['POST'])
 def journey_status():
     """旅程状态 + 图谱解锁数据。未开始时也返回 200（state=null），供图谱入口视图展示「初始 0 点亮」"""
